@@ -124,6 +124,7 @@ export async function mount(container) {
   }
 
   // ─── PRODUCT TABLE ───────────────────────────────────────────────
+  console.log('inventory v4 - price/cost fix active');
   function updateInvDelBtn() {
     const n = container.querySelectorAll('.inv-cb:checked').length;
     container.querySelector('#inv-del-selected').style.display = n ? '' : 'none';
