@@ -1,6 +1,6 @@
 // modules/inventory.js - Kho hàng + Danh mục
 import { registerRoute } from '../core/router.js';
-import { addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
@@ -20,6 +20,8 @@ export async function mount(container) {
         </div>
       </div>
     </div>
+
+    <!-- TAB: SẢN PHẨM -->
     <div id="tab-products">
       <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
         <input id="inv-search" type="text" placeholder="Tìm kiếm..." class="search-input" style="flex:1;min-width:160px" />
@@ -31,13 +33,37 @@ export async function mount(container) {
       <div id="inv-table-wrap"></div>
       <div id="inv-form-wrap" class="hidden"></div>
     </div>
-    <div id="tab-categories" class="hidden">
-      <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem">
-        <button id="cat-add" class="btn btn--primary">+ Thêm danh mục</button>
+
+    <!-- TAB: DANH MỤC -->
+    <div id="tab-categories" class="hidden" style="display:none">
+      <div style="display:flex;gap:1rem;align-items:flex-start">
+
+        <!-- LEFT: folder tree -->
+        <div style="flex:0 0 340px;min-width:260px">
+          <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+            <button id="cat-add" class="btn btn--primary" style="flex:1">+ Thêm danh mục</button>
+          </div>
+          <div id="cat-folders"></div>
+          <div id="cat-form-wrap" class="hidden"></div>
+        </div>
+
+        <!-- RIGHT: product pool -->
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;margin-bottom:.5rem;color:#374151">Tất cả sản phẩm</div>
+          <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+            <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
+            <label style="font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;white-space:nowrap">
+              <input type="checkbox" id="pool-check-all" /> Chọn tất cả
+            </label>
+            <select id="pool-assign-cat" class="search-input" style="min-width:130px">
+              <option value="">Gán vào danh mục...</option>
+            </select>
+            <button id="pool-assign-btn" class="btn btn--primary btn--sm">Gán đã chọn</button>
+          </div>
+          <div id="pool-list" style="max-height:calc(100vh - 280px);overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px"></div>
+        </div>
+
       </div>
-      <div id="cat-table-wrap"></div>
-      <div id="cat-products-wrap" class="hidden"></div>
-      <div id="cat-form-wrap" class="hidden"></div>
     </div>
   `;
 
@@ -46,21 +72,34 @@ export async function mount(container) {
     btn.addEventListener('click', () => {
       container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('tab-products').classList.toggle('hidden', btn.dataset.tab !== 'products');
-      document.getElementById('tab-categories').classList.toggle('hidden', btn.dataset.tab !== 'categories');
+      const showProducts = btn.dataset.tab === 'products';
+      const tp = document.getElementById('tab-products');
+      const tc = document.getElementById('tab-categories');
+      tp.classList.toggle('hidden', !showProducts);
+      tc.classList.toggle('hidden', showProducts);
+      tc.style.display = showProducts ? 'none' : 'block';
     });
   });
 
   let allProducts   = [];
   let allCategories = [];
-  let currentCatKey  = null;
-  let currentCatName = '';
+  const openFolders = new Set(); // tracks which folder keys are expanded
 
-  // ==================== CATEGORIES ====================
+  // ==================== CATEGORIES (onSnapshot) ====================
   const unsubCats = onSnapshot(COL_CATEGORIES, items => {
     allCategories = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
-    renderCatTable(allCategories);
-    // Refresh category filter in products tab
+    // Refresh category selects
+    refreshCatSelects();
+    renderFolders();
+  });
+
+  function getCatName(catKey) {
+    const cat = allCategories.find(c => c._key === catKey);
+    return cat ? cat.name : '';
+  }
+
+  function refreshCatSelects() {
+    // Products tab filter
     const sel = document.getElementById('inv-cat-filter');
     if (sel) {
       const cur = sel.value;
@@ -68,50 +107,87 @@ export async function mount(container) {
         allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
       sel.value = cur;
     }
-    // Refresh select in open product form
+    // Pool assign dropdown
+    const pa = document.getElementById('pool-assign-cat');
+    if (pa) {
+      const cur2 = pa.value;
+      pa.innerHTML = '<option value="">Gán vào danh mục...</option>' +
+        allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
+      pa.value = cur2;
+    }
+    // Product form select
     const fCat = document.getElementById('f-categoryKey');
     if (fCat) {
-      const cur2 = fCat.value;
+      const cur3 = fCat.value;
       fCat.innerHTML = '<option value="">-- Chọn danh mục --</option>' +
         allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
-      fCat.value = cur2;
+      fCat.value = cur3;
     }
-  });
-
-  function getCatName(catKey) {
-    if (!catKey) return '';
-    const cat = allCategories.find(c => c._key === catKey);
-    return cat ? cat.name : '';
   }
 
-  function renderCatTable(data) {
-    const wrap = document.getElementById('cat-table-wrap');
+  // ==================== FOLDER TREE ====================
+  function renderFolders() {
+    const wrap = document.getElementById('cat-folders');
     if (!wrap) return;
-    if (!data.length) {
-      wrap.innerHTML = '<p style="padding:1rem;color:#888">Chưa có danh mục. Nhấn "+ Thêm danh mục" để tạo.</p>';
+    if (!allCategories.length) {
+      wrap.innerHTML = '<p style="color:#888;font-size:.9rem">Chưa có danh mục nào.</p>';
       return;
     }
-    const productCount = catKey => allProducts.filter(p => p.categoryKey === catKey).length;
-    const cols = [
-      { label: 'Tên danh mục', key: c => c.name || '' },
-      { label: 'Mô tả',        key: c => c.desc || '' },
-      { label: 'Số sản phẩm',  key: c => productCount(c._key) },
-      { label: '',             key: c => `
-        <button class="btn btn--sm btn--secondary cat-prods" data-key="${c._key}" data-name="${c.name}">📦 Sản phẩm</button>
-        <button class="btn btn--sm btn--secondary cat-edit" data-key="${c._key}">Sửa</button>
-        ${isAdmin() ? `<button class="btn btn--sm btn--danger cat-del" data-key="${c._key}">Xóa</button>` : ''}
-      `}
-    ];
-    wrap.innerHTML = buildTable(cols, data);
-    wrap.querySelectorAll('.cat-prods').forEach(btn =>
-      btn.addEventListener('click', () => openCatProducts(btn.dataset.key, btn.dataset.name))
-    );
+    wrap.innerHTML = allCategories.map(cat => {
+      const prods  = allProducts.filter(p => p.categoryKey === cat._key);
+      const isOpen = openFolders.has(cat._key);
+      return `
+        <div class="cat-folder" style="margin-bottom:.4rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          <div class="folder-hd" data-key="${cat._key}"
+               style="display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;background:#f9fafb;cursor:pointer;user-select:none">
+            <span style="font-size:.8rem;color:#6b7280;width:12px">${isOpen ? '▼' : '▶'}</span>
+            <span style="font-size:1.1rem">${isOpen ? '📂' : '📁'}</span>
+            <strong style="flex:1;font-size:.92rem">${cat.name || ''}</strong>
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:.1rem .5rem;font-size:.78rem;font-weight:600">${prods.length}</span>
+            <button class="btn btn--sm btn--secondary cat-edit" data-key="${cat._key}" style="padding:.2rem .55rem;font-size:.78rem" onclick="event.stopPropagation()">Sửa</button>
+            ${isAdmin() ? `<button class="btn btn--sm btn--danger cat-del" data-key="${cat._key}" style="padding:.2rem .55rem;font-size:.78rem" onclick="event.stopPropagation()">Xóa</button>` : ''}
+          </div>
+          ${isOpen ? `
+            <div class="folder-body" style="background:#fff;padding:.4rem .75rem .5rem">
+              ${prods.length ? prods.map(p => `
+                <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid #f3f4f6">
+                  <span style="font-size:.82rem;color:#9ca3af;width:52px">${p.id || ''}</span>
+                  <span style="flex:1;font-size:.88rem">${p.name || ''}</span>
+                  <span style="font-size:.78rem;color:#9ca3af">SL:${p.stock ?? 0}</span>
+                  <button class="btn btn--sm btn--danger remove-from-cat" data-key="${p._key}"
+                    style="padding:.15rem .45rem;font-size:.75rem">×</button>
+                </div>`).join('')
+              : '<div style="color:#9ca3af;font-size:.85rem;padding:.25rem 0">Chưa có sản phẩm</div>'}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Folder toggle
+    wrap.querySelectorAll('.folder-hd').forEach(hd => {
+      hd.addEventListener('click', () => {
+        const key = hd.dataset.key;
+        openFolders.has(key) ? openFolders.delete(key) : openFolders.add(key);
+        renderFolders();
+      });
+    });
     wrap.querySelectorAll('.cat-edit').forEach(btn =>
-      btn.addEventListener('click', () => openCatForm(data.find(c => c._key === btn.dataset.key)))
+      btn.addEventListener('click', () => openCatForm(allCategories.find(c => c._key === btn.dataset.key)))
     );
     wrap.querySelectorAll('.cat-del').forEach(btn =>
       btn.addEventListener('click', () => confirmDeleteCat(btn.dataset.key))
     );
+    wrap.querySelectorAll('.remove-from-cat').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ok = await showModal('Xác nhận', 'Bỏ sản phẩm này khỏi danh mục?', true);
+        if (!ok) return;
+        try {
+          await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: '', type: '' });
+          toast('Đã bỏ khỏi danh mục');
+        } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+      });
+    });
   }
 
   document.getElementById('cat-add').addEventListener('click', () => openCatForm(null));
@@ -120,21 +196,19 @@ export async function mount(container) {
     const wrap = document.getElementById('cat-form-wrap');
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
-      <div class="form-card" style="max-width:500px;margin-top:.75rem">
-        <h3>${record ? 'Cập nhật danh mục' : 'Thêm danh mục'}</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Tên danh mục *</label>
-            <input id="cf-name" class="form-input" value="${record ? record.name || '' : ''}" />
-          </div>
-          <div class="form-group">
-            <label>Mô tả</label>
-            <input id="cf-desc" class="form-input" value="${record ? record.desc || '' : ''}" />
-          </div>
+      <div class="form-card" style="margin-top:.75rem">
+        <h4 style="margin:0 0 .6rem">${record ? 'Cập nhật danh mục' : 'Thêm danh mục'}</h4>
+        <div class="form-group" style="margin-bottom:.5rem">
+          <label style="font-size:.85rem">Tên danh mục *</label>
+          <input id="cf-name" class="form-input" value="${record?.name || ''}" placeholder="VD: Linh kiện" />
         </div>
-        <div class="form-actions">
-          <button id="cf-save" class="btn btn--primary">Lưu</button>
-          <button id="cf-cancel" class="btn btn--secondary">Huỷ</button>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label style="font-size:.85rem">Mô tả</label>
+          <input id="cf-desc" class="form-input" value="${record?.desc || ''}" placeholder="Mô tả ngắn..." />
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button id="cf-save" class="btn btn--primary btn--sm">Lưu</button>
+          <button id="cf-cancel" class="btn btn--secondary btn--sm">Huỷ</button>
         </div>
       </div>
     `;
@@ -153,8 +227,8 @@ export async function mount(container) {
 
   async function confirmDeleteCat(key) {
     const inUse = allProducts.filter(p => p.categoryKey === key).length;
-    const msg = inUse > 0
-      ? `Danh mục này có ${inUse} sản phẩm. Xóa danh mục sẽ không xóa sản phẩm, chỉ bỏ liên kết. Tiếp tục?`
+    const msg   = inUse > 0
+      ? `Danh mục này có ${inUse} sản phẩm. Xóa sẽ bỏ liên kết, không xóa sản phẩm. Tiếp tục?`
       : 'Xóa danh mục này?';
     const ok = await showModal('Xác nhận', msg, true);
     if (!ok) return;
@@ -162,17 +236,68 @@ export async function mount(container) {
     catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 
-  // ==================== PRODUCTS ====================
+  // ==================== PRODUCT POOL (right panel) ====================
+  function renderProductPool() {
+    const q   = (document.getElementById('pool-search')?.value || '').toLowerCase();
+    const wrap = document.getElementById('pool-list');
+    if (!wrap) return;
+    const filtered = allProducts.filter(p =>
+      !q || (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q)
+    );
+    if (!filtered.length) {
+      wrap.innerHTML = '<div style="padding:1rem;color:#888;text-align:center">Không có sản phẩm</div>';
+      return;
+    }
+    wrap.innerHTML = filtered.map(p => {
+      const catName = getCatName(p.categoryKey) || p.type || '';
+      return `
+        <label style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .1s"
+               onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+          <input type="checkbox" class="pool-cb" data-key="${p._key}" />
+          <span style="font-size:.8rem;color:#9ca3af;width:52px;flex-shrink:0">${p.id || ''}</span>
+          <span style="flex:1;font-size:.88rem">${p.name || ''}</span>
+          ${catName
+            ? `<span class="badge badge-blue" style="font-size:.75rem;white-space:nowrap">${catName}</span>`
+            : `<span style="font-size:.75rem;color:#d1d5db">Chưa có</span>`}
+        </label>
+      `;
+    }).join('');
+
+    // sync check-all state
+    const checkAll = document.getElementById('pool-check-all');
+    if (checkAll) checkAll.checked = false;
+  }
+
+  document.getElementById('pool-search').addEventListener('input', renderProductPool);
+
+  document.getElementById('pool-check-all').addEventListener('change', function() {
+    document.querySelectorAll('.pool-cb').forEach(cb => cb.checked = this.checked);
+  });
+
+  document.getElementById('pool-assign-btn').addEventListener('click', async () => {
+    const catKey = document.getElementById('pool-assign-cat').value;
+    if (!catKey) { toast('Chọn danh mục cần gán', 'error'); return; }
+    const selected = [...document.querySelectorAll('.pool-cb:checked')].map(cb => cb.dataset.key);
+    if (!selected.length) { toast('Chọn ít nhất một sản phẩm', 'error'); return; }
+    const catName = allCategories.find(c => c._key === catKey)?.name || '';
+    try {
+      await Promise.all(selected.map(key => updateItem(COL_PRODUCTS, key, { categoryKey: catKey, type: catName })));
+      toast(`Đã gán ${selected.length} sản phẩm vào "${catName}"`);
+      document.getElementById('pool-check-all').checked = false;
+    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+  });
+
+  // ==================== PRODUCTS (onSnapshot) ====================
   const unsubProds = onSnapshot(COL_PRODUCTS, items => {
     allProducts = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
-    renderCatTable(allCategories); // refresh product counts
     filterProducts();
-    // Live-refresh open cat-products panel
-    if (currentCatKey) renderCatProductsPanel(currentCatKey, currentCatName);
+    renderFolders();
+    renderProductPool();
   });
 
   container.addEventListener('unmount', () => { unsubCats?.(); unsubProds?.(); });
 
+  // ==================== PRODUCTS TAB ====================
   document.getElementById('inv-search').addEventListener('input', filterProducts);
   document.getElementById('inv-cat-filter').addEventListener('change', filterProducts);
 
@@ -249,7 +374,7 @@ export async function mount(container) {
             </select>
           </div>
           <div class="form-group"><label>Loại (tự nhập nếu không có danh mục)</label><input id="f-type" class="form-input" value="${record?.type || ''}" placeholder="VD: Linh kiện" /></div>
-          <div class="form-group"><label>Đơn vị tính</label><input id="f-unit" type="text" class="form-input" value="${record?.unit || 'Cái'}" /></div>
+          <div class="form-group"><label>Đơn vị tính</label><input id="f-unit" class="form-input" value="${record?.unit || 'Cái'}" /></div>
           <div class="form-group"><label>Tồn kho</label><input id="f-stock" type="number" class="form-input" value="${record?.stock ?? 0}" /></div>
           <div class="form-group"><label>Giá vốn</label><input id="f-cost" type="number" class="form-input" value="${record?.cost || 0}" /></div>
           <div class="form-group"><label>Giá bán</label><input id="f-price" type="number" class="form-input" value="${record?.price || 0}" /></div>
@@ -297,115 +422,5 @@ export async function mount(container) {
     if (!ok) return;
     try { await deleteItem(COL_PRODUCTS, key); toast('Đã xóa sản phẩm'); }
     catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-  }
-
-  // ==================== CAT-PRODUCTS PANEL ====================
-  function openCatProducts(catKey, catName) {
-    currentCatKey  = catKey;
-    currentCatName = catName;
-    renderCatProductsPanel(catKey, catName);
-  }
-
-  function renderCatProductsPanel(catKey, catName) {
-    const wrap = document.getElementById('cat-products-wrap');
-    if (!wrap) return;
-    wrap.classList.remove('hidden');
-
-    const inCat    = allProducts.filter(p => p.categoryKey === catKey);
-    const notInCat = allProducts.filter(p => p.categoryKey !== catKey);
-
-    wrap.innerHTML = `
-      <div class="form-card" style="margin-top:.75rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-          <h4 style="margin:0">📦 Sản phẩm trong danh mục: <strong>${catName}</strong>
-            <span style="margin-left:.5rem;font-size:.85rem;color:#666;font-weight:normal">(${inCat.length} sản phẩm)</span>
-          </h4>
-          <button id="close-cat-prods" class="btn btn--sm btn--secondary">✕ Đóng</button>
-        </div>
-
-        <!-- ADD SECTION: multi-checkbox list -->
-        <div style="border:1px solid #e5e7eb;border-radius:8px;padding:.75rem;margin-bottom:.75rem">
-          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap">
-            <strong style="font-size:.9rem">Thêm sản phẩm vào danh mục</strong>
-            <input id="add-prod-search" type="text" placeholder="Tìm nhanh..." class="search-input" style="flex:1;min-width:140px;max-width:260px" />
-            <label style="font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem">
-              <input type="checkbox" id="check-all-prods" /> Chọn tất cả
-            </label>
-            <button id="add-prod-btn" class="btn btn--primary btn--sm">+ Thêm đã chọn</button>
-          </div>
-          <div id="add-prod-list" style="max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:.3rem .75rem;padding:.25rem 0">
-            ${notInCat.length
-              ? notInCat.map(p => `
-                <label class="prod-check-item" style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;min-width:200px">
-                  <input type="checkbox" class="prod-cb" data-key="${p._key}" />
-                  <span class="prod-cb-label">${p.name || ''}  ${p.id ? '<span style=\"color:#888\">(' + p.id + ')</span>' : ''}</span>
-                </label>`).join('')
-              : '<span style="color:#888;font-size:.85rem">Tất cả sản phẩm đã thuộc danh mục này</span>'
-            }
-          </div>
-        </div>
-
-        <!-- CURRENT PRODUCTS TABLE -->
-        <table class="data-table">
-          <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Tồn kho</th><th></th></tr></thead>
-          <tbody>
-            ${inCat.length
-              ? inCat.map(p => `
-                <tr>
-                  <td>${p.id || p._key}</td>
-                  <td>${p.name || ''}</td>
-                  <td>${p.stock ?? 0}</td>
-                  <td><button class="btn btn--sm btn--danger remove-from-cat" data-key="${p._key}">Bỏ khỏi DM</button></td>
-                </tr>`).join('')
-              : '<tr><td colspan="4" style="text-align:center;color:#888;padding:.75rem">Chưa có sản phẩm trong danh mục này</td></tr>'
-            }
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    // Close
-    document.getElementById('close-cat-prods').onclick = () => {
-      currentCatKey = null; currentCatName = '';
-      wrap.classList.add('hidden'); wrap.innerHTML = '';
-    };
-
-    // Live search filter in checkbox list
-    document.getElementById('add-prod-search').addEventListener('input', function() {
-      const q = this.value.toLowerCase();
-      wrap.querySelectorAll('.prod-check-item').forEach(item => {
-        const txt = item.querySelector('.prod-cb-label')?.textContent.toLowerCase() || '';
-        item.style.display = txt.includes(q) ? '' : 'none';
-      });
-    });
-
-    // Check-all
-    document.getElementById('check-all-prods').addEventListener('change', function() {
-      wrap.querySelectorAll('.prod-cb').forEach(cb => {
-        if (cb.closest('.prod-check-item').style.display !== 'none') cb.checked = this.checked;
-      });
-    });
-
-    // Add selected
-    document.getElementById('add-prod-btn').addEventListener('click', async () => {
-      const selected = [...wrap.querySelectorAll('.prod-cb:checked')].map(cb => cb.dataset.key);
-      if (!selected.length) { toast('Chọn ít nhất một sản phẩm', 'error'); return; }
-      try {
-        await Promise.all(selected.map(key => updateItem(COL_PRODUCTS, key, { categoryKey: catKey, type: catName })));
-        toast(`Đã thêm ${selected.length} sản phẩm vào danh mục`);
-      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-    });
-
-    // Remove single product
-    wrap.querySelectorAll('.remove-from-cat').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const ok = await showModal('Xác nhận', 'Bỏ sản phẩm này khỏi danh mục?', true);
-        if (!ok) return;
-        try {
-          await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: '', type: '' });
-          toast('Đã bỏ khỏi danh mục');
-        } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-      });
-    });
   }
 }
