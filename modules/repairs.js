@@ -17,6 +17,13 @@ const STATUS_CLASS = {
   'Huỷ':       'badge-red'
 };
 
+// deliveryItems is array of {desc, price, qty}
+function formatDeliveryItems(items) {
+  if (!items || !items.length) return '';
+  if (typeof items === 'string') return items;
+  return items.map(i => (i.desc || '') + (i.qty > 1 ? ' x' + i.qty : '')).filter(Boolean).join(', ');
+}
+
 export async function mount(container) {
   container.innerHTML = `
     <div class="module-header">
@@ -51,11 +58,11 @@ export async function mount(container) {
     const st = document.getElementById('rep-status-filter').value;
     const filtered = allData.filter(r => {
       const matchQ = !q ||
-        (r.customer||'').toLowerCase().includes(q) ||
+        (r.customerName||'').toLowerCase().includes(q) ||
         (r.phone||'').toLowerCase().includes(q) ||
-        (r.deliveryItems||'').toLowerCase().includes(q) ||
+        (r.device||'').toLowerCase().includes(q) ||
         (r.serial||'').toLowerCase().includes(q) ||
-        (r._key||'').toLowerCase().includes(q);
+        formatDeliveryItems(r.deliveryItems).toLowerCase().includes(q);
       const matchSt = !st || r.status === st;
       return matchQ && matchSt;
     });
@@ -70,9 +77,9 @@ export async function mount(container) {
     }
     const cols = [
       { label: 'Ngày nhận',   key: r => formatDate(r.receivedDate || r.ts) },
-      { label: 'Khách hàng',  key: r => r.customer || '' },
+      { label: 'Khách hàng',  key: r => r.customerName || '' },
       { label: 'SĐT',         key: r => r.phone || '' },
-      { label: 'Thiết bị',    key: r => r.deliveryItems || '' },
+      { label: 'Thiết bị',    key: r => r.device || formatDeliveryItems(r.deliveryItems) || '' },
       { label: 'Serial',      key: r => r.serial || '' },
       { label: 'KTV',         key: r => r.techName || '' },
       { label: 'Chi phí',     key: r => formatVND(r.cost || 0) },
@@ -93,6 +100,17 @@ export async function mount(container) {
 
   document.getElementById('rep-add').addEventListener('click', () => openForm(null));
 
+  function deliveryItemsToText(items) {
+    if (!items || !items.length) return '';
+    if (typeof items === 'string') return items;
+    return items.map(i => i.desc || '').filter(Boolean).join(', ');
+  }
+
+  function textToDeliveryItems(text) {
+    if (!text) return [];
+    return text.split(',').map(s => s.trim()).filter(Boolean).map(desc => ({ desc, price: 0, qty: 1 }));
+  }
+
   function openForm(record) {
     const wrap = document.getElementById('rep-form-wrap');
     wrap.classList.remove('hidden');
@@ -102,7 +120,7 @@ export async function mount(container) {
         <div class="form-grid">
           <div class="form-group">
             <label>Khách hàng *</label>
-            <input id="f-customer" type="text" value="${record?.customer||''}" />
+            <input id="f-customerName" type="text" value="${record?.customerName||''}" />
           </div>
           <div class="form-group">
             <label>Số điện thoại</label>
@@ -113,8 +131,12 @@ export async function mount(container) {
             <input id="f-address" type="text" value="${record?.address||''}" />
           </div>
           <div class="form-group">
-            <label>Thiết bị nhận *</label>
-            <input id="f-deliveryItems" type="text" value="${record?.deliveryItems||''}" />
+            <label>Thiết bị *</label>
+            <input id="f-device" type="text" value="${record?.device||''}" placeholder="VD: LAPTOP ASUS X556" />
+          </div>
+          <div class="form-group">
+            <label>Linh kiện giao nhận</label>
+            <input id="f-deliveryItems" type="text" value="${deliveryItemsToText(record?.deliveryItems)}" placeholder="Phân cách bằng dấu phẩy" />
           </div>
           <div class="form-group">
             <label>Serial</label>
@@ -149,6 +171,10 @@ export async function mount(container) {
             <input id="f-capital" type="number" value="${record?.capital||0}" />
           </div>
           <div class="form-group">
+            <label>Đặt cọc (đ)</label>
+            <input id="f-deposit" type="number" value="${record?.deposit||0}" />
+          </div>
+          <div class="form-group">
             <label>Giảm giá (đ)</label>
             <input id="f-discount" type="number" value="${record?.discount||0}" />
           </div>
@@ -168,14 +194,18 @@ export async function mount(container) {
             <label>Trạng thái</label>
             <select id="f-status">
               ${STATUS_LIST.map(s =>
-                `<option ${record?.status===s?'selected':''}>${s}</option>`
+                `<option ${(record?.status||'Tiếp nhận')===s?'selected':''}>${s}</option>`
               ).join('')}
             </select>
           </div>
         </div>
         <div class="form-group" style="margin-top:.5rem">
+          <label>Vấn đề / Mô tả</label>
+          <textarea id="f-issue" rows="2">${record?.issue||''}</textarea>
+        </div>
+        <div class="form-group" style="margin-top:.5rem">
           <label>Ghi chú xử lý</label>
-          <textarea id="f-processNote" rows="3">${record?.processNote||''}</textarea>
+          <textarea id="f-processNote" rows="2">${record?.processNote||''}</textarea>
         </div>
         <div class="form-actions">
           <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu phiếu'}</button>
@@ -190,17 +220,15 @@ export async function mount(container) {
     });
 
     document.getElementById('f-save').addEventListener('click', async () => {
-      const customer = document.getElementById('f-customer').value.trim();
-      const deliveryItems = document.getElementById('f-deliveryItems').value.trim();
-      if (!customer || !deliveryItems) {
-        toast('Vui lòng nhập khách hàng và thiết bị', 'error');
-        return;
-      }
+      const customerName = document.getElementById('f-customerName').value.trim();
+      const device = document.getElementById('f-device').value.trim();
+      if (!customerName) { toast('Vui lòng nhập khách hàng', 'error'); return; }
       const data = {
-        customer,
+        customerName,
         phone:          document.getElementById('f-phone').value.trim(),
         address:        document.getElementById('f-address').value.trim(),
-        deliveryItems,
+        device,
+        deliveryItems:  textToDeliveryItems(document.getElementById('f-deliveryItems').value),
         serial:         document.getElementById('f-serial').value.trim(),
         password:       document.getElementById('f-password').value.trim(),
         accessories:    document.getElementById('f-accessories').value.trim(),
@@ -209,10 +237,12 @@ export async function mount(container) {
         deliveredDate:  document.getElementById('f-deliveredDate').value,
         cost:           parseFloat(document.getElementById('f-cost').value) || 0,
         capital:        parseFloat(document.getElementById('f-capital').value) || 0,
+        deposit:        parseFloat(document.getElementById('f-deposit').value) || 0,
         discount:       parseFloat(document.getElementById('f-discount').value) || 0,
         paymentType:    document.getElementById('f-paymentType').value,
         warrantyMonths: parseInt(document.getElementById('f-warrantyMonths').value) || 0,
         status:         document.getElementById('f-status').value,
+        issue:          document.getElementById('f-issue').value.trim(),
         processNote:    document.getElementById('f-processNote').value.trim(),
         ts: record?.ts || Date.now()
       };
