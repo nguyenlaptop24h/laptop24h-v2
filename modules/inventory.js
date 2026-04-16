@@ -397,7 +397,7 @@ export async function mount(container) {
     const catKeys  = selectedCatKey ? getAllKeysUnder(selectedCatKey) : null;
     const filtered = allProducts.filter(p =>
       (!catKeys || catKeys.has(p.categoryKey)) &&
-      (!q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q));
+      (!q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q)));
     list.innerHTML = filtered.length === 0
       ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Không có sản phẩm.</div>'
       : filtered.map(p => {
