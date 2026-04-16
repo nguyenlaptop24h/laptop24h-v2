@@ -169,6 +169,22 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px;
 .badge-purple { background:#faf5ff; color:#6b46c1; }
 .badge-gray   { background:#f7fafc; color:#4a5568; }
 
+/* ---- Tabs ---- */
+.tab-group { display: flex; gap: .25rem; }
+.tab-btn {
+  padding: .35rem .9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.tab-btn:hover  { background: #e5e7eb; }
+.tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   #sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; }
