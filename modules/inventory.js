@@ -161,8 +161,8 @@ export async function mount(container) {
           const c = n<=0?'#ef4444':n<=3?'#f59e0b':'#22c55e';
           return `<span style="color:${c};font-weight:600">${n}</span>`;
         }},
-      { label: 'Giá vốn',  key: p => formatVND(p.costPrice||0) },
-      { label: 'Giá bán',  key: p => formatVND(p.sellPrice||0) },
+      { label: 'Giá vốn',  key: p => formatVND(p.cost||0) },
+      { label: 'Giá bán',  key: p => formatVND(p.price||0) },
       { label: 'Bảo hành', key: p => p.warranty || '' },
       { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
     ];
@@ -195,8 +195,8 @@ export async function mount(container) {
         <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
         <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
         <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.costPrice||0}" style="width:100%" /></label>
-        <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.sellPrice||0}" style="width:100%" /></label>
+        <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
+        <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
         <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
       confirmText: 'Lưu',
@@ -209,8 +209,8 @@ export async function mount(container) {
           categoryKey: document.querySelector('#f-cat')?.value || null,
           unit:        document.querySelector('#f-unit')?.value.trim() || '',
           stock:       Number(document.querySelector('#f-stock')?.value) || 0,
-          costPrice:   Number(document.querySelector('#f-cost')?.value) || 0,
-          sellPrice:   Number(document.querySelector('#f-sell')?.value) || 0,
+          cost: Number(document.querySelector('#f-cost')?.value) || 0,
+          price: Number(document.querySelector('#f-sell')?.value) || 0,
           warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
         };
         key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
