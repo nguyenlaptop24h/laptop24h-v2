@@ -23,12 +23,13 @@ export async function mount(container) {
 
     <!-- TAB: SẢN PHẨM -->
     <div id="tab-products">
-      <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
+      <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
         <input id="inv-search" type="text" placeholder="Tìm kiếm..." class="search-input" style="flex:1;min-width:160px" />
         <select id="inv-cat-filter" class="search-input" style="width:160px">
           <option value="">Tất cả danh mục</option>
         </select>
         <button id="inv-add" class="btn btn--primary">+ Thêm sản phẩm</button>
+        <button id="inv-del-selected" class="btn btn--danger" style="display:none">🗑 Xóa đã chọn (<span id="inv-del-count">0</span>)</button>
       </div>
       <div id="inv-table-wrap"></div>
       <div id="inv-form-wrap" class="hidden"></div>
@@ -40,8 +41,9 @@ export async function mount(container) {
 
         <!-- LEFT: folder tree -->
         <div style="flex:0 0 340px;min-width:260px">
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-            <button id="cat-add" class="btn btn--primary" style="flex:1">+ Thêm danh mục</button>
+          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
+            <button id="cat-add" class="btn btn--primary btn--sm" style="flex:1">+ Thêm danh mục</button>
+            <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">🗑 Xóa (<span id="cat-del-count">0</span>)</button>
           </div>
           <div id="cat-folders"></div>
           <div id="cat-form-wrap" class="hidden"></div>
@@ -73,9 +75,8 @@ export async function mount(container) {
       container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const showProducts = btn.dataset.tab === 'products';
-      const tp = document.getElementById('tab-products');
+      document.getElementById('tab-products').classList.toggle('hidden', !showProducts);
       const tc = document.getElementById('tab-categories');
-      tp.classList.toggle('hidden', !showProducts);
       tc.classList.toggle('hidden', showProducts);
       tc.style.display = showProducts ? 'none' : 'block';
     });
@@ -83,12 +84,11 @@ export async function mount(container) {
 
   let allProducts   = [];
   let allCategories = [];
-  const openFolders = new Set(); // tracks which folder keys are expanded
+  const openFolders = new Set();
 
-  // ==================== CATEGORIES (onSnapshot) ====================
+  // ==================== CATEGORIES ====================
   const unsubCats = onSnapshot(COL_CATEGORIES, items => {
     allCategories = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
-    // Refresh category selects
     refreshCatSelects();
     renderFolders();
   });
@@ -99,7 +99,6 @@ export async function mount(container) {
   }
 
   function refreshCatSelects() {
-    // Products tab filter
     const sel = document.getElementById('inv-cat-filter');
     if (sel) {
       const cur = sel.value;
@@ -107,7 +106,6 @@ export async function mount(container) {
         allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
       sel.value = cur;
     }
-    // Pool assign dropdown
     const pa = document.getElementById('pool-assign-cat');
     if (pa) {
       const cur2 = pa.value;
@@ -115,7 +113,6 @@ export async function mount(container) {
         allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
       pa.value = cur2;
     }
-    // Product form select
     const fCat = document.getElementById('f-categoryKey');
     if (fCat) {
       const cur3 = fCat.value;
@@ -140,12 +137,12 @@ export async function mount(container) {
         <div class="cat-folder" style="margin-bottom:.4rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
           <div class="folder-hd" data-key="${cat._key}"
                style="display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;background:#f9fafb;cursor:pointer;user-select:none">
+            <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
             <span style="font-size:.8rem;color:#6b7280;width:12px">${isOpen ? '▼' : '▶'}</span>
             <span style="font-size:1.1rem">${isOpen ? '📂' : '📁'}</span>
             <strong style="flex:1;font-size:.92rem">${cat.name || ''}</strong>
             <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:.1rem .5rem;font-size:.78rem;font-weight:600">${prods.length}</span>
             <button class="btn btn--sm btn--secondary cat-edit" data-key="${cat._key}" style="padding:.2rem .55rem;font-size:.78rem" onclick="event.stopPropagation()">Sửa</button>
-            ${isAdmin() ? `<button class="btn btn--sm btn--danger cat-del" data-key="${cat._key}" style="padding:.2rem .55rem;font-size:.78rem" onclick="event.stopPropagation()">Xóa</button>` : ''}
           </div>
           ${isOpen ? `
             <div class="folder-body" style="background:#fff;padding:.4rem .75rem .5rem">
@@ -164,19 +161,23 @@ export async function mount(container) {
       `;
     }).join('');
 
-    // Folder toggle
+    // Folder toggle (click header but not checkbox/button)
     wrap.querySelectorAll('.folder-hd').forEach(hd => {
-      hd.addEventListener('click', () => {
+      hd.addEventListener('click', e => {
+        if (e.target.closest('input, button')) return;
         const key = hd.dataset.key;
         openFolders.has(key) ? openFolders.delete(key) : openFolders.add(key);
         renderFolders();
       });
     });
+
+    // Checkbox selection → show/hide delete button
+    wrap.querySelectorAll('.cat-cb').forEach(cb => {
+      cb.addEventListener('change', updateCatDelBtn);
+    });
+
     wrap.querySelectorAll('.cat-edit').forEach(btn =>
       btn.addEventListener('click', () => openCatForm(allCategories.find(c => c._key === btn.dataset.key)))
-    );
-    wrap.querySelectorAll('.cat-del').forEach(btn =>
-      btn.addEventListener('click', () => confirmDeleteCat(btn.dataset.key))
     );
     wrap.querySelectorAll('.remove-from-cat').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -190,7 +191,28 @@ export async function mount(container) {
     });
   }
 
+  function updateCatDelBtn() {
+    const checked = [...document.querySelectorAll('.cat-cb:checked')];
+    const btn  = document.getElementById('cat-del-selected');
+    const span = document.getElementById('cat-del-count');
+    if (!btn) return;
+    btn.style.display = checked.length ? '' : 'none';
+    if (span) span.textContent = checked.length;
+  }
+
   document.getElementById('cat-add').addEventListener('click', () => openCatForm(null));
+
+  document.getElementById('cat-del-selected').addEventListener('click', async () => {
+    const keys = [...document.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    const names = keys.map(k => allCategories.find(c => c._key === k)?.name || k).join(', ');
+    const ok = await showModal('Xác nhận xóa', `Xóa ${keys.length} danh mục: "${names}"?\nSản phẩm sẽ không bị xóa, chỉ bỏ liên kết.`, true);
+    if (!ok) return;
+    try {
+      await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
+      toast(`Đã xóa ${keys.length} danh mục`);
+    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+  });
 
   function openCatForm(record) {
     const wrap = document.getElementById('cat-form-wrap');
@@ -225,20 +247,9 @@ export async function mount(container) {
     });
   }
 
-  async function confirmDeleteCat(key) {
-    const inUse = allProducts.filter(p => p.categoryKey === key).length;
-    const msg   = inUse > 0
-      ? `Danh mục này có ${inUse} sản phẩm. Xóa sẽ bỏ liên kết, không xóa sản phẩm. Tiếp tục?`
-      : 'Xóa danh mục này?';
-    const ok = await showModal('Xác nhận', msg, true);
-    if (!ok) return;
-    try { await deleteItem(COL_CATEGORIES, key); toast('Đã xóa danh mục'); }
-    catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-  }
-
-  // ==================== PRODUCT POOL (right panel) ====================
+  // ==================== PRODUCT POOL ====================
   function renderProductPool() {
-    const q   = (document.getElementById('pool-search')?.value || '').toLowerCase();
+    const q    = (document.getElementById('pool-search')?.value || '').toLowerCase();
     const wrap = document.getElementById('pool-list');
     if (!wrap) return;
     const filtered = allProducts.filter(p =>
@@ -251,7 +262,7 @@ export async function mount(container) {
     wrap.innerHTML = filtered.map(p => {
       const catName = getCatName(p.categoryKey) || p.type || '';
       return `
-        <label style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .1s"
+        <label style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;cursor:pointer"
                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
           <input type="checkbox" class="pool-cb" data-key="${p._key}" />
           <span style="font-size:.8rem;color:#9ca3af;width:52px;flex-shrink:0">${p.id || ''}</span>
@@ -262,18 +273,14 @@ export async function mount(container) {
         </label>
       `;
     }).join('');
-
-    // sync check-all state
-    const checkAll = document.getElementById('pool-check-all');
-    if (checkAll) checkAll.checked = false;
+    const ca = document.getElementById('pool-check-all');
+    if (ca) ca.checked = false;
   }
 
   document.getElementById('pool-search').addEventListener('input', renderProductPool);
-
   document.getElementById('pool-check-all').addEventListener('change', function() {
     document.querySelectorAll('.pool-cb').forEach(cb => cb.checked = this.checked);
   });
-
   document.getElementById('pool-assign-btn').addEventListener('click', async () => {
     const catKey = document.getElementById('pool-assign-cat').value;
     if (!catKey) { toast('Chọn danh mục cần gán', 'error'); return; }
@@ -287,7 +294,7 @@ export async function mount(container) {
     } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   });
 
-  // ==================== PRODUCTS (onSnapshot) ====================
+  // ==================== PRODUCTS ====================
   const unsubProds = onSnapshot(COL_PRODUCTS, items => {
     allProducts = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
     filterProducts();
@@ -297,7 +304,6 @@ export async function mount(container) {
 
   container.addEventListener('unmount', () => { unsubCats?.(); unsubProds?.(); });
 
-  // ==================== PRODUCTS TAB ====================
   document.getElementById('inv-search').addEventListener('input', filterProducts);
   document.getElementById('inv-cat-filter').addEventListener('change', filterProducts);
 
@@ -312,6 +318,15 @@ export async function mount(container) {
     renderProductTable(filtered);
   }
 
+  function updateInvDelBtn() {
+    const checked = [...document.querySelectorAll('.inv-cb:checked')];
+    const btn  = document.getElementById('inv-del-selected');
+    const span = document.getElementById('inv-del-count');
+    if (!btn) return;
+    btn.style.display = checked.length ? '' : 'none';
+    if (span) span.textContent = checked.length;
+  }
+
   function renderProductTable(data) {
     const wrap = document.getElementById('inv-table-wrap');
     if (!wrap) return;
@@ -320,6 +335,9 @@ export async function mount(container) {
       return;
     }
     const cols = [
+      { label: '<input type="checkbox" id="inv-check-all" />', key: p =>
+          `<input type="checkbox" class="inv-cb" data-key="${p._key}" />`
+      },
       { label: 'Mã SP',        key: p => p.id || '' },
       { label: 'Tên sản phẩm', key: p => p.name || '' },
       { label: 'Danh mục',     key: p => {
@@ -338,19 +356,37 @@ export async function mount(container) {
       { label: 'Giá vốn',     key: p => formatVND(p.cost  || 0) },
       { label: 'Giá bán',     key: p => formatVND(p.price || 0) },
       { label: 'Bảo hành',    key: p => p.note || '' },
-      { label: '',            key: p => `
-        <button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>
-        ${isAdmin() ? `<button class="btn btn--sm btn--danger inv-del" data-key="${p._key}">Xóa</button>` : ''}
-      `}
+      { label: '',            key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>`}
     ];
     wrap.innerHTML = buildTable(cols, data);
+
+    // Select-all checkbox in header
+    const checkAll = wrap.querySelector('#inv-check-all');
+    if (checkAll) {
+      checkAll.addEventListener('change', function() {
+        wrap.querySelectorAll('.inv-cb').forEach(cb => cb.checked = this.checked);
+        updateInvDelBtn();
+      });
+    }
+    wrap.querySelectorAll('.inv-cb').forEach(cb =>
+      cb.addEventListener('change', updateInvDelBtn)
+    );
     wrap.querySelectorAll('.inv-edit').forEach(btn =>
       btn.addEventListener('click', () => openProductForm(allProducts.find(p => p._key === btn.dataset.key)))
     );
-    wrap.querySelectorAll('.inv-del').forEach(btn =>
-      btn.addEventListener('click', () => confirmDeleteProduct(btn.dataset.key))
-    );
   }
+
+  document.getElementById('inv-del-selected').addEventListener('click', async () => {
+    const keys = [...document.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    const ok = await showModal('Xác nhận xóa', `Xóa ${keys.length} sản phẩm đã chọn?`, true);
+    if (!ok) return;
+    try {
+      await Promise.all(keys.map(k => deleteItem(COL_PRODUCTS, k)));
+      toast(`Đã xóa ${keys.length} sản phẩm`);
+      document.getElementById('inv-del-selected').style.display = 'none';
+    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+  });
 
   document.getElementById('inv-add').addEventListener('click', () => openProductForm(null));
 
@@ -415,12 +451,5 @@ export async function mount(container) {
         wrap.classList.add('hidden'); wrap.innerHTML = '';
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
-  }
-
-  async function confirmDeleteProduct(key) {
-    const ok = await showModal('Xác nhận', 'Xóa sản phẩm này?', true);
-    if (!ok) return;
-    try { await deleteItem(COL_PRODUCTS, key); toast('Đã xóa sản phẩm'); }
-    catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 }
