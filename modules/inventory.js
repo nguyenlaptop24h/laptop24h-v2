@@ -266,7 +266,7 @@ export async function mount(container) {
           </div>`;
         }
       });
-    });
+    }
     wrap.querySelectorAll('.cat-cb').forEach(cb => cb.addEventListener('change', updateCatDelBtn));
     wrap.querySelectorAll('.cat-add-child').forEach(btn =>
       btn.addEventListener('click', () => {
