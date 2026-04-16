@@ -1,4 +1,4 @@
-// modules/inventory.js - Kho hÃ ng + Danh má»¥c
+// modules/inventory.js - Kho hÃÂ ng + Danh mÃ¡Â»Â¥c
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal, formatVND } from '../core/ui.js';
@@ -12,23 +12,23 @@ registerRoute('#inventory', mount);
 export async function mount(container) {
   container.innerHTML = `
     <div class="module-header">
-      <h2>Kho hÃ ng</h2>
+      <h2>Kho hÃÂ ng</h2>
       <div class="module-actions">
         <div class="tab-group">
-          <button class="tab-btn" data-tab="products">ð¦ Sáº£n pháº©m</button>
-          <button class="tab-btn active" data-tab="categories">ð Danh má»¥c</button>
+          <button class="tab-btn" data-tab="products">Ã°ÂÂÂ¦ SÃ¡ÂºÂ£n phÃ¡ÂºÂ©m</button>
+          <button class="tab-btn active" data-tab="categories">Ã°ÂÂÂ Danh mÃ¡Â»Â¥c</button>
         </div>
       </div>
     </div>
 
     <div id="tab-products" style="display:none">
       <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-        <input id="inv-search" type="text" placeholder="TÃ¬m kiáº¿m..." class="search-input" style="flex:1;min-width:160px" />
+        <input id="inv-search" type="text" placeholder="TÃÂ¬m kiÃ¡ÂºÂ¿m..." class="search-input" style="flex:1;min-width:160px" />
         <select id="inv-cat-filter" class="search-input" style="width:220px">
-          <option value="">Táº¥t cáº£ danh má»¥c</option>
+          <option value="">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ danh mÃ¡Â»Â¥c</option>
         </select>
-        <button id="inv-add" class="btn btn--primary">+ ThÃªm sáº£n pháº©m</button>
-        <button id="inv-del-selected" class="btn btn--danger" style="display:none">ð XÃ³a ÄÃ£ chá»n (<span id="inv-del-count">0</span>)</button>
+        <button id="inv-add" class="btn btn--primary">+ ThÃÂªm sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m</button>
+        <button id="inv-del-selected" class="btn btn--danger" style="display:none">Ã°ÂÂÂ XÃÂ³a ÃÂÃÂ£ chÃ¡Â»Ân (<span id="inv-del-count">0</span>)</button>
       </div>
       <div id="inv-table-wrap"></div>
     </div>
@@ -37,22 +37,22 @@ export async function mount(container) {
       <div style="display:flex;gap:1rem;align-items:flex-start">
         <div style="flex:0 0 380px;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-            <button id="cat-add" class="btn btn--primary btn--sm">+ ThÃªm danh má»¥c gá»c</button>
-            <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">ð XÃ³a (<span id="cat-del-count">0</span>)</button>
+            <button id="cat-add" class="btn btn--primary btn--sm">+ ThÃÂªm danh mÃ¡Â»Â¥c gÃ¡Â»Âc</button>
+            <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">Ã°ÂÂÂ XÃÂ³a (<span id="cat-del-count">0</span>)</button>
           </div>
           <div id="cat-folders"></div>
           <div id="cat-form-wrap"></div>
         </div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-            <input id="pool-search" type="text" placeholder="TÃ¬m sáº£n pháº©m..." class="search-input" style="flex:1;min-width:140px" />
+            <input id="pool-search" type="text" placeholder="TÃÂ¬m sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m..." class="search-input" style="flex:1;min-width:140px" />
             <label style="display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap">
-              <input type="checkbox" id="pool-check-all" /> Chá»n táº¥t cáº£
+              <input type="checkbox" id="pool-check-all" /> ChÃ¡Â»Ân tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£
             </label>
             <select id="pool-assign-cat" class="search-input" style="width:200px">
-              <option value="">GÃ¡n vÃ o danh má»¥c...</option>
+              <option value="">GÃÂ¡n vÃÂ o danh mÃ¡Â»Â¥c...</option>
             </select>
-            <button id="pool-assign-btn" class="btn btn--secondary btn--sm">GÃ¡n ÄÃ£ chá»n</button>
+            <button id="pool-assign-btn" class="btn btn--secondary btn--sm">GÃÂ¡n ÃÂÃÂ£ chÃ¡Â»Ân</button>
           </div>
           <div id="pool-list"></div>
         </div>
@@ -64,7 +64,7 @@ export async function mount(container) {
   let allCategories = [];
   const openFolders = new Set();
 
-  // âââ TAB SWITCH ââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ TAB SWITCH Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   const tp = container.querySelector('#tab-products');
   const tc = container.querySelector('#tab-categories');
   container.querySelectorAll('.tab-btn').forEach(btn => {
@@ -77,7 +77,13 @@ export async function mount(container) {
     });
   });
 
-  // âââ HELPERS ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Default: mo tab Danh muc khi vao Kho hang
+  tp.style.display = 'none';
+  tc.style.display = 'block';
+  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  container.querySelector('[data-tab="categories"]').classList.add('active');
+
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ HELPERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function getCatFullName(cat) {
     const parts = [cat.name];
     let cur = cat;
@@ -114,16 +120,16 @@ export async function mount(container) {
   function refreshCatSelects() {
     const filter    = container.querySelector('#inv-cat-filter');
     const filterVal = filter.value;
-    filter.innerHTML = '<option value="">Táº¥t cáº£ danh má»¥c</option>' + buildCatOptions(null, 0);
+    filter.innerHTML = '<option value="">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ danh mÃ¡Â»Â¥c</option>' + buildCatOptions(null, 0);
     filter.value = filterVal;
 
     const assign    = container.querySelector('#pool-assign-cat');
     const assignVal = assign.value;
-    assign.innerHTML = '<option value="">GÃ¡n vÃ o danh má»¥c...</option>' + buildCatOptions(null, 0);
+    assign.innerHTML = '<option value="">GÃÂ¡n vÃÂ o danh mÃ¡Â»Â¥c...</option>' + buildCatOptions(null, 0);
     assign.value = assignVal;
   }
 
-  // âââ PRODUCT TABLE âââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT TABLE Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function updateInvDelBtn() {
     const n = container.querySelectorAll('.inv-cb:checked').length;
     container.querySelector('#inv-del-selected').style.display = n ? '' : 'none';
@@ -146,25 +152,25 @@ export async function mount(container) {
     const cols = [
       { label: '<input type="checkbox" id="inv-check-all" />',
         key: p => `<input type="checkbox" class="inv-cb" data-key="${p._key}" />` },
-      { label: 'MÃ£ SP',        key: p => p.id || '' },
-      { label: 'TÃªn sáº£n pháº©m', key: p => p.name || '' },
-      { label: 'Danh má»¥c', key: p => {
-          if (!p.categoryKey) return '<span style="color:#9ca3af">â</span>';
+      { label: 'MÃÂ£ SP',        key: p => p.id || '' },
+      { label: 'TÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m', key: p => p.name || '' },
+      { label: 'Danh mÃ¡Â»Â¥c', key: p => {
+          if (!p.categoryKey) return '<span style="color:#9ca3af">Ã¢ÂÂ</span>';
           const cat = allCategories.find(c => c._key === p.categoryKey);
           return cat
             ? `<span style="color:#2563eb">${getCatFullName(cat)}</span>`
-            : '<span style="color:#9ca3af">â</span>';
+            : '<span style="color:#9ca3af">Ã¢ÂÂ</span>';
         }},
-      { label: 'ÄVT',      key: p => p.unit || '' },
-      { label: 'Tá»n kho',  key: p => {
+      { label: 'ÃÂVT',      key: p => p.unit || '' },
+      { label: 'TÃ¡Â»Ân kho',  key: p => {
           const n = Number(p.stock||0);
           const c = n<=0?'#ef4444':n<=3?'#f59e0b':'#22c55e';
           return `<span style="color:${c};font-weight:600">${n}</span>`;
         }},
-      { label: 'GiÃ¡ vá»n',  key: p => formatVND(p.cost||0) },
-      { label: 'GiÃ¡ bÃ¡n',  key: p => formatVND(p.price||0) },
-      { label: 'Báº£o hÃ nh', key: p => p.warranty || '' },
-      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sá»­a</button>` }
+      { label: 'GiÃÂ¡ vÃ¡Â»Ân',  key: p => formatVND(p.cost||0) },
+      { label: 'GiÃÂ¡ bÃÂ¡n',  key: p => formatVND(p.price||0) },
+      { label: 'BÃ¡ÂºÂ£o hÃÂ nh', key: p => p.warranty || '' },
+      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">SÃ¡Â»Â­a</button>` }
     ];
     // FIX: buildTable(cols, data) - cols first!
     wrap.innerHTML = buildTable(cols, data);
@@ -179,30 +185,30 @@ export async function mount(container) {
       btn.addEventListener('click', () => openProductForm(btn.dataset.key)));
   }
 
-  // âââ PRODUCT FORM ââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT FORM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function openProductForm(key) {
     const p       = key ? (allProducts.find(x => x._key === key) || {}) : {};
-    const catOpts = '<option value="">â KhÃ´ng cÃ³ â</option>' + buildCatOptions(null, 0);
+    const catOpts = '<option value="">Ã¢ÂÂ KhÃÂ´ng cÃÂ³ Ã¢ÂÂ</option>' + buildCatOptions(null, 0);
     const catSel  = p.categoryKey
       ? catOpts.replace(`value="${p.categoryKey}"`, `value="${p.categoryKey}" selected`)
       : catOpts;
 
     showModal({
-      title: `${key ? 'Sá»­a' : 'ThÃªm'} sáº£n pháº©m`,
+      title: `${key ? 'SÃ¡Â»Â­a' : 'ThÃÂªm'} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m`,
       body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-        <label>MÃ£ SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
-        <label>TÃªn sáº£n pháº©m<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
-        <label>Danh má»¥c<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
-        <label>ÄVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
-        <label>Tá»n kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>GiÃ¡ vá»n<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
-        <label>GiÃ¡ bÃ¡n<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
-        <label>Báº£o hÃ nh<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
+        <label>MÃÂ£ SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
+        <label>TÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
+        <label>Danh mÃ¡Â»Â¥c<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
+        <label>ÃÂVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
+        <label>TÃ¡Â»Ân kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
+        <label>GiÃÂ¡ vÃ¡Â»Ân<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
+        <label>GiÃÂ¡ bÃÂ¡n<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
+        <label>BÃ¡ÂºÂ£o hÃÂ nh<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
-      confirmText: 'LÆ°u',
+      confirmText: 'LÃÂ°u',
       onConfirm: async () => {
         const name = document.querySelector('#f-name')?.value.trim() || '';
-        if (!name) { toast('Nháº­p tÃªn sáº£n pháº©m!','warning'); return; }
+        if (!name) { toast('NhÃ¡ÂºÂ­p tÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!','warning'); return; }
         const data = {
           id:          document.querySelector('#f-id')?.value.trim() || '',
           name,
@@ -214,12 +220,12 @@ export async function mount(container) {
           warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
         };
         key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
-        toast(key ? 'ÄÃ£ cáº­p nháº­t!' : 'ÄÃ£ thÃªm sáº£n pháº©m!','success');
+        toast(key ? 'ÃÂÃÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t!' : 'ÃÂÃÂ£ thÃÂªm sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!','success');
       }
     });
   }
 
-  // âââ CATEGORY FOLDER TREE ââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ CATEGORY FOLDER TREE Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function updateCatDelBtn() {
     const n = container.querySelectorAll('.cat-cb:checked').length;
     container.querySelector('#cat-del-selected').style.display = n ? '' : 'none';
@@ -246,23 +252,23 @@ export async function mount(container) {
         body += `<div class="folder-product" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .3rem ${pl+44}px;border-top:1px solid #f3f4f6;font-size:.84rem">
           <span style="flex:1;color:#374151">${p.name}</span>
           <span style="color:#9ca3af;font-size:.75rem">${p.id||''}</span>
-          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="Bá» khá»i danh má»¥c">Ã</button>
+          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="BÃ¡Â»Â khÃ¡Â»Âi danh mÃ¡Â»Â¥c">ÃÂ</button>
         </div>`;
       });
       if (!children.length && !prods.length) {
-        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">Trá»ng</div>`;
+        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">TrÃ¡Â»Âng</div>`;
       }
     }
 
     return `<div class="cat-folder" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:.35rem;overflow:hidden;margin-left:${pl}px">
       <div class="folder-hd" data-key="${cat._key}" style="display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;background:${depth>0?'#f9fafb':'#fff'};cursor:pointer;user-select:none">
         <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
-        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'â¼':'â¶'}</span>
-        <span style="font-size:1rem">${isOpen?'ð':'ð'}</span>
+        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'Ã¢ÂÂ¼':'Ã¢ÂÂ¶'}</span>
+        <span style="font-size:1rem">${isOpen?'Ã°ÂÂÂ':'Ã°ÂÂÂ'}</span>
         <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
         <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
-        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Má»¥c con</button>
-        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sá»­a</button>
+        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+MÃ¡Â»Â¥c con</button>
+        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">SÃ¡Â»Â­a</button>
       </div>
       ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
     </div>`;
@@ -272,7 +278,7 @@ export async function mount(container) {
     const wrap  = container.querySelector('#cat-folders');
     const roots = allCategories.filter(c => !c.parentKey);
     wrap.innerHTML = roots.length === 0
-      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">ChÆ°a cÃ³ danh má»¥c nÃ o.</div>'
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">ChÃÂ°a cÃÂ³ danh mÃ¡Â»Â¥c nÃÂ o.</div>'
       : roots.map(cat => renderFolderNode(cat, 0)).join('');
 
     wrap.querySelectorAll('.folder-hd').forEach(hd => {
@@ -294,15 +300,15 @@ export async function mount(container) {
     wrap.querySelectorAll('.remove-from-cat').forEach(btn =>
       btn.addEventListener('click', async () => {
         await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: null });
-        toast('ÄÃ£ bá» khá»i danh má»¥c','success');
+        toast('ÃÂÃÂ£ bÃ¡Â»Â khÃ¡Â»Âi danh mÃ¡Â»Â¥c','success');
       }));
   }
 
-  // âââ CATEGORY FORM âââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ CATEGORY FORM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function openCatForm(key, defaultParentKey) {
     const cat      = key ? (allCategories.find(c => c._key === key) || {}) : {};
     const excluded = key ? [...getDescendantKeys(key), key] : [];
-    const parentOpts = '<option value="">â Danh má»¥c gá»c â</option>' +
+    const parentOpts = '<option value="">Ã¢ÂÂ Danh mÃ¡Â»Â¥c gÃ¡Â»Âc Ã¢ÂÂ</option>' +
       allCategories
         .filter(c => !excluded.includes(c._key))
         .map(c => `<option value="${c._key}">${getCatFullName(c)}</option>`).join('');
@@ -316,17 +322,17 @@ export async function mount(container) {
     const wrap = container.querySelector('#cat-form-wrap');
     wrap.innerHTML = `
       <div style="border:1px solid #bfdbfe;border-radius:8px;padding:.75rem;margin-top:.5rem;background:#eff6ff">
-        <strong style="font-size:.9rem">${key ? 'Sá»­a' : 'ThÃªm'} danh má»¥c</strong>
+        <strong style="font-size:.9rem">${key ? 'SÃ¡Â»Â­a' : 'ThÃÂªm'} danh mÃ¡Â»Â¥c</strong>
         <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
-          <label style="font-size:.85rem">TÃªn danh má»¥c
-            <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiá»n..." />
+          <label style="font-size:.85rem">TÃÂªn danh mÃ¡Â»Â¥c
+            <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiÃ¡Â»Ân..." />
           </label>
-          <label style="font-size:.85rem">Thuá»c vá» danh má»¥c
+          <label style="font-size:.85rem">ThuÃ¡Â»Âc vÃ¡Â»Â danh mÃ¡Â»Â¥c
             <select id="cf-parent" class="search-input" style="width:100%;margin-top:.2rem">${parentSel}</select>
           </label>
           <div style="display:flex;gap:.5rem;justify-content:flex-end">
-            <button id="cf-cancel" class="btn btn--secondary btn--sm">Há»§y</button>
-            <button id="cf-save" class="btn btn--primary btn--sm">LÆ°u</button>
+            <button id="cf-cancel" class="btn btn--secondary btn--sm">HÃ¡Â»Â§y</button>
+            <button id="cf-save" class="btn btn--primary btn--sm">LÃÂ°u</button>
           </div>
         </div>
       </div>`;
@@ -334,25 +340,25 @@ export async function mount(container) {
     wrap.querySelector('#cf-cancel').addEventListener('click', () => { wrap.innerHTML = ''; });
     wrap.querySelector('#cf-save').addEventListener('click', async () => {
       const name      = wrap.querySelector('#cf-name').value.trim();
-      if (!name) { toast('Nháº­p tÃªn danh má»¥c!','warning'); return; }
+      if (!name) { toast('NhÃ¡ÂºÂ­p tÃÂªn danh mÃ¡Â»Â¥c!','warning'); return; }
       const parentKey = wrap.querySelector('#cf-parent').value || null;
       key
         ? await updateItem(COL_CATEGORIES, key, { name, parentKey })
         : await addItem(COL_CATEGORIES, { name, parentKey });
-      toast(key ? 'ÄÃ£ cáº­p nháº­t danh má»¥c!' : 'ÄÃ£ thÃªm danh má»¥c!','success');
+      toast(key ? 'ÃÂÃÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t danh mÃ¡Â»Â¥c!' : 'ÃÂÃÂ£ thÃÂªm danh mÃ¡Â»Â¥c!','success');
       wrap.innerHTML = '';
       if (parentKey) openFolders.add(parentKey);
     });
   }
 
-  // âââ PRODUCT POOL ââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT POOL Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   function renderProductPool() {
     const q      = (container.querySelector('#pool-search')?.value || '').toLowerCase();
     const list   = container.querySelector('#pool-list');
     const filtered = allProducts.filter(p =>
       !q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q));
     list.innerHTML = filtered.length === 0
-      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">KhÃ´ng cÃ³ sáº£n pháº©m.</div>'
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">KhÃÂ´ng cÃÂ³ sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m.</div>'
       : filtered.map(p => {
           const cat = p.categoryKey ? allCategories.find(c => c._key === p.categoryKey) : null;
           return `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f3f4f6;font-size:.84rem">
@@ -361,32 +367,32 @@ export async function mount(container) {
             <span style="color:#6b7280;font-size:.75rem">${p.id||''}</span>
             ${cat
               ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
-              : '<span style="color:#d1d5db;font-size:.73rem">ChÆ°a phÃ¢n loáº¡i</span>'}
+              : '<span style="color:#d1d5db;font-size:.73rem">ChÃÂ°a phÃÂ¢n loÃ¡ÂºÂ¡i</span>'}
           </div>`;
         }).join('');
     const pca = container.querySelector('#pool-check-all');
     if (pca) pca.checked = false;
   }
 
-  // âââ EVENT LISTENERS ââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ EVENT LISTENERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   container.querySelector('#inv-search').addEventListener('input', renderProductTable);
   container.querySelector('#inv-cat-filter').addEventListener('change', renderProductTable);
   container.querySelector('#inv-add').addEventListener('click', () => openProductForm(null));
   container.querySelector('#inv-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;
-    if (!confirm(`XÃ³a ${keys.length} sáº£n pháº©m?`)) return;
+    if (!confirm(`XÃÂ³a ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m?`)) return;
     await Promise.all(keys.map(k => deleteItem(COL_PRODUCTS, k)));
-    toast(`ÄÃ£ xÃ³a ${keys.length} sáº£n pháº©m`,'success');
+    toast(`ÃÂÃÂ£ xÃÂ³a ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m`,'success');
   });
 
   container.querySelector('#cat-add').addEventListener('click', () => openCatForm(null, null));
   container.querySelector('#cat-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;
-    if (!confirm(`XÃ³a ${keys.length} danh má»¥c?`)) return;
+    if (!confirm(`XÃÂ³a ${keys.length} danh mÃ¡Â»Â¥c?`)) return;
     await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
-    toast(`ÄÃ£ xÃ³a ${keys.length} danh má»¥c`,'success');
+    toast(`ÃÂÃÂ£ xÃÂ³a ${keys.length} danh mÃ¡Â»Â¥c`,'success');
     updateCatDelBtn();
   });
 
@@ -396,16 +402,16 @@ export async function mount(container) {
   container.querySelector('#pool-search').addEventListener('input', renderProductPool);
   container.querySelector('#pool-assign-btn').addEventListener('click', async () => {
     const catKey = container.querySelector('#pool-assign-cat').value;
-    if (!catKey) { toast('Chá»n danh má»¥c trÆ°á»c!','warning'); return; }
+    if (!catKey) { toast('ChÃ¡Â»Ân danh mÃ¡Â»Â¥c trÃÂ°Ã¡Â»Âc!','warning'); return; }
     const keys = [...container.querySelectorAll('.pool-cb:checked')].map(cb => cb.dataset.key);
-    if (!keys.length) { toast('Chá»n sáº£n pháº©m trÆ°á»c!','warning'); return; }
+    if (!keys.length) { toast('ChÃ¡Â»Ân sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m trÃÂ°Ã¡Â»Âc!','warning'); return; }
     await Promise.all(keys.map(k => updateItem(COL_PRODUCTS, k, { categoryKey: catKey })));
-    toast(`ÄÃ£ gÃ¡n ${keys.length} sáº£n pháº©m!`,'success');
+    toast(`ÃÂÃÂ£ gÃÂ¡n ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!`,'success');
     container.querySelector('#pool-check-all').checked = false;
     renderProductPool();
   });
 
-  // âââ FIREBASE LISTENERS âââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ FIREBASE LISTENERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   onSnapshot(COL_CATEGORIES, items => {
     allCategories = items;
     renderFolders();
