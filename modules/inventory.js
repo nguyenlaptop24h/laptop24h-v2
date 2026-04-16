@@ -266,7 +266,7 @@ export async function mount(container) {
         <span style="font-size:1rem">${isOpen?'📂':'📁'}</span>
         <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
         <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
-        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Mục con</button>
+        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap;font-size:18px;font-weight:700;padding:1px 8px;line-height:1" title="Thêm mục con">＋</button>
         <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sửa</button>
       </div>
       ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
