@@ -1,4 +1,4 @@
-// modules/inventory.js - Kho hÃÂ ng + Danh mÃ¡Â»Â¥c
+// modules/inventory.js - Kho hàng + Danh mục
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal, formatVND } from '../core/ui.js';
@@ -12,47 +12,47 @@ registerRoute('#inventory', mount);
 export async function mount(container) {
   container.innerHTML = `
     <div class="module-header">
-      <h2>Kho hÃÂ ng</h2>
+      <h2>Kho hàng</h2>
       <div class="module-actions">
         <div class="tab-group">
-          <button class="tab-btn" data-tab="products">Ã°ÂÂÂ¦ SÃ¡ÂºÂ£n phÃ¡ÂºÂ©m</button>
-          <button class="tab-btn active" data-tab="categories">Ã°ÂÂÂ Danh mÃ¡Â»Â¥c</button>
+          <button class="tab-btn" data-tab="products">📦 Sản phẩm</button>
+          <button class="tab-btn active" data-tab="categories">🗂 Danh mục</button>
         </div>
       </div>
     </div>
 
-    <div id="tab-products" style="display:none">
+    <div id="tab-products">
       <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-        <input id="inv-search" type="text" placeholder="TÃÂ¬m kiÃ¡ÂºÂ¿m..." class="search-input" style="flex:1;min-width:160px" />
+        <input id="inv-search" type="text" placeholder="Tìm kiếm..." class="search-input" style="flex:1;min-width:160px" />
         <select id="inv-cat-filter" class="search-input" style="width:220px">
-          <option value="">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ danh mÃ¡Â»Â¥c</option>
+          <option value="">Tất cả danh mục</option>
         </select>
-        <button id="inv-add" class="btn btn--primary">+ ThÃÂªm sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m</button>
-        <button id="inv-del-selected" class="btn btn--danger" style="display:none">Ã°ÂÂÂ XÃÂ³a ÃÂÃÂ£ chÃ¡Â»Ân (<span id="inv-del-count">0</span>)</button>
+        <button id="inv-add" class="btn btn--primary">+ Thêm sản phẩm</button>
+        <button id="inv-del-selected" class="btn btn--danger" style="display:none">🗑 Xóa đã chọn (<span id="inv-del-count">0</span>)</button>
       </div>
       <div id="inv-table-wrap"></div>
     </div>
 
-    <div id="tab-categories">
+    <div id="tab-categories" style="display:none">
       <div style="display:flex;gap:1rem;align-items:flex-start">
         <div style="flex:0 0 380px;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-            <button id="cat-add" class="btn btn--primary btn--sm">+ ThÃÂªm danh mÃ¡Â»Â¥c gÃ¡Â»Âc</button>
-            <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">Ã°ÂÂÂ XÃÂ³a (<span id="cat-del-count">0</span>)</button>
+            <button id="cat-add" class="btn btn--primary btn--sm">+ Thêm danh mục gốc</button>
+            <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">🗑 Xóa (<span id="cat-del-count">0</span>)</button>
           </div>
           <div id="cat-folders"></div>
           <div id="cat-form-wrap"></div>
         </div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
-            <input id="pool-search" type="text" placeholder="TÃÂ¬m sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m..." class="search-input" style="flex:1;min-width:140px" />
+            <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
             <label style="display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap">
-              <input type="checkbox" id="pool-check-all" /> ChÃ¡Â»Ân tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£
+              <input type="checkbox" id="pool-check-all" /> Chọn tất cả
             </label>
             <select id="pool-assign-cat" class="search-input" style="width:200px">
-              <option value="">GÃÂ¡n vÃÂ o danh mÃ¡Â»Â¥c...</option>
+              <option value="">Gán vào danh mục...</option>
             </select>
-            <button id="pool-assign-btn" class="btn btn--secondary btn--sm">GÃÂ¡n ÃÂÃÂ£ chÃ¡Â»Ân</button>
+            <button id="pool-assign-btn" class="btn btn--secondary btn--sm">Gán đã chọn</button>
           </div>
           <div id="pool-list"></div>
         </div>
@@ -64,7 +64,7 @@ export async function mount(container) {
   let allCategories = [];
   const openFolders = new Set();
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ TAB SWITCH Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── TAB SWITCH ────────────────────────────────────────────────
   const tp = container.querySelector('#tab-products');
   const tc = container.querySelector('#tab-categories');
   container.querySelectorAll('.tab-btn').forEach(btn => {
@@ -77,13 +77,12 @@ export async function mount(container) {
     });
   });
 
-  // Default: mo tab Danh muc khi vao Kho hang
+  // Mac dinh: mo tab Danh muc khi vao Kho hang
   tp.style.display = 'none';
   tc.style.display = 'block';
-  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   container.querySelector('[data-tab="categories"]').classList.add('active');
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ HELPERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── HELPERS ────────────────────────────────────────────────────
   function getCatFullName(cat) {
     const parts = [cat.name];
     let cur = cat;
@@ -120,16 +119,16 @@ export async function mount(container) {
   function refreshCatSelects() {
     const filter    = container.querySelector('#inv-cat-filter');
     const filterVal = filter.value;
-    filter.innerHTML = '<option value="">TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ danh mÃ¡Â»Â¥c</option>' + buildCatOptions(null, 0);
+    filter.innerHTML = '<option value="">Tất cả danh mục</option>' + buildCatOptions(null, 0);
     filter.value = filterVal;
 
     const assign    = container.querySelector('#pool-assign-cat');
     const assignVal = assign.value;
-    assign.innerHTML = '<option value="">GÃÂ¡n vÃÂ o danh mÃ¡Â»Â¥c...</option>' + buildCatOptions(null, 0);
+    assign.innerHTML = '<option value="">Gán vào danh mục...</option>' + buildCatOptions(null, 0);
     assign.value = assignVal;
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT TABLE Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── PRODUCT TABLE ───────────────────────────────────────────────
   function updateInvDelBtn() {
     const n = container.querySelectorAll('.inv-cb:checked').length;
     container.querySelector('#inv-del-selected').style.display = n ? '' : 'none';
@@ -152,25 +151,25 @@ export async function mount(container) {
     const cols = [
       { label: '<input type="checkbox" id="inv-check-all" />',
         key: p => `<input type="checkbox" class="inv-cb" data-key="${p._key}" />` },
-      { label: 'MÃÂ£ SP',        key: p => p.id || '' },
-      { label: 'TÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m', key: p => p.name || '' },
-      { label: 'Danh mÃ¡Â»Â¥c', key: p => {
-          if (!p.categoryKey) return '<span style="color:#9ca3af">Ã¢ÂÂ</span>';
+      { label: 'Mã SP',        key: p => p.id || '' },
+      { label: 'Tên sản phẩm', key: p => p.name || '' },
+      { label: 'Danh mục', key: p => {
+          if (!p.categoryKey) return '<span style="color:#9ca3af">—</span>';
           const cat = allCategories.find(c => c._key === p.categoryKey);
           return cat
             ? `<span style="color:#2563eb">${getCatFullName(cat)}</span>`
-            : '<span style="color:#9ca3af">Ã¢ÂÂ</span>';
+            : '<span style="color:#9ca3af">—</span>';
         }},
-      { label: 'ÃÂVT',      key: p => p.unit || '' },
-      { label: 'TÃ¡Â»Ân kho',  key: p => {
+      { label: 'ĐVT',      key: p => p.unit || '' },
+      { label: 'Tồn kho',  key: p => {
           const n = Number(p.stock||0);
           const c = n<=0?'#ef4444':n<=3?'#f59e0b':'#22c55e';
           return `<span style="color:${c};font-weight:600">${n}</span>`;
         }},
-      { label: 'GiÃÂ¡ vÃ¡Â»Ân',  key: p => formatVND(p.cost||0) },
-      { label: 'GiÃÂ¡ bÃÂ¡n',  key: p => formatVND(p.price||0) },
-      { label: 'BÃ¡ÂºÂ£o hÃÂ nh', key: p => p.warranty || '' },
-      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">SÃ¡Â»Â­a</button>` }
+      { label: 'Giá vốn',  key: p => formatVND(p.cost||0) },
+      { label: 'Giá bán',  key: p => formatVND(p.price||0) },
+      { label: 'Bảo hành', key: p => p.warranty || '' },
+      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
     ];
     // FIX: buildTable(cols, data) - cols first!
     wrap.innerHTML = buildTable(cols, data);
@@ -185,30 +184,30 @@ export async function mount(container) {
       btn.addEventListener('click', () => openProductForm(btn.dataset.key)));
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT FORM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── PRODUCT FORM ────────────────────────────────────────────────
   function openProductForm(key) {
     const p       = key ? (allProducts.find(x => x._key === key) || {}) : {};
-    const catOpts = '<option value="">Ã¢ÂÂ KhÃÂ´ng cÃÂ³ Ã¢ÂÂ</option>' + buildCatOptions(null, 0);
+    const catOpts = '<option value="">— Không có —</option>' + buildCatOptions(null, 0);
     const catSel  = p.categoryKey
       ? catOpts.replace(`value="${p.categoryKey}"`, `value="${p.categoryKey}" selected`)
       : catOpts;
 
     showModal({
-      title: `${key ? 'SÃ¡Â»Â­a' : 'ThÃÂªm'} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m`,
+      title: `${key ? 'Sửa' : 'Thêm'} sản phẩm`,
       body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-        <label>MÃÂ£ SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
-        <label>TÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
-        <label>Danh mÃ¡Â»Â¥c<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
-        <label>ÃÂVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
-        <label>TÃ¡Â»Ân kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>GiÃÂ¡ vÃ¡Â»Ân<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
-        <label>GiÃÂ¡ bÃÂ¡n<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
-        <label>BÃ¡ÂºÂ£o hÃÂ nh<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
+        <label>Mã SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
+        <label>Tên sản phẩm<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
+        <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
+        <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
+        <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
+        <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
+        <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
+        <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
-      confirmText: 'LÃÂ°u',
+      confirmText: 'Lưu',
       onConfirm: async () => {
         const name = document.querySelector('#f-name')?.value.trim() || '';
-        if (!name) { toast('NhÃ¡ÂºÂ­p tÃÂªn sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!','warning'); return; }
+        if (!name) { toast('Nhập tên sản phẩm!','warning'); return; }
         const data = {
           id:          document.querySelector('#f-id')?.value.trim() || '',
           name,
@@ -220,12 +219,12 @@ export async function mount(container) {
           warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
         };
         key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
-        toast(key ? 'ÃÂÃÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t!' : 'ÃÂÃÂ£ thÃÂªm sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!','success');
+        toast(key ? 'Đã cập nhật!' : 'Đã thêm sản phẩm!','success');
       }
     });
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ CATEGORY FOLDER TREE Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── CATEGORY FOLDER TREE ────────────────────────────────────────
   function updateCatDelBtn() {
     const n = container.querySelectorAll('.cat-cb:checked').length;
     container.querySelector('#cat-del-selected').style.display = n ? '' : 'none';
@@ -252,23 +251,23 @@ export async function mount(container) {
         body += `<div class="folder-product" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .3rem ${pl+44}px;border-top:1px solid #f3f4f6;font-size:.84rem">
           <span style="flex:1;color:#374151">${p.name}</span>
           <span style="color:#9ca3af;font-size:.75rem">${p.id||''}</span>
-          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="BÃ¡Â»Â khÃ¡Â»Âi danh mÃ¡Â»Â¥c">ÃÂ</button>
+          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="Bỏ khỏi danh mục">×</button>
         </div>`;
       });
       if (!children.length && !prods.length) {
-        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">TrÃ¡Â»Âng</div>`;
+        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">Trống</div>`;
       }
     }
 
     return `<div class="cat-folder" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:.35rem;overflow:hidden;margin-left:${pl}px">
       <div class="folder-hd" data-key="${cat._key}" style="display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;background:${depth>0?'#f9fafb':'#fff'};cursor:pointer;user-select:none">
         <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
-        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'Ã¢ÂÂ¼':'Ã¢ÂÂ¶'}</span>
-        <span style="font-size:1rem">${isOpen?'Ã°ÂÂÂ':'Ã°ÂÂÂ'}</span>
+        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'▼':'▶'}</span>
+        <span style="font-size:1rem">${isOpen?'📂':'📁'}</span>
         <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
         <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
-        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+MÃ¡Â»Â¥c con</button>
-        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">SÃ¡Â»Â­a</button>
+        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Mục con</button>
+        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sửa</button>
       </div>
       ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
     </div>`;
@@ -278,7 +277,7 @@ export async function mount(container) {
     const wrap  = container.querySelector('#cat-folders');
     const roots = allCategories.filter(c => !c.parentKey);
     wrap.innerHTML = roots.length === 0
-      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">ChÃÂ°a cÃÂ³ danh mÃ¡Â»Â¥c nÃÂ o.</div>'
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Chưa có danh mục nào.</div>'
       : roots.map(cat => renderFolderNode(cat, 0)).join('');
 
     wrap.querySelectorAll('.folder-hd').forEach(hd => {
@@ -300,15 +299,15 @@ export async function mount(container) {
     wrap.querySelectorAll('.remove-from-cat').forEach(btn =>
       btn.addEventListener('click', async () => {
         await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: null });
-        toast('ÃÂÃÂ£ bÃ¡Â»Â khÃ¡Â»Âi danh mÃ¡Â»Â¥c','success');
+        toast('Đã bỏ khỏi danh mục','success');
       }));
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ CATEGORY FORM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── CATEGORY FORM ───────────────────────────────────────────────
   function openCatForm(key, defaultParentKey) {
     const cat      = key ? (allCategories.find(c => c._key === key) || {}) : {};
     const excluded = key ? [...getDescendantKeys(key), key] : [];
-    const parentOpts = '<option value="">Ã¢ÂÂ Danh mÃ¡Â»Â¥c gÃ¡Â»Âc Ã¢ÂÂ</option>' +
+    const parentOpts = '<option value="">— Danh mục gốc —</option>' +
       allCategories
         .filter(c => !excluded.includes(c._key))
         .map(c => `<option value="${c._key}">${getCatFullName(c)}</option>`).join('');
@@ -322,17 +321,17 @@ export async function mount(container) {
     const wrap = container.querySelector('#cat-form-wrap');
     wrap.innerHTML = `
       <div style="border:1px solid #bfdbfe;border-radius:8px;padding:.75rem;margin-top:.5rem;background:#eff6ff">
-        <strong style="font-size:.9rem">${key ? 'SÃ¡Â»Â­a' : 'ThÃÂªm'} danh mÃ¡Â»Â¥c</strong>
+        <strong style="font-size:.9rem">${key ? 'Sửa' : 'Thêm'} danh mục</strong>
         <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
-          <label style="font-size:.85rem">TÃÂªn danh mÃ¡Â»Â¥c
-            <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiÃ¡Â»Ân..." />
+          <label style="font-size:.85rem">Tên danh mục
+            <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiện..." />
           </label>
-          <label style="font-size:.85rem">ThuÃ¡Â»Âc vÃ¡Â»Â danh mÃ¡Â»Â¥c
+          <label style="font-size:.85rem">Thuộc về danh mục
             <select id="cf-parent" class="search-input" style="width:100%;margin-top:.2rem">${parentSel}</select>
           </label>
           <div style="display:flex;gap:.5rem;justify-content:flex-end">
-            <button id="cf-cancel" class="btn btn--secondary btn--sm">HÃ¡Â»Â§y</button>
-            <button id="cf-save" class="btn btn--primary btn--sm">LÃÂ°u</button>
+            <button id="cf-cancel" class="btn btn--secondary btn--sm">Hủy</button>
+            <button id="cf-save" class="btn btn--primary btn--sm">Lưu</button>
           </div>
         </div>
       </div>`;
@@ -340,25 +339,25 @@ export async function mount(container) {
     wrap.querySelector('#cf-cancel').addEventListener('click', () => { wrap.innerHTML = ''; });
     wrap.querySelector('#cf-save').addEventListener('click', async () => {
       const name      = wrap.querySelector('#cf-name').value.trim();
-      if (!name) { toast('NhÃ¡ÂºÂ­p tÃÂªn danh mÃ¡Â»Â¥c!','warning'); return; }
+      if (!name) { toast('Nhập tên danh mục!','warning'); return; }
       const parentKey = wrap.querySelector('#cf-parent').value || null;
       key
         ? await updateItem(COL_CATEGORIES, key, { name, parentKey })
         : await addItem(COL_CATEGORIES, { name, parentKey });
-      toast(key ? 'ÃÂÃÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t danh mÃ¡Â»Â¥c!' : 'ÃÂÃÂ£ thÃÂªm danh mÃ¡Â»Â¥c!','success');
+      toast(key ? 'Đã cập nhật danh mục!' : 'Đã thêm danh mục!','success');
       wrap.innerHTML = '';
       if (parentKey) openFolders.add(parentKey);
     });
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ PRODUCT POOL Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── PRODUCT POOL ────────────────────────────────────────────────
   function renderProductPool() {
     const q      = (container.querySelector('#pool-search')?.value || '').toLowerCase();
     const list   = container.querySelector('#pool-list');
     const filtered = allProducts.filter(p =>
       !q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q));
     list.innerHTML = filtered.length === 0
-      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">KhÃÂ´ng cÃÂ³ sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m.</div>'
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Không có sản phẩm.</div>'
       : filtered.map(p => {
           const cat = p.categoryKey ? allCategories.find(c => c._key === p.categoryKey) : null;
           return `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f3f4f6;font-size:.84rem">
@@ -367,32 +366,32 @@ export async function mount(container) {
             <span style="color:#6b7280;font-size:.75rem">${p.id||''}</span>
             ${cat
               ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
-              : '<span style="color:#d1d5db;font-size:.73rem">ChÃÂ°a phÃÂ¢n loÃ¡ÂºÂ¡i</span>'}
+              : '<span style="color:#d1d5db;font-size:.73rem">Chưa phân loại</span>'}
           </div>`;
         }).join('');
     const pca = container.querySelector('#pool-check-all');
     if (pca) pca.checked = false;
   }
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ EVENT LISTENERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── EVENT LISTENERS ────────────────────────────────────────────
   container.querySelector('#inv-search').addEventListener('input', renderProductTable);
   container.querySelector('#inv-cat-filter').addEventListener('change', renderProductTable);
   container.querySelector('#inv-add').addEventListener('click', () => openProductForm(null));
   container.querySelector('#inv-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;
-    if (!confirm(`XÃÂ³a ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m?`)) return;
+    if (!confirm(`Xóa ${keys.length} sản phẩm?`)) return;
     await Promise.all(keys.map(k => deleteItem(COL_PRODUCTS, k)));
-    toast(`ÃÂÃÂ£ xÃÂ³a ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m`,'success');
+    toast(`Đã xóa ${keys.length} sản phẩm`,'success');
   });
 
   container.querySelector('#cat-add').addEventListener('click', () => openCatForm(null, null));
   container.querySelector('#cat-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;
-    if (!confirm(`XÃÂ³a ${keys.length} danh mÃ¡Â»Â¥c?`)) return;
+    if (!confirm(`Xóa ${keys.length} danh mục?`)) return;
     await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
-    toast(`ÃÂÃÂ£ xÃÂ³a ${keys.length} danh mÃ¡Â»Â¥c`,'success');
+    toast(`Đã xóa ${keys.length} danh mục`,'success');
     updateCatDelBtn();
   });
 
@@ -402,16 +401,16 @@ export async function mount(container) {
   container.querySelector('#pool-search').addEventListener('input', renderProductPool);
   container.querySelector('#pool-assign-btn').addEventListener('click', async () => {
     const catKey = container.querySelector('#pool-assign-cat').value;
-    if (!catKey) { toast('ChÃ¡Â»Ân danh mÃ¡Â»Â¥c trÃÂ°Ã¡Â»Âc!','warning'); return; }
+    if (!catKey) { toast('Chọn danh mục trước!','warning'); return; }
     const keys = [...container.querySelectorAll('.pool-cb:checked')].map(cb => cb.dataset.key);
-    if (!keys.length) { toast('ChÃ¡Â»Ân sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m trÃÂ°Ã¡Â»Âc!','warning'); return; }
+    if (!keys.length) { toast('Chọn sản phẩm trước!','warning'); return; }
     await Promise.all(keys.map(k => updateItem(COL_PRODUCTS, k, { categoryKey: catKey })));
-    toast(`ÃÂÃÂ£ gÃÂ¡n ${keys.length} sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m!`,'success');
+    toast(`Đã gán ${keys.length} sản phẩm!`,'success');
     container.querySelector('#pool-check-all').checked = false;
     renderProductPool();
   });
 
-  // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ FIREBASE LISTENERS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ─── FIREBASE LISTENERS ─────────────────────────────────────────
   onSnapshot(COL_CATEGORIES, items => {
     allCategories = items;
     renderFolders();
