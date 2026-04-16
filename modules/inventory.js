@@ -322,13 +322,30 @@ export async function mount(container) {
           </h4>
           <button id="close-cat-prods" class="btn btn--sm btn--secondary">✕ Đóng</button>
         </div>
-        <div style="margin-bottom:.75rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-          <select id="add-prod-select" class="search-input" style="flex:1;min-width:220px">
-            <option value="">-- Chọn sản phẩm để thêm vào danh mục --</option>
-            ${notInCat.map(p => `<option value="${p._key}">${p.name || ''}  ${p.id ? '(' + p.id + ')' : ''}</option>`).join('')}
-          </select>
-          <button id="add-prod-btn" class="btn btn--primary">+ Thêm vào danh mục</button>
+
+        <!-- ADD SECTION: multi-checkbox list -->
+        <div style="border:1px solid #e5e7eb;border-radius:8px;padding:.75rem;margin-bottom:.75rem">
+          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap">
+            <strong style="font-size:.9rem">Thêm sản phẩm vào danh mục</strong>
+            <input id="add-prod-search" type="text" placeholder="Tìm nhanh..." class="search-input" style="flex:1;min-width:140px;max-width:260px" />
+            <label style="font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem">
+              <input type="checkbox" id="check-all-prods" /> Chọn tất cả
+            </label>
+            <button id="add-prod-btn" class="btn btn--primary btn--sm">+ Thêm đã chọn</button>
+          </div>
+          <div id="add-prod-list" style="max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:.3rem .75rem;padding:.25rem 0">
+            ${notInCat.length
+              ? notInCat.map(p => `
+                <label class="prod-check-item" style="display:flex;align-items:center;gap:.3rem;font-size:.85rem;cursor:pointer;min-width:200px">
+                  <input type="checkbox" class="prod-cb" data-key="${p._key}" />
+                  <span class="prod-cb-label">${p.name || ''}  ${p.id ? '<span style=\"color:#888\">(' + p.id + ')</span>' : ''}</span>
+                </label>`).join('')
+              : '<span style="color:#888;font-size:.85rem">Tất cả sản phẩm đã thuộc danh mục này</span>'
+            }
+          </div>
         </div>
+
+        <!-- CURRENT PRODUCTS TABLE -->
         <table class="data-table">
           <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Tồn kho</th><th></th></tr></thead>
           <tbody>
@@ -347,20 +364,39 @@ export async function mount(container) {
       </div>
     `;
 
+    // Close
     document.getElementById('close-cat-prods').onclick = () => {
       currentCatKey = null; currentCatName = '';
       wrap.classList.add('hidden'); wrap.innerHTML = '';
     };
 
-    document.getElementById('add-prod-btn').onclick = async () => {
-      const key = document.getElementById('add-prod-select').value;
-      if (!key) { toast('Chọn sản phẩm để thêm', 'error'); return; }
-      try {
-        await updateItem(COL_PRODUCTS, key, { categoryKey: catKey, type: catName });
-        toast('Đã thêm vào danh mục');
-      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-    };
+    // Live search filter in checkbox list
+    document.getElementById('add-prod-search').addEventListener('input', function() {
+      const q = this.value.toLowerCase();
+      wrap.querySelectorAll('.prod-check-item').forEach(item => {
+        const txt = item.querySelector('.prod-cb-label')?.textContent.toLowerCase() || '';
+        item.style.display = txt.includes(q) ? '' : 'none';
+      });
+    });
 
+    // Check-all
+    document.getElementById('check-all-prods').addEventListener('change', function() {
+      wrap.querySelectorAll('.prod-cb').forEach(cb => {
+        if (cb.closest('.prod-check-item').style.display !== 'none') cb.checked = this.checked;
+      });
+    });
+
+    // Add selected
+    document.getElementById('add-prod-btn').addEventListener('click', async () => {
+      const selected = [...wrap.querySelectorAll('.prod-cb:checked')].map(cb => cb.dataset.key);
+      if (!selected.length) { toast('Chọn ít nhất một sản phẩm', 'error'); return; }
+      try {
+        await Promise.all(selected.map(key => updateItem(COL_PRODUCTS, key, { categoryKey: catKey, type: catName })));
+        toast(`Đã thêm ${selected.length} sản phẩm vào danh mục`);
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    });
+
+    // Remove single product
     wrap.querySelectorAll('.remove-from-cat').forEach(btn => {
       btn.addEventListener('click', async () => {
         const ok = await showModal('Xác nhận', 'Bỏ sản phẩm này khỏi danh mục?', true);
