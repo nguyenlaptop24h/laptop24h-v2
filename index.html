@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laptop 24h - Quản lý</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+
+  <!-- Màn hình đăng nhập -->
+  <div id="auth-screen" class="screen">
+    <div class="login-box">
+      <h2>Laptop 24h</h2>
+      <input id="auth-email" type="email" placeholder="Email" />
+      <input id="auth-pass" type="password" placeholder="Mật khẩu" />
+      <button id="auth-btn">Đăng nhập</button>
+      <p id="auth-err" class="error"></p>
+    </div>
+  </div>
+
+  <!-- Giao diện chính -->
+  <div id="app" class="screen hidden">
+    <nav id="sidebar">
+      <div class="logo">Laptop 24h</div>
+      <ul id="nav-links">
+        <li><a href="#repairs">🔧 Phiếu sửa chữa</a></li>
+        <li><a href="#sales">💰 Bán hàng</a></li>
+        <li><a href="#inventory">📦 Kho hàng</a></li>
+        <li><a href="#customers">👥 Khách hàng</a></li>
+        <li><a href="#debts">📋 Công nợ</a></li>
+        <li><a href="#stats">📊 Thống kê</a></li>
+        <li class="admin-only"><a href="#users">👤 Nhân viên</a></li>
+        <li class="admin-only"><a href="#settings">⚙️ Cài đặt</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span id="user-name"></span>
+        <button id="logout-btn">Đăng xuất</button>
+      </div>
+    </nav>
+    <main id="main-content">
+      <!-- Các module render vào đây -->
+    </main>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container"></div>
+
+  <!-- Firebase SDK (compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <!-- App bootstrap (ES module) -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
