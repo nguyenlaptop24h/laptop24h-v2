@@ -16,7 +16,7 @@ export async function mount(container) {
       <div class="module-actions">
         <div class="tab-group">
           <button class="tab-btn active" data-tab="products">📦 Sản phẩm</button>
-          <button class="tab-btn" data-tab="categories">🗂️ Danh mục</button>
+          <button class="tab-btn" data-tab="categories">🗂 Danh mục</button>
         </div>
       </div>
     </div>
@@ -25,431 +25,405 @@ export async function mount(container) {
     <div id="tab-products">
       <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
         <input id="inv-search" type="text" placeholder="Tìm kiếm..." class="search-input" style="flex:1;min-width:160px" />
-        <select id="inv-cat-filter" class="search-input" style="width:160px">
+        <select id="inv-cat-filter" class="search-input" style="width:220px">
           <option value="">Tất cả danh mục</option>
         </select>
         <button id="inv-add" class="btn btn--primary">+ Thêm sản phẩm</button>
         <button id="inv-del-selected" class="btn btn--danger" style="display:none">🗑 Xóa đã chọn (<span id="inv-del-count">0</span>)</button>
       </div>
       <div id="inv-table-wrap"></div>
-      <div id="inv-form-wrap" class="hidden"></div>
     </div>
 
     <!-- TAB: DANH MỤC -->
-    <div id="tab-categories" class="hidden" style="display:none">
+    <div id="tab-categories" style="display:none">
       <div style="display:flex;gap:1rem;align-items:flex-start">
-
         <!-- LEFT: folder tree -->
-        <div style="flex:0 0 340px;min-width:260px">
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
-            <button id="cat-add" class="btn btn--primary btn--sm" style="flex:1">+ Thêm danh mục</button>
+        <div style="flex:0 0 380px;min-width:0">
+          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+            <button id="cat-add" class="btn btn--primary btn--sm">+ Thêm danh mục gốc</button>
             <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">🗑 Xóa (<span id="cat-del-count">0</span>)</button>
           </div>
           <div id="cat-folders"></div>
-          <div id="cat-form-wrap" class="hidden"></div>
+          <div id="cat-form-wrap"></div>
         </div>
-
         <!-- RIGHT: product pool -->
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;margin-bottom:.5rem;color:#374151">Tất cả sản phẩm</div>
-          <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
             <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
-            <label style="font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;white-space:nowrap">
+            <label style="display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap">
               <input type="checkbox" id="pool-check-all" /> Chọn tất cả
             </label>
-            <select id="pool-assign-cat" class="search-input" style="min-width:130px">
+            <select id="pool-assign-cat" class="search-input" style="width:200px">
               <option value="">Gán vào danh mục...</option>
             </select>
-            <button id="pool-assign-btn" class="btn btn--primary btn--sm">Gán đã chọn</button>
+            <button id="pool-assign-btn" class="btn btn--secondary btn--sm">Gán đã chọn</button>
           </div>
-          <div id="pool-list" style="max-height:calc(100vh - 280px);overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px"></div>
+          <div id="pool-list"></div>
         </div>
-
       </div>
     </div>
   `;
-
-  // --- Tab switching ---
-  container.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const showProducts = btn.dataset.tab === 'products';
-      document.getElementById('tab-products').classList.toggle('hidden', !showProducts);
-      const tc = document.getElementById('tab-categories');
-      tc.classList.toggle('hidden', showProducts);
-      tc.style.display = showProducts ? 'none' : 'block';
-    });
-  });
 
   let allProducts   = [];
   let allCategories = [];
   const openFolders = new Set();
 
-  // ==================== CATEGORIES ====================
-  const unsubCats = onSnapshot(COL_CATEGORIES, items => {
-    allCategories = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
-    refreshCatSelects();
-    renderFolders();
+  // ─── TAB SWITCH ────────────────────────────────────────────────
+  const tp = container.querySelector('#tab-products');
+  const tc = container.querySelector('#tab-categories');
+  container.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const showProducts = btn.dataset.tab === 'products';
+      tp.style.display = showProducts ? '' : 'none';
+      tc.style.display = showProducts ? 'none' : 'block';
+    });
   });
 
-  function getCatName(catKey) {
-    const cat = allCategories.find(c => c._key === catKey);
-    return cat ? cat.name : '';
+  // ─── HELPERS ────────────────────────────────────────────────────
+  function getCatFullName(cat) {
+    const parts = [cat.name];
+    let cur = cat;
+    while (cur.parentKey) {
+      const parent = allCategories.find(c => c._key === cur.parentKey);
+      if (!parent) break;
+      parts.unshift(parent.name);
+      cur = parent;
+    }
+    return parts.join(' > ');
+  }
+
+  function buildCatOptions(parentKey, depth) {
+    const indent = '\u3000'.repeat(depth);
+    return allCategories
+      .filter(c => (c.parentKey || null) === (parentKey || null))
+      .map(c => {
+        const subs = buildCatOptions(c._key, depth + 1);
+        return `<option value="${c._key}">${indent}${c.name}</option>` + subs;
+      }).join('');
+  }
+
+  function getDescendantKeys(key) {
+    const result = [];
+    const queue  = [key];
+    while (queue.length) {
+      const cur = queue.shift();
+      allCategories
+        .filter(c => c.parentKey === cur)
+        .forEach(c => { result.push(c._key); queue.push(c._key); });
+    }
+    return result;
   }
 
   function refreshCatSelects() {
-    const sel = document.getElementById('inv-cat-filter');
-    if (sel) {
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">Tất cả danh mục</option>' +
-        allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
-      sel.value = cur;
-    }
-    const pa = document.getElementById('pool-assign-cat');
-    if (pa) {
-      const cur2 = pa.value;
-      pa.innerHTML = '<option value="">Gán vào danh mục...</option>' +
-        allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
-      pa.value = cur2;
-    }
-    const fCat = document.getElementById('f-categoryKey');
-    if (fCat) {
-      const cur3 = fCat.value;
-      fCat.innerHTML = '<option value="">-- Chọn danh mục --</option>' +
-        allCategories.map(c => `<option value="${c._key}">${c.name}</option>`).join('');
-      fCat.value = cur3;
-    }
+    const filter    = container.querySelector('#inv-cat-filter');
+    const filterVal = filter.value;
+    filter.innerHTML = '<option value="">Tất cả danh mục</option>' + buildCatOptions(null, 0);
+    filter.value = filterVal;
+
+    const assign    = container.querySelector('#pool-assign-cat');
+    const assignVal = assign.value;
+    assign.innerHTML = '<option value="">Gán vào danh mục...</option>' + buildCatOptions(null, 0);
+    assign.value = assignVal;
   }
 
-  // ==================== FOLDER TREE ====================
-  function renderFolders() {
-    const wrap = document.getElementById('cat-folders');
-    if (!wrap) return;
-    if (!allCategories.length) {
-      wrap.innerHTML = '<p style="color:#888;font-size:.9rem">Chưa có danh mục nào.</p>';
-      return;
-    }
-    wrap.innerHTML = allCategories.map(cat => {
-      const prods  = allProducts.filter(p => p.categoryKey === cat._key);
-      const isOpen = openFolders.has(cat._key);
-      return `
-        <div class="cat-folder" style="margin-bottom:.4rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-          <div class="folder-hd" data-key="${cat._key}"
-               style="display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;background:#f9fafb;cursor:pointer;user-select:none">
-            <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
-            <span style="font-size:.8rem;color:#6b7280;width:12px">${isOpen ? '▼' : '▶'}</span>
-            <span style="font-size:1.1rem">${isOpen ? '📂' : '📁'}</span>
-            <strong style="flex:1;font-size:.92rem">${cat.name || ''}</strong>
-            <span style="background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:.1rem .5rem;font-size:.78rem;font-weight:600">${prods.length}</span>
-            <button class="btn btn--sm btn--secondary cat-edit" data-key="${cat._key}" style="padding:.2rem .55rem;font-size:.78rem" onclick="event.stopPropagation()">Sửa</button>
-          </div>
-          ${isOpen ? `
-            <div class="folder-body" style="background:#fff;padding:.4rem .75rem .5rem">
-              ${prods.length ? prods.map(p => `
-                <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid #f3f4f6">
-                  <span style="font-size:.82rem;color:#9ca3af;width:52px">${p.id || ''}</span>
-                  <span style="flex:1;font-size:.88rem">${p.name || ''}</span>
-                  <span style="font-size:.78rem;color:#9ca3af">SL:${p.stock ?? 0}</span>
-                  <button class="btn btn--sm btn--danger remove-from-cat" data-key="${p._key}"
-                    style="padding:.15rem .45rem;font-size:.75rem">×</button>
-                </div>`).join('')
-              : '<div style="color:#9ca3af;font-size:.85rem;padding:.25rem 0">Chưa có sản phẩm</div>'}
-            </div>
-          ` : ''}
-        </div>
-      `;
-    }).join('');
+  // ─── PRODUCT TABLE ───────────────────────────────────────────────
+  function updateInvDelBtn() {
+    const checked = container.querySelectorAll('.inv-cb:checked');
+    container.querySelector('#inv-del-selected').style.display = checked.length ? '' : 'none';
+    container.querySelector('#inv-del-count').textContent = checked.length;
+  }
 
-    // Folder toggle (click header but not checkbox/button)
+  function filterProducts() {
+    const q   = (container.querySelector('#inv-search')?.value || '').toLowerCase();
+    const cat = container.querySelector('#inv-cat-filter')?.value || '';
+    return allProducts.filter(p => {
+      const mQ = !q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q);
+      const mC = !cat || p.categoryKey === cat;
+      return mQ && mC;
+    });
+  }
+
+  function renderProductTable() {
+    const wrap = container.querySelector('#inv-table-wrap');
+    const data = filterProducts();
+    const cols = [
+      { label: '<input type="checkbox" id="inv-check-all" />',
+        key: p => `<input type="checkbox" class="inv-cb" data-key="${p._key}" />` },
+      { label: 'Mã SP',       key: p => p.id || '' },
+      { label: 'Tên sản phẩm', key: p => p.name || '' },
+      { label: 'Danh mục', key: p => {
+          if (!p.categoryKey) return '<span style="color:#9ca3af">—</span>';
+          const cat = allCategories.find(c => c._key === p.categoryKey);
+          return cat ? `<span style="color:#2563eb">${getCatFullName(cat)}</span>` : '<span style="color:#9ca3af">—</span>';
+        }},
+      { label: 'ĐVT',       key: p => p.unit || '' },
+      { label: 'Tồn kho',   key: p => {
+          const n = Number(p.stock||0);
+          const c = n<=0?'#ef4444':n<=3?'#f59e0b':'#22c55e';
+          return `<span style="color:${c};font-weight:600">${n}</span>`;
+        }},
+      { label: 'Giá vốn',  key: p => formatVND(p.costPrice||0) },
+      { label: 'Giá bán',  key: p => formatVND(p.sellPrice||0) },
+      { label: 'Bảo hành', key: p => p.warranty || '' },
+      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
+    ];
+    wrap.innerHTML = buildTable(data, cols);
+
+    const ca = wrap.querySelector('#inv-check-all');
+    if (ca) ca.addEventListener('change', () => {
+      wrap.querySelectorAll('.inv-cb').forEach(cb => cb.checked = ca.checked);
+      updateInvDelBtn();
+    });
+    wrap.querySelectorAll('.inv-cb').forEach(cb => cb.addEventListener('change', updateInvDelBtn));
+    wrap.querySelectorAll('.inv-edit').forEach(btn =>
+      btn.addEventListener('click', () => openProductForm(btn.dataset.key)));
+  }
+
+  // ─── PRODUCT FORM ────────────────────────────────────────────────
+  function openProductForm(key) {
+    const p = key ? (allProducts.find(x => x._key === key) || {}) : {};
+    const catOpts = '<option value="">— Không có —</option>' + buildCatOptions(null, 0);
+    showModal(`
+      <h3>${key ? 'Sửa' : 'Thêm'} sản phẩm</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <label>Mã SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
+        <label>Tên sản phẩm<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
+        <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catOpts}</select></label>
+        <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
+        <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
+        <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.costPrice||0}" style="width:100%" /></label>
+        <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.sellPrice||0}" style="width:100%" /></label>
+        <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button id="f-cancel" class="btn btn--secondary">Hủy</button>
+        <button id="f-save" class="btn btn--primary">Lưu</button>
+      </div>`);
+    if (p.categoryKey) {
+      const sel = document.querySelector('#f-cat');
+      if (sel) sel.value = p.categoryKey;
+    }
+    const closeModal = () => document.querySelector('.modal-overlay, .modal')?.remove();
+    document.querySelector('#f-cancel')?.addEventListener('click', closeModal);
+    document.querySelector('#f-save')?.addEventListener('click', async () => {
+      const data = {
+        id:          document.querySelector('#f-id').value.trim(),
+        name:        document.querySelector('#f-name').value.trim(),
+        categoryKey: document.querySelector('#f-cat').value || null,
+        unit:        document.querySelector('#f-unit').value.trim(),
+        stock:       Number(document.querySelector('#f-stock').value)||0,
+        costPrice:   Number(document.querySelector('#f-cost').value)||0,
+        sellPrice:   Number(document.querySelector('#f-sell').value)||0,
+        warranty:    document.querySelector('#f-warranty').value.trim(),
+      };
+      if (!data.name) { toast('Nhập tên sản phẩm!','warning'); return; }
+      key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
+      toast(key ? 'Đã cập nhật!' : 'Đã thêm sản phẩm!','success');
+      closeModal();
+    });
+  }
+
+  // ─── CATEGORY FOLDER TREE ────────────────────────────────────────
+  function updateCatDelBtn() {
+    const checked = container.querySelectorAll('.cat-cb:checked');
+    container.querySelector('#cat-del-selected').style.display = checked.length ? '' : 'none';
+    container.querySelector('#cat-del-count').textContent = checked.length;
+  }
+
+  function renderFolderNode(cat, depth) {
+    const children    = allCategories.filter(c => c.parentKey === cat._key);
+    const prods       = allProducts.filter(p => p.categoryKey === cat._key);
+    const isOpen      = openFolders.has(cat._key);
+    const pl          = depth * 18;
+
+    // count total products recursively
+    function countAll(key) {
+      const direct = allProducts.filter(p => p.categoryKey === key).length;
+      const childSum = allCategories.filter(c => c.parentKey === key).reduce((s,c) => s + countAll(c._key), 0);
+      return direct + childSum;
+    }
+    const total = countAll(cat._key);
+
+    let body = '';
+    if (isOpen) {
+      children.forEach(child => { body += renderFolderNode(child, depth + 1); });
+      prods.forEach(p => {
+        body += `<div class="folder-product" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .3rem ${pl+44}px;border-top:1px solid #f3f4f6;font-size:.84rem">
+          <span style="flex:1;color:#374151">${p.name}</span>
+          <span style="color:#9ca3af;font-size:.75rem">${p.id||''}</span>
+          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" title="Bỏ khỏi danh mục" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem">×</button>
+        </div>`;
+      });
+      if (!children.length && !prods.length) {
+        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">Trống</div>`;
+      }
+    }
+
+    return `<div class="cat-folder" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:.35rem;overflow:hidden;margin-left:${pl}px">
+      <div class="folder-hd" data-key="${cat._key}" style="display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;background:${depth>0?'#f9fafb':'#fff'};cursor:pointer;user-select:none">
+        <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
+        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'▼':'▶'}</span>
+        <span style="font-size:1rem">${isOpen?'📂':'📁'}</span>
+        <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
+        <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
+        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" title="Thêm danh mục con" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Mục con</button>
+        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sửa</button>
+      </div>
+      ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
+    </div>`;
+  }
+
+  function renderFolders() {
+    const wrap  = container.querySelector('#cat-folders');
+    const roots = allCategories.filter(c => !c.parentKey);
+    wrap.innerHTML = roots.length === 0
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Chưa có danh mục nào.</div>'
+      : roots.map(cat => renderFolderNode(cat, 0)).join('');
+
     wrap.querySelectorAll('.folder-hd').forEach(hd => {
       hd.addEventListener('click', e => {
-        if (e.target.closest('input, button')) return;
+        if (e.target.closest('input[type="checkbox"], button')) return;
         const key = hd.dataset.key;
         openFolders.has(key) ? openFolders.delete(key) : openFolders.add(key);
         renderFolders();
       });
     });
-
-    // Checkbox selection → show/hide delete button
-    wrap.querySelectorAll('.cat-cb').forEach(cb => {
-      cb.addEventListener('change', updateCatDelBtn);
-    });
-
+    wrap.querySelectorAll('.cat-cb').forEach(cb => cb.addEventListener('change', updateCatDelBtn));
+    wrap.querySelectorAll('.cat-add-child').forEach(btn =>
+      btn.addEventListener('click', () => {
+        openFolders.add(btn.dataset.key);
+        openCatForm(null, btn.dataset.key);
+      }));
     wrap.querySelectorAll('.cat-edit').forEach(btn =>
-      btn.addEventListener('click', () => openCatForm(allCategories.find(c => c._key === btn.dataset.key)))
-    );
-    wrap.querySelectorAll('.remove-from-cat').forEach(btn => {
+      btn.addEventListener('click', () => openCatForm(btn.dataset.key)));
+    wrap.querySelectorAll('.remove-from-cat').forEach(btn =>
       btn.addEventListener('click', async () => {
-        const ok = await showModal('Xác nhận', 'Bỏ sản phẩm này khỏi danh mục?', true);
-        if (!ok) return;
-        try {
-          await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: '', type: '' });
-          toast('Đã bỏ khỏi danh mục');
-        } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-      });
-    });
+        await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: null });
+        toast('Đã bỏ khỏi danh mục','success');
+      }));
   }
 
-  function updateCatDelBtn() {
-    const checked = [...document.querySelectorAll('.cat-cb:checked')];
-    const btn  = document.getElementById('cat-del-selected');
-    const span = document.getElementById('cat-del-count');
-    if (!btn) return;
-    btn.style.display = checked.length ? '' : 'none';
-    if (span) span.textContent = checked.length;
-  }
+  // ─── CATEGORY FORM (thêm / sửa) ─────────────────────────────────
+  function openCatForm(key, defaultParentKey) {
+    const cat      = key ? (allCategories.find(c => c._key === key) || {}) : {};
+    const excluded = key ? [...getDescendantKeys(key), key] : [];
+    const parentOpts = '<option value="">— Danh mục gốc (không thuộc mục nào) —</option>' +
+      allCategories
+        .filter(c => !excluded.includes(c._key))
+        .map(c => `<option value="${c._key}">${getCatFullName(c)}</option>`).join('');
 
-  document.getElementById('cat-add').addEventListener('click', () => openCatForm(null));
-
-  document.getElementById('cat-del-selected').addEventListener('click', async () => {
-    const keys = [...document.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
-    if (!keys.length) return;
-    const names = keys.map(k => allCategories.find(c => c._key === k)?.name || k).join(', ');
-    const ok = await showModal('Xác nhận xóa', `Xóa ${keys.length} danh mục: "${names}"?\nSản phẩm sẽ không bị xóa, chỉ bỏ liên kết.`, true);
-    if (!ok) return;
-    try {
-      await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
-      toast(`Đã xóa ${keys.length} danh mục`);
-    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-  });
-
-  function openCatForm(record) {
-    const wrap = document.getElementById('cat-form-wrap');
-    wrap.classList.remove('hidden');
+    const wrap = container.querySelector('#cat-form-wrap');
     wrap.innerHTML = `
-      <div class="form-card" style="margin-top:.75rem">
-        <h4 style="margin:0 0 .6rem">${record ? 'Cập nhật danh mục' : 'Thêm danh mục'}</h4>
-        <div class="form-group" style="margin-bottom:.5rem">
-          <label style="font-size:.85rem">Tên danh mục *</label>
-          <input id="cf-name" class="form-input" value="${record?.name || ''}" placeholder="VD: Linh kiện" />
+      <div style="border:1px solid #bfdbfe;border-radius:8px;padding:.75rem;margin-top:.5rem;background:#eff6ff">
+        <strong style="font-size:.9rem">${key ? 'Sửa' : 'Thêm'} danh mục</strong>
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
+          <label style="font-size:.85rem">Tên danh mục
+            <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiện..." />
+          </label>
+          <label style="font-size:.85rem">Thuộc về danh mục
+            <select id="cf-parent" class="search-input" style="width:100%;margin-top:.2rem">${parentOpts}</select>
+          </label>
+          <div style="display:flex;gap:.5rem;justify-content:flex-end">
+            <button id="cf-cancel" class="btn btn--secondary btn--sm">Hủy</button>
+            <button id="cf-save" class="btn btn--primary btn--sm">Lưu</button>
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom:.75rem">
-          <label style="font-size:.85rem">Mô tả</label>
-          <input id="cf-desc" class="form-input" value="${record?.desc || ''}" placeholder="Mô tả ngắn..." />
-        </div>
-        <div style="display:flex;gap:.5rem">
-          <button id="cf-save" class="btn btn--primary btn--sm">Lưu</button>
-          <button id="cf-cancel" class="btn btn--secondary btn--sm">Huỷ</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('cf-cancel').onclick = () => { wrap.classList.add('hidden'); wrap.innerHTML = ''; };
-    document.getElementById('cf-save').addEventListener('click', async () => {
-      const name = document.getElementById('cf-name').value.trim();
-      if (!name) { toast('Vui lòng nhập tên danh mục', 'error'); return; }
-      const data = { name, desc: document.getElementById('cf-desc').value.trim() };
-      try {
-        if (record) { await updateItem(COL_CATEGORIES, record._key, data); toast('Đã cập nhật danh mục'); }
-        else        { await addItem(COL_CATEGORIES, data); toast('Đã thêm danh mục'); }
-        wrap.classList.add('hidden'); wrap.innerHTML = '';
-      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+      </div>`;
+
+    const parentSel = wrap.querySelector('#cf-parent');
+    const setParent = defaultParentKey || (key ? cat.parentKey : null);
+    if (setParent) parentSel.value = setParent;
+
+    wrap.querySelector('#cf-cancel').addEventListener('click', () => { wrap.innerHTML = ''; });
+    wrap.querySelector('#cf-save').addEventListener('click', async () => {
+      const name      = wrap.querySelector('#cf-name').value.trim();
+      if (!name) { toast('Nhập tên danh mục!','warning'); return; }
+      const parentKey = wrap.querySelector('#cf-parent').value || null;
+      key
+        ? await updateItem(COL_CATEGORIES, key, { name, parentKey })
+        : await addItem(COL_CATEGORIES, { name, parentKey });
+      toast(key ? 'Đã cập nhật danh mục!' : 'Đã thêm danh mục!','success');
+      wrap.innerHTML = '';
+      if (parentKey) openFolders.add(parentKey);
     });
   }
 
-  // ==================== PRODUCT POOL ====================
+  // ─── PRODUCT POOL ────────────────────────────────────────────────
   function renderProductPool() {
-    const q    = (document.getElementById('pool-search')?.value || '').toLowerCase();
-    const wrap = document.getElementById('pool-list');
-    if (!wrap) return;
+    const q      = (container.querySelector('#pool-search')?.value || '').toLowerCase();
+    const list   = container.querySelector('#pool-list');
     const filtered = allProducts.filter(p =>
-      !q || (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q)
-    );
-    if (!filtered.length) {
-      wrap.innerHTML = '<div style="padding:1rem;color:#888;text-align:center">Không có sản phẩm</div>';
-      return;
-    }
-    wrap.innerHTML = filtered.map(p => {
-      const catName = getCatName(p.categoryKey) || p.type || '';
-      return `
-        <label style="display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;cursor:pointer"
-               onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-          <input type="checkbox" class="pool-cb" data-key="${p._key}" />
-          <span style="font-size:.8rem;color:#9ca3af;width:52px;flex-shrink:0">${p.id || ''}</span>
-          <span style="flex:1;font-size:.88rem">${p.name || ''}</span>
-          ${catName
-            ? `<span class="badge badge-blue" style="font-size:.75rem;white-space:nowrap">${catName}</span>`
-            : `<span style="font-size:.75rem;color:#d1d5db">Chưa có</span>`}
-        </label>
-      `;
-    }).join('');
-    const ca = document.getElementById('pool-check-all');
-    if (ca) ca.checked = false;
+      !q || (p.name||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q));
+    list.innerHTML = filtered.length === 0
+      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Không có sản phẩm.</div>'
+      : filtered.map(p => {
+          const cat = p.categoryKey ? allCategories.find(c => c._key === p.categoryKey) : null;
+          return `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f3f4f6;font-size:.84rem">
+            <input type="checkbox" class="pool-cb" data-key="${p._key}" />
+            <span style="flex:1">${p.name}</span>
+            <span style="color:#6b7280;font-size:.75rem">${p.id||''}</span>
+            ${cat
+              ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
+              : '<span style="color:#d1d5db;font-size:.73rem">Chưa phân loại</span>'}
+          </div>`;
+        }).join('');
+    const pca = container.querySelector('#pool-check-all');
+    if (pca) pca.checked = false;
   }
 
-  document.getElementById('pool-search').addEventListener('input', renderProductPool);
-  document.getElementById('pool-check-all').addEventListener('change', function() {
-    document.querySelectorAll('.pool-cb').forEach(cb => cb.checked = this.checked);
-  });
-  document.getElementById('pool-assign-btn').addEventListener('click', async () => {
-    const catKey = document.getElementById('pool-assign-cat').value;
-    if (!catKey) { toast('Chọn danh mục cần gán', 'error'); return; }
-    const selected = [...document.querySelectorAll('.pool-cb:checked')].map(cb => cb.dataset.key);
-    if (!selected.length) { toast('Chọn ít nhất một sản phẩm', 'error'); return; }
-    const catName = allCategories.find(c => c._key === catKey)?.name || '';
-    try {
-      await Promise.all(selected.map(key => updateItem(COL_PRODUCTS, key, { categoryKey: catKey, type: catName })));
-      toast(`Đã gán ${selected.length} sản phẩm vào "${catName}"`);
-      document.getElementById('pool-check-all').checked = false;
-    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+  // ─── EVENT LISTENERS ────────────────────────────────────────────
+  container.querySelector('#inv-search').addEventListener('input', renderProductTable);
+  container.querySelector('#inv-cat-filter').addEventListener('change', renderProductTable);
+  container.querySelector('#inv-add').addEventListener('click', () => openProductForm(null));
+  container.querySelector('#inv-del-selected').addEventListener('click', async () => {
+    const keys = [...container.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    if (!confirm(`Xóa ${keys.length} sản phẩm?`)) return;
+    await Promise.all(keys.map(k => deleteItem(COL_PRODUCTS, k)));
+    toast(`Đã xóa ${keys.length} sản phẩm`,'success');
   });
 
-  // ==================== PRODUCTS ====================
-  const unsubProds = onSnapshot(COL_PRODUCTS, items => {
-    allProducts = items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'vi'));
-    filterProducts();
-    renderFolders();
+  container.querySelector('#cat-add').addEventListener('click', () => openCatForm(null, null));
+  container.querySelector('#cat-del-selected').addEventListener('click', async () => {
+    const keys = [...container.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    if (!confirm(`Xóa ${keys.length} danh mục?\nLưu ý: sản phẩm bên trong sẽ không bị xóa, chỉ mất liên kết danh mục.`)) return;
+    await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
+    toast(`Đã xóa ${keys.length} danh mục`,'success');
+    updateCatDelBtn();
+  });
+
+  container.querySelector('#pool-check-all').addEventListener('change', e => {
+    container.querySelectorAll('.pool-cb').forEach(cb => cb.checked = e.target.checked);
+  });
+  container.querySelector('#pool-search').addEventListener('input', renderProductPool);
+  container.querySelector('#pool-assign-btn').addEventListener('click', async () => {
+    const catKey = container.querySelector('#pool-assign-cat').value;
+    if (!catKey) { toast('Chọn danh mục trước!','warning'); return; }
+    const keys = [...container.querySelectorAll('.pool-cb:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) { toast('Chọn sản phẩm trước!','warning'); return; }
+    await Promise.all(keys.map(k => updateItem(COL_PRODUCTS, k, { categoryKey: catKey })));
+    toast(`Đã gán ${keys.length} sản phẩm!`,'success');
+    container.querySelector('#pool-check-all').checked = false;
     renderProductPool();
   });
 
-  container.addEventListener('unmount', () => { unsubCats?.(); unsubProds?.(); });
-
-  document.getElementById('inv-search').addEventListener('input', filterProducts);
-  document.getElementById('inv-cat-filter').addEventListener('change', filterProducts);
-
-  function filterProducts() {
-    const q      = (document.getElementById('inv-search')?.value || '').toLowerCase();
-    const catKey = document.getElementById('inv-cat-filter')?.value || '';
-    const filtered = allProducts.filter(p => {
-      const matchQ   = !q || (p.name || '').toLowerCase().includes(q) || (p.id || '').toLowerCase().includes(q);
-      const matchCat = !catKey || p.categoryKey === catKey;
-      return matchQ && matchCat;
-    });
-    renderProductTable(filtered);
-  }
-
-  function updateInvDelBtn() {
-    const checked = [...document.querySelectorAll('.inv-cb:checked')];
-    const btn  = document.getElementById('inv-del-selected');
-    const span = document.getElementById('inv-del-count');
-    if (!btn) return;
-    btn.style.display = checked.length ? '' : 'none';
-    if (span) span.textContent = checked.length;
-  }
-
-  function renderProductTable(data) {
-    const wrap = document.getElementById('inv-table-wrap');
-    if (!wrap) return;
-    if (!data.length) {
-      wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>';
-      return;
-    }
-    const cols = [
-      { label: '<input type="checkbox" id="inv-check-all" />', key: p =>
-          `<input type="checkbox" class="inv-cb" data-key="${p._key}" />`
-      },
-      { label: 'Mã SP',        key: p => p.id || '' },
-      { label: 'Tên sản phẩm', key: p => p.name || '' },
-      { label: 'Danh mục',     key: p => {
-          const n = getCatName(p.categoryKey) || p.type || '';
-          return n ? `<span class="badge badge-blue">${n}</span>` : '';
-        }
-      },
-      { label: 'ĐVT',         key: p => p.unit || '' },
-      { label: 'Tồn kho',     key: p => {
-          const s = p.stock ?? 0;
-          return s <= 0 ? `<span style="color:#e53e3e;font-weight:600">${s}</span>`
-               : s <= 3 ? `<span style="color:#ddbb20;font-weight:600">${s}</span>`
-               : s;
-        }
-      },
-      { label: 'Giá vốn',     key: p => formatVND(p.cost  || 0) },
-      { label: 'Giá bán',     key: p => formatVND(p.price || 0) },
-      { label: 'Bảo hành',    key: p => p.note || '' },
-      { label: '',            key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>`}
-    ];
-    wrap.innerHTML = buildTable(cols, data);
-
-    // Select-all checkbox in header
-    const checkAll = wrap.querySelector('#inv-check-all');
-    if (checkAll) {
-      checkAll.addEventListener('change', function() {
-        wrap.querySelectorAll('.inv-cb').forEach(cb => cb.checked = this.checked);
-        updateInvDelBtn();
-      });
-    }
-    wrap.querySelectorAll('.inv-cb').forEach(cb =>
-      cb.addEventListener('change', updateInvDelBtn)
-    );
-    wrap.querySelectorAll('.inv-edit').forEach(btn =>
-      btn.addEventListener('click', () => openProductForm(allProducts.find(p => p._key === btn.dataset.key)))
-    );
-  }
-
-  document.getElementById('inv-del-selected').addEventListener('click', async () => {
-    const keys = [...document.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
-    if (!keys.length) return;
-    const ok = await showModal('Xác nhận xóa', `Xóa ${keys.length} sản phẩm đã chọn?`, true);
-    if (!ok) return;
-    try {
-      await Promise.all(keys.map(k => deleteItem(COL_PRODUCTS, k)));
-      toast(`Đã xóa ${keys.length} sản phẩm`);
-      document.getElementById('inv-del-selected').style.display = 'none';
-    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+  // ─── FIREBASE LISTENERS ─────────────────────────────────────────
+  onSnapshot(COL_CATEGORIES, snap => {
+    allCategories = Object.entries(snap||{}).map(([k,v]) => ({...v, _key:k}));
+    renderFolders();
+    refreshCatSelects();
+    renderProductPool();
   });
 
-  document.getElementById('inv-add').addEventListener('click', () => openProductForm(null));
-
-  function openProductForm(record) {
-    const wrap = document.getElementById('inv-form-wrap');
-    wrap.classList.remove('hidden');
-    const catOptions = allCategories.map(c =>
-      `<option value="${c._key}" ${record?.categoryKey === c._key ? 'selected' : ''}>${c.name}</option>`
-    ).join('');
-    wrap.innerHTML = `
-      <div class="form-card" style="margin-top:.75rem">
-        <h3>${record ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm'}</h3>
-        <div class="form-grid">
-          <div class="form-group"><label>Mã SP</label><input id="f-id" class="form-input" value="${record?.id || ''}" /></div>
-          <div class="form-group"><label>Tên sản phẩm *</label><input id="f-name" class="form-input" value="${record?.name || ''}" /></div>
-          <div class="form-group">
-            <label>Danh mục</label>
-            <select id="f-categoryKey" class="form-input">
-              <option value="">-- Chọn danh mục --</option>
-              ${catOptions}
-            </select>
-          </div>
-          <div class="form-group"><label>Loại (tự nhập nếu không có danh mục)</label><input id="f-type" class="form-input" value="${record?.type || ''}" placeholder="VD: Linh kiện" /></div>
-          <div class="form-group"><label>Đơn vị tính</label><input id="f-unit" class="form-input" value="${record?.unit || 'Cái'}" /></div>
-          <div class="form-group"><label>Tồn kho</label><input id="f-stock" type="number" class="form-input" value="${record?.stock ?? 0}" /></div>
-          <div class="form-group"><label>Giá vốn</label><input id="f-cost" type="number" class="form-input" value="${record?.cost || 0}" /></div>
-          <div class="form-group"><label>Giá bán</label><input id="f-price" type="number" class="form-input" value="${record?.price || 0}" /></div>
-          <div class="form-group"><label>Bảo hành (ghi chú)</label><input id="f-note" class="form-input" value="${record?.note || ''}" /></div>
-        </div>
-        <div class="form-actions">
-          <button id="f-save" class="btn btn--primary">Lưu</button>
-          <button id="f-cancel" class="btn btn--secondary">Huỷ</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('f-categoryKey').addEventListener('change', function() {
-      if (this.value) {
-        const cat = allCategories.find(c => c._key === this.value);
-        if (cat) document.getElementById('f-type').value = cat.name;
-      }
-    });
-    document.getElementById('f-cancel').onclick = () => { wrap.classList.add('hidden'); wrap.innerHTML = ''; };
-    document.getElementById('f-save').addEventListener('click', async () => {
-      const name = document.getElementById('f-name').value.trim();
-      if (!name) { toast('Vui lòng nhập tên sản phẩm', 'error'); return; }
-      const catKey  = document.getElementById('f-categoryKey').value;
-      const catName = catKey ? (allCategories.find(c => c._key === catKey)?.name || '') : '';
-      const data = {
-        id:          document.getElementById('f-id').value.trim(),
-        name,
-        categoryKey: catKey || '',
-        type:        catName || document.getElementById('f-type').value.trim(),
-        unit:        document.getElementById('f-unit').value.trim(),
-        stock:       Number(document.getElementById('f-stock').value) || 0,
-        cost:        Number(document.getElementById('f-cost').value) || 0,
-        price:       Number(document.getElementById('f-price').value) || 0,
-        note:        document.getElementById('f-note').value.trim(),
-      };
-      try {
-        if (record) { await updateItem(COL_PRODUCTS, record._key, data); toast('Đã cập nhật sản phẩm'); }
-        else        { await addItem(COL_PRODUCTS, data); toast('Đã thêm sản phẩm'); }
-        wrap.classList.add('hidden'); wrap.innerHTML = '';
-      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
-    });
-  }
+  onSnapshot(COL_PRODUCTS, snap => {
+    allProducts = Object.entries(snap||{}).map(([k,v]) => ({...v, _key:k}))
+      .sort((a,b) => (a.name||'').localeCompare(b.name||'','vi'));
+    renderProductTable();
+    renderFolders();
+    renderProductPool();
+    updateInvDelBtn();
+  });
 }
