@@ -124,7 +124,6 @@ export async function mount(container) {
   }
 
   // ─── PRODUCT TABLE ───────────────────────────────────────────────
-  console.log('inventory v4 - price/cost fix active');
   function updateInvDelBtn() {
     const n = container.querySelectorAll('.inv-cb:checked').length;
     container.querySelector('#inv-del-selected').style.display = n ? '' : 'none';
@@ -407,16 +406,15 @@ export async function mount(container) {
   });
 
   // ─── FIREBASE LISTENERS ─────────────────────────────────────────
-  onSnapshot(COL_CATEGORIES, snap => {
-    allCategories = Object.entries(snap||{}).map(([k,v]) => ({...v, _key:k}));
+  onSnapshot(COL_CATEGORIES, items => {
+    allCategories = items;
     renderFolders();
     refreshCatSelects();
     renderProductPool();
   });
 
-  onSnapshot(COL_PRODUCTS, snap => {
-    allProducts = Object.entries(snap||{}).map(([k,v]) => ({...v, _key:k}))
-      .sort((a,b) => (a.name||'').localeCompare(b.name||'','vi'));
+  onSnapshot(COL_PRODUCTS, items => {
+    allProducts = [...items].sort((a,b) => (a.name||'').localeCompare(b.name||'','vi'));
     renderProductTable();
     renderFolders();
     renderProductPool();
