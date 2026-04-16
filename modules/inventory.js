@@ -21,7 +21,6 @@ export async function mount(container) {
       </div>
     </div>
 
-    <!-- TAB: SẢN PHẨM -->
     <div id="tab-products">
       <div class="sub-actions" style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
         <input id="inv-search" type="text" placeholder="Tìm kiếm..." class="search-input" style="flex:1;min-width:160px" />
@@ -34,10 +33,8 @@ export async function mount(container) {
       <div id="inv-table-wrap"></div>
     </div>
 
-    <!-- TAB: DANH MỤC -->
     <div id="tab-categories" style="display:none">
       <div style="display:flex;gap:1rem;align-items:flex-start">
-        <!-- LEFT: folder tree -->
         <div style="flex:0 0 380px;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
             <button id="cat-add" class="btn btn--primary btn--sm">+ Thêm danh mục gốc</button>
@@ -46,7 +43,6 @@ export async function mount(container) {
           <div id="cat-folders"></div>
           <div id="cat-form-wrap"></div>
         </div>
-        <!-- RIGHT: product pool -->
         <div style="flex:1;min-width:0">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
             <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
@@ -109,8 +105,7 @@ export async function mount(container) {
     const queue  = [key];
     while (queue.length) {
       const cur = queue.shift();
-      allCategories
-        .filter(c => c.parentKey === cur)
+      allCategories.filter(c => c.parentKey === cur)
         .forEach(c => { result.push(c._key); queue.push(c._key); });
     }
     return result;
@@ -130,9 +125,9 @@ export async function mount(container) {
 
   // ─── PRODUCT TABLE ───────────────────────────────────────────────
   function updateInvDelBtn() {
-    const checked = container.querySelectorAll('.inv-cb:checked');
-    container.querySelector('#inv-del-selected').style.display = checked.length ? '' : 'none';
-    container.querySelector('#inv-del-count').textContent = checked.length;
+    const n = container.querySelectorAll('.inv-cb:checked').length;
+    container.querySelector('#inv-del-selected').style.display = n ? '' : 'none';
+    container.querySelector('#inv-del-count').textContent = n;
   }
 
   function filterProducts() {
@@ -151,15 +146,17 @@ export async function mount(container) {
     const cols = [
       { label: '<input type="checkbox" id="inv-check-all" />',
         key: p => `<input type="checkbox" class="inv-cb" data-key="${p._key}" />` },
-      { label: 'Mã SP',       key: p => p.id || '' },
+      { label: 'Mã SP',        key: p => p.id || '' },
       { label: 'Tên sản phẩm', key: p => p.name || '' },
       { label: 'Danh mục', key: p => {
           if (!p.categoryKey) return '<span style="color:#9ca3af">—</span>';
           const cat = allCategories.find(c => c._key === p.categoryKey);
-          return cat ? `<span style="color:#2563eb">${getCatFullName(cat)}</span>` : '<span style="color:#9ca3af">—</span>';
+          return cat
+            ? `<span style="color:#2563eb">${getCatFullName(cat)}</span>`
+            : '<span style="color:#9ca3af">—</span>';
         }},
-      { label: 'ĐVT',       key: p => p.unit || '' },
-      { label: 'Tồn kho',   key: p => {
+      { label: 'ĐVT',      key: p => p.unit || '' },
+      { label: 'Tồn kho',  key: p => {
           const n = Number(p.stock||0);
           const c = n<=0?'#ef4444':n<=3?'#f59e0b':'#22c55e';
           return `<span style="color:${c};font-weight:600">${n}</span>`;
@@ -169,7 +166,8 @@ export async function mount(container) {
       { label: 'Bảo hành', key: p => p.warranty || '' },
       { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
     ];
-    wrap.innerHTML = buildTable(data, cols);
+    // FIX: buildTable(cols, data) - cols first!
+    wrap.innerHTML = buildTable(cols, data);
 
     const ca = wrap.querySelector('#inv-check-all');
     if (ca) ca.addEventListener('change', () => {
@@ -183,68 +181,63 @@ export async function mount(container) {
 
   // ─── PRODUCT FORM ────────────────────────────────────────────────
   function openProductForm(key) {
-    const p = key ? (allProducts.find(x => x._key === key) || {}) : {};
+    const p       = key ? (allProducts.find(x => x._key === key) || {}) : {};
     const catOpts = '<option value="">— Không có —</option>' + buildCatOptions(null, 0);
-    showModal(`
-      <h3>${key ? 'Sửa' : 'Thêm'} sản phẩm</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+    const catSel  = p.categoryKey
+      ? catOpts.replace(`value="${p.categoryKey}"`, `value="${p.categoryKey}" selected`)
+      : catOpts;
+
+    showModal({
+      title: `${key ? 'Sửa' : 'Thêm'} sản phẩm`,
+      body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
         <label>Mã SP<br><input id="f-id" class="search-input" value="${p.id||''}" style="width:100%" /></label>
         <label>Tên sản phẩm<br><input id="f-name" class="search-input" value="${p.name||''}" style="width:100%" /></label>
-        <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catOpts}</select></label>
+        <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
         <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
         <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
         <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.costPrice||0}" style="width:100%" /></label>
         <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.sellPrice||0}" style="width:100%" /></label>
         <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
-      </div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
-        <button id="f-cancel" class="btn btn--secondary">Hủy</button>
-        <button id="f-save" class="btn btn--primary">Lưu</button>
-      </div>`);
-    if (p.categoryKey) {
-      const sel = document.querySelector('#f-cat');
-      if (sel) sel.value = p.categoryKey;
-    }
-    const closeModal = () => document.querySelector('.modal-overlay, .modal')?.remove();
-    document.querySelector('#f-cancel')?.addEventListener('click', closeModal);
-    document.querySelector('#f-save')?.addEventListener('click', async () => {
-      const data = {
-        id:          document.querySelector('#f-id').value.trim(),
-        name:        document.querySelector('#f-name').value.trim(),
-        categoryKey: document.querySelector('#f-cat').value || null,
-        unit:        document.querySelector('#f-unit').value.trim(),
-        stock:       Number(document.querySelector('#f-stock').value)||0,
-        costPrice:   Number(document.querySelector('#f-cost').value)||0,
-        sellPrice:   Number(document.querySelector('#f-sell').value)||0,
-        warranty:    document.querySelector('#f-warranty').value.trim(),
-      };
-      if (!data.name) { toast('Nhập tên sản phẩm!','warning'); return; }
-      key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
-      toast(key ? 'Đã cập nhật!' : 'Đã thêm sản phẩm!','success');
-      closeModal();
+      </div>`,
+      confirmText: 'Lưu',
+      onConfirm: async () => {
+        const name = document.querySelector('#f-name')?.value.trim() || '';
+        if (!name) { toast('Nhập tên sản phẩm!','warning'); return; }
+        const data = {
+          id:          document.querySelector('#f-id')?.value.trim() || '',
+          name,
+          categoryKey: document.querySelector('#f-cat')?.value || null,
+          unit:        document.querySelector('#f-unit')?.value.trim() || '',
+          stock:       Number(document.querySelector('#f-stock')?.value) || 0,
+          costPrice:   Number(document.querySelector('#f-cost')?.value) || 0,
+          sellPrice:   Number(document.querySelector('#f-sell')?.value) || 0,
+          warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
+        };
+        key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
+        toast(key ? 'Đã cập nhật!' : 'Đã thêm sản phẩm!','success');
+      }
     });
   }
 
   // ─── CATEGORY FOLDER TREE ────────────────────────────────────────
   function updateCatDelBtn() {
-    const checked = container.querySelectorAll('.cat-cb:checked');
-    container.querySelector('#cat-del-selected').style.display = checked.length ? '' : 'none';
-    container.querySelector('#cat-del-count').textContent = checked.length;
+    const n = container.querySelectorAll('.cat-cb:checked').length;
+    container.querySelector('#cat-del-selected').style.display = n ? '' : 'none';
+    container.querySelector('#cat-del-count').textContent = n;
+  }
+
+  function countAll(key) {
+    const direct   = allProducts.filter(p => p.categoryKey === key).length;
+    const children = allCategories.filter(c => c.parentKey === key);
+    return direct + children.reduce((s, c) => s + countAll(c._key), 0);
   }
 
   function renderFolderNode(cat, depth) {
-    const children    = allCategories.filter(c => c.parentKey === cat._key);
-    const prods       = allProducts.filter(p => p.categoryKey === cat._key);
-    const isOpen      = openFolders.has(cat._key);
-    const pl          = depth * 18;
-
-    // count total products recursively
-    function countAll(key) {
-      const direct = allProducts.filter(p => p.categoryKey === key).length;
-      const childSum = allCategories.filter(c => c.parentKey === key).reduce((s,c) => s + countAll(c._key), 0);
-      return direct + childSum;
-    }
-    const total = countAll(cat._key);
+    const children = allCategories.filter(c => c.parentKey === cat._key);
+    const prods    = allProducts.filter(p => p.categoryKey === cat._key);
+    const isOpen   = openFolders.has(cat._key);
+    const total    = countAll(cat._key);
+    const pl       = depth * 18;
 
     let body = '';
     if (isOpen) {
@@ -253,7 +246,7 @@ export async function mount(container) {
         body += `<div class="folder-product" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .3rem ${pl+44}px;border-top:1px solid #f3f4f6;font-size:.84rem">
           <span style="flex:1;color:#374151">${p.name}</span>
           <span style="color:#9ca3af;font-size:.75rem">${p.id||''}</span>
-          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" title="Bỏ khỏi danh mục" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem">×</button>
+          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="Bỏ khỏi danh mục">×</button>
         </div>`;
       });
       if (!children.length && !prods.length) {
@@ -268,7 +261,7 @@ export async function mount(container) {
         <span style="font-size:1rem">${isOpen?'📂':'📁'}</span>
         <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
         <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
-        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" title="Thêm danh mục con" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Mục con</button>
+        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap">+Mục con</button>
         <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sửa</button>
       </div>
       ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
@@ -305,14 +298,20 @@ export async function mount(container) {
       }));
   }
 
-  // ─── CATEGORY FORM (thêm / sửa) ─────────────────────────────────
+  // ─── CATEGORY FORM ───────────────────────────────────────────────
   function openCatForm(key, defaultParentKey) {
     const cat      = key ? (allCategories.find(c => c._key === key) || {}) : {};
     const excluded = key ? [...getDescendantKeys(key), key] : [];
-    const parentOpts = '<option value="">— Danh mục gốc (không thuộc mục nào) —</option>' +
+    const parentOpts = '<option value="">— Danh mục gốc —</option>' +
       allCategories
         .filter(c => !excluded.includes(c._key))
         .map(c => `<option value="${c._key}">${getCatFullName(c)}</option>`).join('');
+
+    const setParent = defaultParentKey || (key ? cat.parentKey : null);
+    const parentSel = parentOpts.replace(
+      setParent ? `value="${setParent}"` : '___NOMATCH___',
+      setParent ? `value="${setParent}" selected` : ''
+    );
 
     const wrap = container.querySelector('#cat-form-wrap');
     wrap.innerHTML = `
@@ -323,7 +322,7 @@ export async function mount(container) {
             <input id="cf-name" class="search-input" value="${cat.name||''}" style="width:100%;margin-top:.2rem" placeholder="VD: Laptop, Dell, Linh kiện..." />
           </label>
           <label style="font-size:.85rem">Thuộc về danh mục
-            <select id="cf-parent" class="search-input" style="width:100%;margin-top:.2rem">${parentOpts}</select>
+            <select id="cf-parent" class="search-input" style="width:100%;margin-top:.2rem">${parentSel}</select>
           </label>
           <div style="display:flex;gap:.5rem;justify-content:flex-end">
             <button id="cf-cancel" class="btn btn--secondary btn--sm">Hủy</button>
@@ -331,10 +330,6 @@ export async function mount(container) {
           </div>
         </div>
       </div>`;
-
-    const parentSel = wrap.querySelector('#cf-parent');
-    const setParent = defaultParentKey || (key ? cat.parentKey : null);
-    if (setParent) parentSel.value = setParent;
 
     wrap.querySelector('#cf-cancel').addEventListener('click', () => { wrap.innerHTML = ''; });
     wrap.querySelector('#cf-save').addEventListener('click', async () => {
@@ -389,7 +384,7 @@ export async function mount(container) {
   container.querySelector('#cat-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.cat-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;
-    if (!confirm(`Xóa ${keys.length} danh mục?\nLưu ý: sản phẩm bên trong sẽ không bị xóa, chỉ mất liên kết danh mục.`)) return;
+    if (!confirm(`Xóa ${keys.length} danh mục?`)) return;
     await Promise.all(keys.map(k => deleteItem(COL_CATEGORIES, k)));
     toast(`Đã xóa ${keys.length} danh mục`,'success');
     updateCatDelBtn();
