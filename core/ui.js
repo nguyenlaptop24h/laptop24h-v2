@@ -52,66 +52,24 @@ export function showModal({ title, body, onConfirm, confirmText = 'Xác nhận',
 }
 
 // ---- Table builder ----
-export function buildTable({ columns, data, actions }) {
-  const table = document.createElement('table');
-  table.className = 'data-table';
-  // Header
-  const thead = table.createTHead();
-  const hr = thead.insertRow();
-  columns.forEach(col => {
-    const th = document.createElement('th');
-    th.textContent = col.label;
-    if (col.width) th.style.width = col.width;
-    hr.appendChild(th);
-  });
-  if (actions) {
-    const th = document.createElement('th');
-    th.textContent = 'Thao tác';
-    th.style.width = '120px';
-    hr.appendChild(th);
-  }
-  // Body
-  const tbody = table.createTBody();
-  if (!data || data.length === 0) {
-    const tr = tbody.insertRow();
-    const td = tr.insertCell();
-    td.colSpan = columns.length + (actions ? 1 : 0);
-    td.className = 'empty-row';
-    td.textContent = 'Không có dữ liệu';
-  } else {
-    data.forEach(row => {
-      const tr = tbody.insertRow();
-      tr.dataset.key = row._key || '';
-      columns.forEach(col => {
-        const td = tr.insertCell();
-        if (col.render) {
-          const result = col.render(row[col.field], row);
-          if (result instanceof HTMLElement) td.appendChild(result);
-          else td.innerHTML = result ?? '';
-        } else if (col.money) {
-          td.textContent = formatVND(row[col.field]);
-          td.className = 'cell--money';
-        } else {
-          td.textContent = row[col.field] ?? '';
-        }
-      });
-      if (actions) {
-        const td = tr.insertCell();
-        td.className = 'cell--actions';
-        actions.forEach(act => {
-          const btn = document.createElement('button');
-          btn.className = `btn btn--xs btn--${act.type || 'secondary'}`;
-          btn.textContent = act.label;
-          btn.onclick = () => act.onClick(row);
-          td.appendChild(btn);
-        });
+export function buildTable(cols, data) {
+  const thead = cols.map(c => `<th>${c.label}</th>`).join('');
+  const tbody = data.map(row => {
+    const cells = cols.map(c => {
+      let val = '';
+      if (typeof c.key === 'function') {
+        val = c.key(row) ?? '';
+      } else if (typeof c.key === 'string') {
+        val = row[c.key] ?? '';
       }
-    });
-  }
-  return table;
+      return `<td>${val}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  return `<table class="data-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
 }
 
-// ---- Form helpers ----
+
 export function getFormData(formEl) {
   const data = {};
   formEl.querySelectorAll('input, select, textarea').forEach(el => {
