@@ -267,21 +267,56 @@ export async function mount(container) {
         }
       });
     }
-    wrap.querySelectorAll('.cat-cb').forEach(cb => cb.addEventListener('change', updateCatDelBtn));
-    wrap.querySelectorAll('.cat-add-child').forEach(btn =>
-      btn.addEventListener('click', () => {
+  const arrow = isOpen ? '▾' : '▸';
+  return `<div class="folder-item" data-key="${cat._key}">
+    <div class="folder-header" data-key="${cat._key}" style="display:flex;align-items:center;gap:.45rem;padding:.42rem .6rem .42rem ${pl+4}px;cursor:pointer;background:${depth===0?'#f1f5f9':'#f8fafc'};border-bottom:1px solid #e5e7eb;user-select:none">
+      <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" style="flex-shrink:0">
+      <span style="color:#64748b;font-size:.82rem;width:12px">${arrow}</span>
+      <span style="flex:1;font-weight:${depth===0?600:500};font-size:${depth===0?'.9rem':'.85rem'};color:#1e293b">${cat.name}</span>
+      <span style="font-size:.72rem;color:#94a3b8;background:#e2e8f0;border-radius:9px;padding:1px 7px">${total}</span>
+      <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" title="Sửa">✎</button>
+      <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:18px;font-weight:700;padding:1px 8px;line-height:1" title="Thêm mục con">＋</button>
+    </div>
+    ${body}
+  </div>`;
+  }
+
+
+  // ### RENDER ALL FOLDERS ###############################################
+  function renderFolders() {
+    const fc = container.querySelector('#cat-folders');
+    if (!fc) return;
+    const roots = allCategories.filter(c => !c.parentKey);
+    fc.innerHTML = roots.length
+      ? roots.map(c => renderFolderNode(c, 0)).join('')
+      : '<p style="color:#aaa;padding:1rem;font-size:.85rem">Đầy chưa có danh mục nào. Hãy thêm danh mục gốc.</p>';
+    fc.querySelectorAll('.folder-header').forEach(hdr =>
+      hdr.addEventListener('click', e => {
+        if (e.target.closest('button,input')) return;
+        const key = hdr.dataset.key;
+        if (openFolders.has(key)) openFolders.delete(key); else openFolders.add(key);
+        renderFolders();
+      }));
+    fc.querySelectorAll('.cat-cb').forEach(cb =>
+      cb.addEventListener('change', updateCatDelBtn));
+    fc.querySelectorAll('.cat-add-child').forEach(btn =>
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
         openFolders.add(btn.dataset.key);
         openCatForm(null, btn.dataset.key);
       }));
-    wrap.querySelectorAll('.cat-edit').forEach(btn =>
-      btn.addEventListener('click', () => openCatForm(btn.dataset.key)));
-    wrap.querySelectorAll('.remove-from-cat').forEach(btn =>
-      btn.addEventListener('click', async () => {
+    fc.querySelectorAll('.cat-edit').forEach(btn =>
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openCatForm(btn.dataset.key);
+      }));
+    fc.querySelectorAll('.remove-from-cat').forEach(btn =>
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
         await updateItem(COL_PRODUCTS, btn.dataset.key, { categoryKey: null });
-        toast('Đã bỏ khỏi danh mục','success');
+        toast('Đã bỏ khỏi danh mục', 'success');
       }));
   }
-
   // ─── CATEGORY FORM ───────────────────────────────────────────────
   function openCatForm(key, defaultParentKey) {
     const cat      = key ? (allCategories.find(c => c._key === key) || {}) : {};
