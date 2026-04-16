@@ -246,46 +246,25 @@ export async function mount(container) {
 
     let body = '';
     if (isOpen) {
-      children.forEach(child => { body += renderFolderNode(child, depth + 1); });
-      prods.forEach(p => {
-        body += `<div class="folder-product" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .3rem ${pl+44}px;border-top:1px solid #f3f4f6;font-size:.84rem">
-          <span style="flex:1;color:#374151">${p.name}</span>
-          <span style="color:#9ca3af;font-size:.75rem">${p.id||''}</span>
-          <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 .25rem" title="Bỏ khỏi danh mục">×</button>
-        </div>`;
-      });
-      if (!children.length && !prods.length) {
-        body += `<div style="padding:.4rem .5rem .4rem ${pl+44}px;color:#9ca3af;font-size:.8rem">Trống</div>`;
-      }
-    }
-
-    return `<div class="cat-folder" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:.35rem;overflow:hidden;margin-left:${pl}px">
-      <div class="folder-hd" data-key="${cat._key}" style="display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;background:${depth>0?'#f9fafb':'#fff'};cursor:pointer;user-select:none">
-        <input type="checkbox" class="cat-cb" data-key="${cat._key}" onclick="event.stopPropagation()" />
-        <span style="font-size:.85rem;width:.9rem;text-align:center">${isOpen?'▼':'▶'}</span>
-        <span style="font-size:1rem">${isOpen?'📂':'📁'}</span>
-        <strong style="flex:1;font-size:.88rem">${cat.name}</strong>
-        <span style="background:#e5e7eb;border-radius:9999px;padding:.05rem .45rem;font-size:.74rem;color:#6b7280">${total}</span>
-        <button class="cat-add-child btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="color:#2563eb;font-size:.75rem;white-space:nowrap;font-size:18px;font-weight:700;padding:1px 8px;line-height:1" title="Thêm mục con">＋</button>
-        <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" onclick="event.stopPropagation()" style="font-size:.75rem">Sửa</button>
-      </div>
-      ${isOpen ? `<div class="folder-body" style="border-top:1px solid #e5e7eb">${body}</div>` : ''}
-    </div>`;
-  }
-
-  function renderFolders() {
-    const wrap  = container.querySelector('#cat-folders');
-    const roots = allCategories.filter(c => !c.parentKey);
-    wrap.innerHTML = roots.length === 0
-      ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Chưa có danh mục nào.</div>'
-      : roots.map(cat => renderFolderNode(cat, 0)).join('');
-
-    wrap.querySelectorAll('.folder-hd').forEach(hd => {
-      hd.addEventListener('click', e => {
-        if (e.target.closest('input[type="checkbox"], button')) return;
-        const key = hd.dataset.key;
-        openFolders.has(key) ? openFolders.delete(key) : openFolders.add(key);
-        renderFolders();
+      const treeItems = [
+        ...children.map(c => ({ type: 'cat', data: c })),
+        ...prods.map(p => ({ type: 'prod', data: p }))
+      ];
+      treeItems.forEach((item, ti) => {
+        const isLast = ti === treeItems.length - 1;
+        const sym = isLast ? '└─' : '├─';
+        const indent = (depth + 1) * 18 + 6;
+        if (item.type === 'cat') {
+          body += renderFolderNode(item.data, depth + 1);
+        } else {
+          const p = item.data;
+          body += `<div class="folder-product" style="display:flex;align-items:center;gap:.4rem;padding:.28rem .6rem .28rem ${indent}px;border-top:1px solid #f0f1f3;font-size:.83rem;background:#f9fafb">
+            <span style="color:#94a3b8;font-family:monospace;font-size:.85rem;flex-shrink:0">${sym}</span>
+            <span style="flex:1;color:#1f2937;font-weight:400">${p.name}</span>
+            <span style="color:#9ca3af;font-size:.73rem;margin-right:.25rem">${p.id||''}</span>
+            <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 3px" title="Bo khoi danh muc">x</button>
+          </div>`;
+        }
       });
     });
     wrap.querySelectorAll('.cat-cb').forEach(cb => cb.addEventListener('change', updateCatDelBtn));
