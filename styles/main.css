@@ -161,6 +161,14 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px;
 .settings-section:last-child { border-bottom: none; }
 .settings-section h3 { margin-bottom: .8rem; }
 
+/* ---- Badge colors ---- */
+.badge-blue   { background:#ebf8ff; color:#2b6cb0; }
+.badge-green  { background:#f0fff4; color:#276749; }
+.badge-orange { background:#fffaf0; color:#c05621; }
+.badge-red    { background:#fff5f5; color:#c53030; }
+.badge-purple { background:#faf5ff; color:#6b46c1; }
+.badge-gray   { background:#f7fafc; color:#4a5568; }
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   #sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; }
