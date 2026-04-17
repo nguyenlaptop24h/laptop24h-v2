@@ -44,7 +44,7 @@ export async function mount(container) {
           <div id="cat-form-wrap"></div>
         </div>
         <div style="flex:1;min-width:0;overflow-y:auto;height:100%">
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:.5rem;margin-bottom:0;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:100;background:#fff;padding-bottom:.4rem">
             <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
             <label style="display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap">
               <input type="checkbox" id="pool-check-all" /> Chọn tất cả
