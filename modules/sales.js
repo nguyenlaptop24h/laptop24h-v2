@@ -287,7 +287,7 @@ export async function mount(container) {
     };
     try {
       if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); }
-      else { await addItem(COLLECTION, data); toast('L\u01b0u \u0110\u01a1n th\u00e0nh c\u00f4ng'); }
+      else { await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); }
       formWrap.innerHTML = ''; editKey = null;
     } catch(e) { toast('L\u1ed7i: ' + e.message); }
   }
@@ -301,7 +301,8 @@ export async function mount(container) {
       return;
     }
     listWrap.innerHTML = items.map(s => `
-      <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:.t�5rem;padding:.85rem 1rem">�       <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:.75rem;padding:.85rem 1rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
             <input type="checkbox" class="sale-cb" data-key="${s._key}" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
             <div>
