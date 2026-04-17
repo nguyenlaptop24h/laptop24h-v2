@@ -1,7 +1,7 @@
 // app.js - Bootstrap entry point
 import { initDB } from './core/db.js';
 import { initAuth } from './core/auth.js';
-import { initRouter } from './core/router.js?v=16';
+import { initRouter } from './core/router.js?v=17';
 import { initUI } from './core/ui.js';
 
 async function main() {
