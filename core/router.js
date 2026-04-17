@@ -44,7 +44,17 @@ export function initRouter() {
     import('../modules/stats.js'),
     import('../modules/users.js'),
     import('../modules/settings.js'),
-  ]).then(() => navigate());
+  ]).then(([repairs, sales, inventory, customers, debts, stats, users, settings]) => {
+    registerRoute('#repairs',    repairs.mount);
+    registerRoute('#sales',      sales.mount);
+    registerRoute('#inventory',  inventory.mount);
+    registerRoute('#customers',  customers.mount);
+    registerRoute('#debts',      debts.mount);
+    registerRoute('#stats',      stats.mount);
+    registerRoute('#users',      users.mount);
+    registerRoute('#settings',   settings.mount);
+    navigate();
+  });
 }
 
 export function navigateTo(hash) {
