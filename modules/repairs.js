@@ -291,7 +291,9 @@ export async function mount(container) {
         tr.addEventListener('click', e => {
           if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
           setSelected(key === selectedKey ? null : key);
-        
+        });
+      });
+    }
     wrap.querySelectorAll('.rep-radio').forEach(rb => {
       rb.checked = rb.dataset.key === selectedKey;
       rb.addEventListener('change', () => { if (rb.checked) setSelected(rb.dataset.key); });
