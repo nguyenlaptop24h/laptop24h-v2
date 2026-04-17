@@ -1,4 +1,4 @@
-// modules/sales.js - Ban hang v4
+// modules/sales.js - Ban hang v5
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, showModal, formatVND } from '../core/ui.js';
@@ -42,18 +42,13 @@ export async function mount(container) {
     const d = existing || {};
     const rows = (d.items && d.items.length) ? d.items : [{ sku:'', name:'', qty:1, price:0, disc:0 }];
 
-    const dlHtml = invItems.map(p =>
-      `<option data-sku="${String(p.id||'').replace(/"/g,'')}" data-price="${p.price||0}" value="${String(p.name||'').replace(/"/g,'&quot;')}"></option>`
-    ).join('');
-
     const warranties = ['Kh\u00f4ng b\u1ea3o h\u00e0nh','1 th\u00e1ng','3 th\u00e1ng','6 th\u00e1ng','12 th\u00e1ng','18 th\u00e1ng','24 th\u00e1ng'];
     const wOpts = warranties.map(w => `<option value="${w}"${(d.warranty||'3 th\u00e1ng')===w?' selected':''}>${w}</option>`).join('');
 
-    const pays = ['Ti\u1ec1n m\u1eb7t','Chuy\u1ec3n kho\u1ea3n','Qu\u1eb9t th\u1ebb'];
+    const pays = ['Ti\u1ec1n m\u1eb7t','Chuy\u1ec3n kho\u1ea3n','Qu\u1eb9t th\u1ebc'];
     const pOpts = pays.map(p => `<option value="${p}"${(d.payMethod||'Ti\u1ec1n m\u1eb7t')===p?' selected':''}>${p}</option>`).join('');
 
     formWrap.innerHTML = `
-      <datalist id="inv-dl">${dlHtml}</datalist>
       <div style="padding:0 1rem">
       <div style="background:#fff;border-radius:12px;box-shadow:0 2px 14px rgba(0,0,0,.09);margin-bottom:1rem;overflow:hidden">
 
@@ -127,7 +122,7 @@ export async function mount(container) {
 
         <div style="padding:1rem 1.25rem;display:flex;gap:.75rem;align-items:center">
           <button id="sf-print" style="flex:1;background:#2ecc71;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udda8 In Bill + BH</button>
-          <button id="sf-save" style="flex:1;background:#1a3a6b;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udcbe L\u01b0u \u0111\u01a1n H\u00e0ng</button>
+          <button id="sf-save" style="flex:1;background:#1a3a6b;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udcbe L\u01b0u \u0110\u01a1n H\u00e0ng</button>
           ${existing ? '<button id="sf-del" style="background:none;border:1px solid #ddd;border-radius:8px;padding:.78rem .95rem;cursor:pointer;font-size:1.1rem;color:#999">\ud83d\uddd1</button>' : ''}
         </div>
       </div>
@@ -160,7 +155,7 @@ export async function mount(container) {
   function addRow(item) {
     item = item || {};
     const tbody = formWrap.querySelector('#sf-rows');
-    if (!tbody) return;
+    if (\!tbody) return;
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid #f5f5f5';
     const nm = String(item.name||'').replace(/"/g,'&quot;');
@@ -168,8 +163,9 @@ export async function mount(container) {
       <td style="padding:.32rem .4rem">
         <input class="rsku form-control" style="font-size:.8rem;width:70px" placeholder="M\u00e3" value="${item.sku||''}">
       </td>
-      <td style="padding:.32rem .4rem">
-        <input class="rname form-control" list="inv-dl" style="font-size:.8rem;width:100%" placeholder="T\u00ean s\u1ea3n ph\u1ea9m..." value="${nm}">
+      <td style="padding:.32rem .4rem;position:relative">
+        <input class="rname form-control" style="font-size:.8rem;width:100%" placeholder="G\u00f5 t\u00ean ho\u1eb7c m\u00e3 SP..." value="${nm}" autocomplete="off">
+        <div class="sp-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #1a73e8;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:9999;max-height:220px;overflow-y:auto"></div>
       </td>
       <td style="padding:.32rem .4rem">
         <input class="rqty form-control" type="number" min="1" value="${item.qty||1}" style="text-align:center;font-size:.8rem;width:48px">
@@ -185,14 +181,64 @@ export async function mount(container) {
         <button class="rdel" style="background:#ff4d4f;color:#fff;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:.85rem;line-height:1">\u00d7</button>
       </td>
     `;
-    const rname = tr.querySelector('.rname');
-    const rsku  = tr.querySelector('.rsku');
+
+    const rname  = tr.querySelector('.rname');
+    const rsku   = tr.querySelector('.rsku');
     const rprice = tr.querySelector('.rprice');
-    rname.addEventListener('change', () => {
-      const found = invItems.find(p => p.name === rname.value);
-      if (found) { rsku.value = found.id||''; rprice.value = found.price||0; }
+    const drop   = tr.querySelector('.sp-drop');
+
+    function selectProduct(p) {
+      rname.value  = p.name  || '';
+      rsku.value   = p.id    || '';
+      rprice.value = p.price || 0;
+      drop.style.display = 'none';
       recalc();
+    }
+
+    function showDrop(q) {
+      if (\!q) { drop.style.display = 'none'; return; }
+      const ql = q.toLowerCase();
+      const hits = invItems.filter(p =>
+        (p.name||'').toLowerCase().includes(ql) ||
+        String(p.id||'').toLowerCase().includes(ql)
+      ).slice(0, 10);
+      if (\!hits.length) { drop.style.display = 'none'; return; }
+      drop.innerHTML = hits.map(p => `
+        <div class="sp-opt" data-key="${p._key}"
+          style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
+          <div style="min-width:0">
+            <div style="font-size:.82rem;font-weight:600;white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
+            <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '· '+p.unit : ''}</div>
+          </div>
+          <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
+        </div>`).join('');
+      drop.querySelectorAll('.sp-opt').forEach(opt => {
+        opt.addEventListener('mousedown', e => {
+          e.preventDefault();
+          const p = invItems.find(x => x._key === opt.dataset.key);
+          if (p) selectProduct(p);
+        });
+        opt.addEventListener('mouseover', () => { opt.style.background = '#f0f6ff'; });
+        opt.addEventListener('mouseout',  () => { opt.style.background = ''; });
+      });
+      drop.style.display = 'block';
+    }
+
+    rname.addEventListener('input',  () => showDrop(rname.value.trim()));
+    rname.addEventListener('focus',  () => { if (rname.value.trim()) showDrop(rname.value.trim()); });
+    rname.addEventListener('blur',   () => setTimeout(() => { drop.style.display = 'none'; }, 200));
+    rname.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { drop.style.display = 'none'; }
+      if (e.key === 'Enter') {
+        const first = drop.querySelector('.sp-opt');
+        if (first && drop.style.display \!== 'none') {
+          e.preventDefault();
+          const p = invItems.find(x => x._key === first.dataset.key);
+          if (p) selectProduct(p);
+        }
+      }
     });
+
     tr.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
     tr.querySelector('.rdel').onclick = () => { tr.remove(); recalc(); };
     tbody.appendChild(tr);
@@ -241,7 +287,7 @@ export async function mount(container) {
     };
     try {
       if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); }
-      else { await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); }
+      else { await addItem(COLLECTION, data); toast('L\u01b0u \u0110\u01a1n th\u00e0nh c\u00f4ng'); }
       formWrap.innerHTML = ''; editKey = null;
     } catch(e) { toast('L\u1ed7i: ' + e.message); }
   }
@@ -250,13 +296,12 @@ export async function mount(container) {
   function renderList(items) {
     currentList = items;
     countEl.textContent = '(' + items.length + ')';
-    if (!items.length) {
+    if (\!items.length) {
       listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n n\u00e0o h\u00f4m nay</p>';
       return;
     }
     listWrap.innerHTML = items.map(s => `
-      <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:.75rem;padding:.85rem 1rem">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:.t�5rem;padding:.85rem 1rem">�       <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
             <input type="checkbox" class="sale-cb" data-key="${s._key}" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
             <div>
@@ -286,7 +331,7 @@ export async function mount(container) {
 
     listWrap.querySelectorAll('.btn-detail').forEach(b => b.onclick = () => {
       const s = currentList.find(x => x._key === b.dataset.key);
-      if (!s) return;
+      if (\!s) return;
       const rhtml = (s.items||[]).map(r =>
         `<tr style="border-bottom:1px solid #f0f0f0">
           <td style="padding:.3rem .4rem">${r.sku||''}</td>
