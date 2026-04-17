@@ -292,9 +292,58 @@ export async function mount(container) {
     return text.split(',').map(s => s.trim()).filter(Boolean).map(desc => ({ desc, price: 0, qty: 1 }));
   }
 
-  function openForm(record) {
+  function printReceipt(d) {
+  var r = function(l,v){ return '<tr><td style="font-weight:bold;width:40%;padding:3px 6px;color:#444;vertical-align:top">'+l+'</td><td style="padding:3px 6px">'+(v||'')+'</td></tr>'; };
+  var css = 'body{font-family:Arial,sans-serif;font-size:13px;padding:20px;color:#222}'
+    + 'h2{text-align:center;font-size:18px;margin:0 0 2px}'
+    + '.sub{text-align:center;font-size:14px;font-weight:bold;margin-bottom:12px;letter-spacing:1px}'
+    + 'table{width:100%;border-collapse:collapse;margin-bottom:8px}'
+    + 'tr{border-bottom:1px solid #eee}'
+    + '.sec{background:#eeeeee;font-weight:bold;padding:3px 8px;font-size:12px;margin-top:6px}'
+    + '.sign{display:flex;justify-content:space-between;margin-top:30px}'
+    + '.line{border-top:1px solid #999;margin-top:38px;padding-top:4px;font-size:12px;text-align:center}'
+    + '@media print{.np{display:none}}';
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>'
+    + '<h2>LAPTOP 24H</h2>'
+    + '<div class="sub">PHIẾU NHậN MÁY</div>'
+    + '<div class="sec">THÔNG TIN KHÁCH HÀNG</div><table>'
+    + r('Khách hàng:',d.customerName)
+    + r('Điện thoại:',d.phone)
+    + r('Địa chỉ:',d.address)
+    + '</table><div class="sec">THÔNG TIN THIết Bị</div><table>'
+    + r('Thiết bị:',d.device)
+    + r('Serial:',d.serial)
+    + r('Mật khẩu:',d.password)
+    + r('Phụ kiện kèm:',d.accessories)
+    + '</table><div class="sec">THÔNG TIN SỪa CHỮa</div><table>'
+    + r('Kỹ thuật viên:',d.techName)
+    + r('Ngày nhận:',d.receivedDate)
+    + r('Ngày trả dự kiến:',d.deliveredDate)
+    + r('Tình trạng ban đầu:',d.initialCondition)
+    + r('Yêu cầu sửa chỮa:',d.repairRequest)
+    + r('Trạng thái:',d.status)
+    + '</table><div class="sec">THANH TOÁN</div><table>'
+    + r('Chi phí ước tính:',d.cost)
+    + r('Đặt cọc:',d.deposit)
+    + r('Hình thức thanh toán:',d.paymentType)
+    + '</table>'
+    + '<div class="sign">'
+    + '<div style="width:45%"><div class="line">Khách hàng ký tên</div></div>'
+    + '<div style="width:45%"><div class="line">Kỹ thuật viên</div></div>'
+    + '</div>'
+    + '<div class="np" style="text-align:center;margin-top:14px">'
+    + '<button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">&#128424; In phiếu</button>'
+    + '</div>'
+    + '</body></html>';
+  var w = window.open('', '_blank', 'width=640,height=820');
+  w.document.write(html);
+  w.document.close();
+}
+
+function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
     formWrap.innerHTML = `
+      <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}</style>
       <div class="form-card">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
         <div class="form-grid" style="gap:.2rem">
@@ -322,11 +371,25 @@ export async function mount(container) {
         <div class="form-group" style="margin-top:.4rem"><label>Yêu cầu sửa chữa</label><textarea id="f-repairRequest" rows="3" style="width:100%;resize:vertical">${record?.repairRequest||''}</textarea></div>
         <div class="form-actions">
           <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu phiếu'}</button>
+          <button id="f-print" class="btn btn--secondary">🖨 In phiếu</button>
           <button id="f-cancel" class="btn btn--secondary">Hủy</button>
         </div>
       </div>
     `;
     formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; });
+    formWrap.querySelector('#f-print').addEventListener('click', () => {
+      const fv = id => formWrap.querySelector('#'+id).value;
+      const d = {
+        customerName: fv('f-customerName'), phone: fv('f-phone'), address: fv('f-address'),
+        device: fv('f-device'), serial: fv('f-serial'), password: fv('f-password'),
+        accessories: fv('f-accessories'), techName: fv('f-techName'),
+        receivedDate: fv('f-receivedDate'), deliveredDate: fv('f-deliveredDate'),
+        cost: fv('f-cost'), deposit: fv('f-deposit'), paymentType: fv('f-paymentType'),
+        status: fv('f-status'), initialCondition: fv('f-initialCondition'),
+        repairRequest: fv('f-repairRequest')
+      };
+      printReceipt(d);
+    });
     formWrap.querySelector('#f-save').addEventListener('click', async () => {
       const customerName = formWrap.querySelector('#f-customerName').value.trim();
       if (!customerName) { toast('Vui lòng nhập khách hàng', 'error'); return; }
