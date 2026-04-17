@@ -38,7 +38,7 @@ export function initRouter() {
     Promise.all([
         import('../modules/repairs.js?v=16'),
         import('../modules/sales.js?v=11'),
-        import('../modules/inventory.js?v=14'),
+        import('../modules/inventory.js?v=15'),
         import('../modules/customers.js'),
         import('../modules/debts.js'),
         import('../modules/stats.js'),
