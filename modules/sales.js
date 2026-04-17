@@ -45,7 +45,7 @@ export async function mount(container) {
     const warranties = ['Kh\u00f4ng b\u1ea3o h\u00e0nh','1 th\u00e1ng','3 th\u00e1ng','6 th\u00e1ng','12 th\u00e1ng','18 th\u00e1ng','24 th\u00e1ng'];
     const wOpts = warranties.map(w => `<option value="${w}"${(d.warranty||'3 th\u00e1ng')===w?' selected':''}>${w}</option>`).join('');
 
-    const pays = ['Ti\u1ec1n m\u1eb7t','Chuy\u1ec3n kho\u1ea3n','Qu\u1eb9t th\u1ebc'];
+    const pays = ['Ti\u1ec1n m\u1eb7t','Chuy\u1ec3n kho\u1ea3n','Qu\u1eb9t th\u1ebb'];
     const pOpts = pays.map(p => `<option value="${p}"${(d.payMethod||'Ti\u1ec1n m\u1eb7t')===p?' selected':''}>${p}</option>`).join('');
 
     formWrap.innerHTML = `
@@ -139,7 +139,7 @@ export async function mount(container) {
     if (existing) {
       formWrap.querySelector('#sf-del').onclick = () => showModal({
         title: 'X\u00f3a \u0111\u01a1n h\u00e0ng',
-        body: 'X\u00e1c nh\u1eadn x\u00f3a \u0111\u01a1n n\u00e0y?',
+        body: 'X\u00e1c nh\u1eadn x\u00f3a \u0111\u01a1n m\u00e0y?',
         confirmText: 'X\u00f3a',
         onConfirm: async () => {
           await deleteItem(COLLECTION, existing._key);
@@ -155,7 +155,7 @@ export async function mount(container) {
   function addRow(item) {
     item = item || {};
     const tbody = formWrap.querySelector('#sf-rows');
-    if (\!tbody) return;
+    if (!tbody) return;
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid #f5f5f5';
     const nm = String(item.name||'').replace(/"/g,'&quot;');
@@ -196,13 +196,13 @@ export async function mount(container) {
     }
 
     function showDrop(q) {
-      if (\!q) { drop.style.display = 'none'; return; }
+      if (!q) { drop.style.display = 'none'; return; }
       const ql = q.toLowerCase();
       const hits = invItems.filter(p =>
         (p.name||'').toLowerCase().includes(ql) ||
         String(p.id||'').toLowerCase().includes(ql)
       ).slice(0, 10);
-      if (\!hits.length) { drop.style.display = 'none'; return; }
+      if (!hits.length) { drop.style.display = 'none'; return; }
       drop.innerHTML = hits.map(p => `
         <div class="sp-opt" data-key="${p._key}"
           style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
@@ -231,7 +231,7 @@ export async function mount(container) {
       if (e.key === 'Escape') { drop.style.display = 'none'; }
       if (e.key === 'Enter') {
         const first = drop.querySelector('.sp-opt');
-        if (first && drop.style.display \!== 'none') {
+        if (first && drop.style.display !== 'none') {
           e.preventDefault();
           const p = invItems.find(x => x._key === first.dataset.key);
           if (p) selectProduct(p);
@@ -296,8 +296,8 @@ export async function mount(container) {
   function renderList(items) {
     currentList = items;
     countEl.textContent = '(' + items.length + ')';
-    if (\!items.length) {
-      listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n n\u00e0o h\u00f4m nay</p>';
+    if (!items.length) {
+      listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n m\u00e0o h\u00f4m nay</p>';
       return;
     }
     listWrap.innerHTML = items.map(s => `
@@ -332,7 +332,7 @@ export async function mount(container) {
 
     listWrap.querySelectorAll('.btn-detail').forEach(b => b.onclick = () => {
       const s = currentList.find(x => x._key === b.dataset.key);
-      if (\!s) return;
+      if (!s) return;
       const rhtml = (s.items||[]).map(r =>
         `<tr style="border-bottom:1px solid #f0f0f0">
           <td style="padding:.3rem .4rem">${r.sku||''}</td>
