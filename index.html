@@ -3,39 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Laptop 24h - Quáº£n lÃ½</title>
+  <title>Laptop 24h - QuÃ¡ÂºÂ£n lÃÂ½</title>
   <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
 
-  <!-- MÃ n hÃ¬nh ÄÄng nháº­p -->
+  <!-- MÃÂ n hÃÂ¬nh ÃÂÃÂng nhÃ¡ÂºÂ­p -->
   <div id="auth-screen" class="screen">
     <div class="login-box">
       <h2>Laptop 24h</h2>
-      <input id="auth-email" type="text" placeholder="TÃªn ÄÄng nháº­p" autocomplete="username" />
-      <input id="auth-pass" type="password" placeholder="Máº­t kháº©u" autocomplete="current-password" />
-      <button id="auth-btn">ÄÄng nháº­p</button>
+      <input id="auth-email" type="text" placeholder="TÃÂªn ÃÂÃÂng nhÃ¡ÂºÂ­p" autocomplete="username" />
+      <input id="auth-pass" type="password" placeholder="MÃ¡ÂºÂ­t khÃ¡ÂºÂ©u" autocomplete="current-password" />
+      <button id="auth-btn">ÃÂÃÂng nhÃ¡ÂºÂ­p</button>
       <p id="auth-err" class="error"></p>
     </div>
   </div>
 
-  <!-- Giao diá»n chÃ­nh -->
+  <!-- Giao diÃ¡Â»Ân chÃÂ­nh -->
   <div id="app" class="screen hidden">
     <nav id="sidebar">
       <div class="logo">Laptop 24h</div>
       <ul id="nav-links">
-        <li><a href="#repairs">ð§ Phiáº¿u sá»­a chá»¯a</a></li>
-        <li><a href="#sales">ð° BÃ¡n hÃ ng</a></li>
-        <li><a href="#inventory">ð¦ Kho hÃ ng</a></li>
-        <li><a href="#customers">ð¥ KhÃ¡ch hÃ ng</a></li>
-        <li><a href="#debts">ð CÃ´ng ná»£</a></li>
-        <li><a href="#stats">ð Thá»ng kÃª</a></li>
-        <li class="admin-only"><a href="#users">ð¤ NhÃ¢n viÃªn</a></li>
-        <li class="admin-only"><a href="#settings">âï¸ CÃ i Äáº·t</a></li>
+        <li><a href="#repairs">Ã°ÂÂÂ§ PhiÃ¡ÂºÂ¿u sÃ¡Â»Â­a chÃ¡Â»Â¯a</a></li>
+        <li><a href="#sales">Ã°ÂÂÂ° BÃÂ¡n hÃÂ ng</a></li>
+        <li><a href="#inventory">Ã°ÂÂÂ¦ Kho hÃÂ ng</a></li>
+        <li><a href="#customers">Ã°ÂÂÂ¥ KhÃÂ¡ch hÃÂ ng</a></li>
+        <li><a href="#debts">Ã°ÂÂÂ CÃÂ´ng nÃ¡Â»Â£</a></li>
+        <li><a href="#stats">Ã°ÂÂÂ ThÃ¡Â»Âng kÃÂª</a></li>
+        <li class="admin-only"><a href="#users">Ã°ÂÂÂ¤ NhÃÂ¢n viÃÂªn</a></li>
+        <li class="admin-only"><a href="#settings">Ã¢ÂÂÃ¯Â¸Â CÃÂ i ÃÂÃ¡ÂºÂ·t</a></li>
       </ul>
       <div class="sidebar-footer">
         <span id="user-name"></span>
-        <button id="logout-btn">ÄÄng xuáº¥t</button>
+        <button id="logout-btn">ÃÂÃÂng xuÃ¡ÂºÂ¥t</button>
       </div>
     </nav>
     <main id="main-content"></main>
@@ -44,11 +44,11 @@
   <!-- Toast notifications -->
   <div id="toast-container"></div>
 
-  <!-- Firebase SDK (chá» cáº§n app + database, khÃ´ng cáº§n auth) -->
+  <!-- Firebase SDK (chÃ¡Â»Â cÃ¡ÂºÂ§n app + database, khÃÂ´ng cÃ¡ÂºÂ§n auth) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <!-- App bootstrap (ES module) -->
-  <script type="module" src="app.js?v=9"></script>
+  <script type="module" src="app.js?v=10"></script>
 </body>
 </html>
