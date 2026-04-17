@@ -297,7 +297,7 @@ export async function mount(container) {
     formWrap.innerHTML = `
       <div class="form-card">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
-        <div class="form-grid">
+        <div class="form-grid" style="gap:.35rem">
           <div class="form-group"><label>Khách hàng *</label><input id="f-customerName" type="text" value="${record?.customerName||''}"/></div>
           <div class="form-group"><label>Số điện thoại</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
           <div class="form-group"><label>Địa chỉ</label><input id="f-address" type="text" value="${record?.address||''}"/></div>
@@ -310,19 +310,20 @@ export async function mount(container) {
           <div class="form-group"><label>Ngày nhận</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
           <div class="form-group"><label>Ngày giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
           <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="number" value="${record?.cost||0}"/></div>
-          <div class="form-group"><label>Vốn linh kiện (đ)</label><input id="f-capital" type="number" value="${record?.capital||0}"/></div>
+          
           <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="number" value="${record?.deposit||0}"/></div>
-          <div class="form-group"><label>Giảm giá (đ)</label><input id="f-discount" type="number" value="${record?.discount||0}"/></div>
+          
           <div class="form-group"><label>Hình thức TT</label>
             <select id="f-paymentType">${['Tiền mặt','Chuyển khoản','Công nợ'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
           </div>
-          <div class="form-group"><label>Bảo hành (tháng)</label><input id="f-warrantyMonths" type="number" value="${record?.warrantyMonths||0}"/></div>
+          
           <div class="form-group"><label>Trạng thái</label>
             <select id="f-status">${STATUS_LIST.map(s=>'<option '+((record?.status||'Tiếp nhận')===s?'selected':'')+'>'+s+'</option>').join('')}</select>
           </div>
+          <div class="form-group" style="grid-column:1/-1"><label>Cấu hình</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.35rem;margin-top:.25rem"><input id="f-cpu" type="text" placeholder="CPU" value="${record?.cpu||''}" /><input id="f-ram" type="text" placeholder="RAM" value="${record?.ram||''}" /><input id="f-ssd" type="text" placeholder="SSD" value="${record?.ssd||''}" /><input id="f-vga" type="text" placeholder="VGA" value="${record?.vga||''}" /></div></div>
         </div>
-        <div class="form-group" style="margin-top:.5rem"><label>Vấn đề / Mô tả</label><textarea id="f-issue" rows="2">${record?.issue||''}</textarea></div>
-        <div class="form-group" style="margin-top:.5rem"><label>Ghi chú xử lý</label><textarea id="f-processNote" rows="2">${record?.processNote||''}</textarea></div>
+        <div class="form-group" style="margin-top:.4rem"><label>Tình trạng ban đầu</label><textarea id="f-initialCondition" rows="2">${record?.initialCondition||''}</textarea></div>
+        <div class="form-group" style="margin-top:.4rem"><label>Yêu cầu sửa chữa</label><textarea id="f-repairRequest" rows="2">${record?.repairRequest||''}</textarea></div>
         <div class="form-actions">
           <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu phiếu'}</button>
           <button id="f-cancel" class="btn btn--secondary">Hủy</button>
@@ -346,14 +347,15 @@ export async function mount(container) {
         receivedDate:   formWrap.querySelector('#f-receivedDate').value,
         deliveredDate:  formWrap.querySelector('#f-deliveredDate').value,
         cost:           parseFloat(formWrap.querySelector('#f-cost').value) || 0,
-        capital:        parseFloat(formWrap.querySelector('#f-capital').value) || 0,
         deposit:        parseFloat(formWrap.querySelector('#f-deposit').value) || 0,
-        discount:       parseFloat(formWrap.querySelector('#f-discount').value) || 0,
         paymentType:    formWrap.querySelector('#f-paymentType').value,
-        warrantyMonths: parseInt(formWrap.querySelector('#f-warrantyMonths').value) || 0,
         status:         formWrap.querySelector('#f-status').value,
-        issue:          formWrap.querySelector('#f-issue').value.trim(),
-        processNote:    formWrap.querySelector('#f-processNote').value.trim(),
+        cpu:            formWrap.querySelector('#f-cpu').value.trim(),
+        ram:            formWrap.querySelector('#f-ram').value.trim(),
+        ssd:            formWrap.querySelector('#f-ssd').value.trim(),
+        vga:            formWrap.querySelector('#f-vga').value.trim(),
+        initialCondition: formWrap.querySelector('#f-initialCondition').value.trim(),
+        repairRequest:  formWrap.querySelector('#f-repairRequest').value.trim(),
         ts: record?.ts || Date.now()
       };
       try {
