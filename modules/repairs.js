@@ -315,6 +315,12 @@ export async function mount(container) {
     + r('Serial:',d.serial)
     + r('Mật khẩu:',d.password)
     + r('Phụ kiện kèm:',d.accessories)
+    
+    + '</table><div class="sec">CẤU HÌNH MÁY</div><table>'
+    + r('CPU:',d.cpu)
+    + r('RAM:',d.ram)
+    + r('SSD:',d.ssd)
+    + r('VGA:',d.vga)
     + '</table><div class="sec">THÔNG TIN SỪa CHỮa</div><table>'
     + r('Kỹ thuật viên:',d.techName)
     + r('Ngày nhận:',d.receivedDate)
@@ -343,7 +349,7 @@ export async function mount(container) {
 function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
     formWrap.innerHTML = `
-      <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}</style>
+      <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}#rep-form-wrap .form-card{max-width:920px}</style>
       <div class="form-card">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
         <div class="form-grid" style="gap:.2rem">
@@ -385,7 +391,7 @@ function openForm(record) {
         accessories: fv('f-accessories'), techName: fv('f-techName'),
         receivedDate: fv('f-receivedDate'), deliveredDate: fv('f-deliveredDate'),
         cost: fv('f-cost'), deposit: fv('f-deposit'), paymentType: fv('f-paymentType'),
-        status: fv('f-status'), initialCondition: fv('f-initialCondition'),
+        status: fv('f-status'), cpu: fv('f-cpu'), ram: fv('f-ram'), ssd: fv('f-ssd'), vga: fv('f-vga'), initialCondition: fv('f-initialCondition'),
         repairRequest: fv('f-repairRequest')
       };
       printReceipt(d);
