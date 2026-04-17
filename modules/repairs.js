@@ -230,7 +230,10 @@ export async function mount(container) {
         tr.addEventListener('click', e => {
           if (e.target.classList.contains('btn') || e.target.closest('.btn')) return;
           setSelected(key === selectedKey ? null : key);
-        });
+        
+    const _hs=!!wrap.querySelector('tr.selected');
+    ['rep-edit-btn','rep-del-btn','rep-print-btn'].forEach(function(_id){const _b=wrap.querySelector('#'+_id);if(_b)_b.style.display=_hs?'':'none';});
+    const _sh=wrap.querySelector('#rep-sel-hint');if(_sh)_sh.style.display=_hs?'none':'';});
       });
     }
 
@@ -349,7 +352,7 @@ export async function mount(container) {
 function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
     formWrap.innerHTML = `
-      <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}#rep-form-wrap .form-card{max-width:920px}</style>
+      <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}#rep-form-wrap .form-card{max-width:920px}#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}.rep-modal .form-card{margin:0 auto}</style>
       <div class="form-card">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
         <div class="form-grid" style="gap:.2rem">
@@ -382,7 +385,8 @@ function openForm(record) {
         </div>
       </div>
     `;
-    formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; });
+    formWrap.classList.add('rep-modal');
+    formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); });
     formWrap.querySelector('#f-print').addEventListener('click', () => {
       const fv = id => formWrap.querySelector('#'+id).value;
       const d = {
@@ -425,7 +429,7 @@ function openForm(record) {
       try {
         if (record) { await updateItem(COLLECTION, record._key, data); toast('Đã cập nhật phiếu'); }
         else { await addItem(COLLECTION, data); toast('Đã thêm phiếu mới'); }
-        formWrap.innerHTML = '';
+        formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal');
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
