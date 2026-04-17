@@ -1,5 +1,5 @@
 // core/router.js - Hash-based routing
-// Mỗi module đăng ký route của mình qua registerRoute()
+// Má»i module ÄÄng kÃ½ route cá»§a mÃ¬nh qua registerRoute()
 
 const routes = {};
 let currentRoute = null;
@@ -21,7 +21,7 @@ export function initRouter() {
         const mountFn = routes[hash];
         const main = document.getElementById('main-content');
         if (!mountFn) {
-            main.innerHTML = '<p class="empty">Trang không tồn tại.</p>';
+            main.innerHTML = '<p class="empty">Trang khÃ´ng tá»n táº¡i.</p>';
             return;
         }
         if (currentRoute === hash) return;
@@ -32,11 +32,11 @@ export function initRouter() {
     }
 
     window.addEventListener('hashchange', navigate);
-    navigate(); // render trang đầu tiên
+    navigate(); // render trang Äáº§u tiÃªn
 
-    // Import tất cả modules đồng thời cùng ký routes
+    // Import táº¥t cáº£ modules Äá»ng thá»i cÃ¹ng kÃ½ routes
     Promise.all([
-        import('../modules/repairs.js?v=15'),
+        import('../modules/repairs.js?v=16'),
         import('../modules/sales.js'),
         import('../modules/inventory.js?v=14'),
         import('../modules/customers.js'),
