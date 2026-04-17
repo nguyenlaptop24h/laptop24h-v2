@@ -331,4 +331,3 @@ export async function mount(container) {
   dateFilter.addEventListener('change', () => loadDate(dateFilter.value));
   loadDate(todayStr);
 }
- 
