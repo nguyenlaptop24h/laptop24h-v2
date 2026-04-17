@@ -251,33 +251,13 @@ export async function mount(container) {
 
   function renderFolderNode(cat, depth) {
     const children = allCategories.filter(c => c.parentKey === cat._key);
-    const prods    = allProducts.filter(p => p.categoryKey === cat._key);
     const isOpen   = openFolders.has(cat._key);
     const total    = countAll(cat._key);
     const pl       = depth * 18;
 
     let body = '';
     if (isOpen) {
-      const treeItems = [
-        ...children.map(c => ({ type: 'cat', data: c })),
-        ...prods.map(p => ({ type: 'prod', data: p }))
-      ];
-      treeItems.forEach((item, ti) => {
-        const isLast = ti === treeItems.length - 1;
-        const sym = isLast ? '└─' : '├─';
-        const indent = (depth + 1) * 18 + 6;
-        if (item.type === 'cat') {
-          body += renderFolderNode(item.data, depth + 1);
-        } else {
-          const p = item.data;
-          body += `<div class="folder-product" style="display:flex;align-items:center;gap:.4rem;padding:.28rem .6rem .28rem ${indent}px;border-top:1px solid #f0f1f3;font-size:.83rem;background:#f9fafb">
-            <span style="color:#94a3b8;font-family:monospace;font-size:.85rem;flex-shrink:0">${sym}</span>
-            <span style="flex:1;color:#1f2937;font-weight:400">${p.name}</span>
-            <span style="color:#9ca3af;font-size:.73rem;margin-right:.25rem">${p.id||''}</span>
-            <button class="remove-from-cat btn btn--xs btn--ghost" data-key="${p._key}" style="color:#ef4444;font-size:1rem;line-height:1;padding:0 3px" title="Bo khoi danh muc">x</button>
-          </div>`;
-        }
-      });
+      children.forEach(c => { body += renderFolderNode(c, depth + 1); });
     }
   const arrow = isOpen ? '▾' : '▸';
   return `<div class="folder-item" data-key="${cat._key}">
