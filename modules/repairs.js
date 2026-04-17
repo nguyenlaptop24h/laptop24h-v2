@@ -177,6 +177,8 @@ export async function mount(container) {
       tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
     });
     container.querySelectorAll('.rep-radio').forEach(rb => { rb.checked = rb.dataset.key === key; });
+    document.querySelectorAll('.rep-deliver,.rep-status').forEach(b => b.style.display = 'none');
+    if (key) { const selRow = container.querySelector('tr[data-key="' + key + '"]'); if (selRow) selRow.querySelectorAll('.rep-deliver,.rep-status').forEach(b => b.style.display = ''); }
   }
 
   function filterData() {
