@@ -297,26 +297,22 @@ export async function mount(container) {
     formWrap.innerHTML = `
       <div class="form-card">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
-        <div class="form-grid" style="gap:.35rem">
+        <div class="form-grid" style="gap:.3rem">
           <div class="form-group"><label>Khách hàng *</label><input id="f-customerName" type="text" value="${record?.customerName||''}"/></div>
           <div class="form-group"><label>Số điện thoại</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
-          <div class="form-group"><label>Địa chỉ</label><input id="f-address" type="text" value="${record?.address||''}"/></div>
           <div class="form-group"><label>Thiết bị *</label><input id="f-device" type="text" value="${record?.device||''}" placeholder="VD: LAPTOP ASUS X556"/></div>
-          <div class="form-group"><label>Linh kiện giao nhận</label><input id="f-deliveryItems" type="text" value="${deliveryItemsToText(record?.deliveryItems)}" placeholder="Phân cách bằng dấu phẩy"/></div>
           <div class="form-group"><label>Serial</label><input id="f-serial" type="text" value="${record?.serial||''}"/></div>
+          <div class="form-group"><label>Địa chỉ</label><input id="f-address" type="text" value="${record?.address||''}"/></div>
           <div class="form-group"><label>Mật khẩu máy</label><input id="f-password" type="text" value="${record?.password||''}"/></div>
           <div class="form-group"><label>Phụ kiện đi kèm</label><input id="f-accessories" type="text" value="${record?.accessories||''}"/></div>
           <div class="form-group"><label>Kỹ thuật viên</label><input id="f-techName" type="text" value="${record?.techName||''}"/></div>
           <div class="form-group"><label>Ngày nhận</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
           <div class="form-group"><label>Ngày giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
           <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="number" value="${record?.cost||0}"/></div>
-          
           <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="number" value="${record?.deposit||0}"/></div>
-          
           <div class="form-group"><label>Hình thức TT</label>
             <select id="f-paymentType">${['Tiền mặt','Chuyển khoản','Công nợ'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
           </div>
-          
           <div class="form-group"><label>Trạng thái</label>
             <select id="f-status">${STATUS_LIST.map(s=>'<option '+((record?.status||'Tiếp nhận')===s?'selected':'')+'>'+s+'</option>').join('')}</select>
           </div>
@@ -339,7 +335,6 @@ export async function mount(container) {
         phone:          formWrap.querySelector('#f-phone').value.trim(),
         address:        formWrap.querySelector('#f-address').value.trim(),
         device:         formWrap.querySelector('#f-device').value.trim(),
-        deliveryItems:  textToDeliveryItems(formWrap.querySelector('#f-deliveryItems').value),
         serial:         formWrap.querySelector('#f-serial').value.trim(),
         password:       formWrap.querySelector('#f-password').value.trim(),
         accessories:    formWrap.querySelector('#f-accessories').value.trim(),
