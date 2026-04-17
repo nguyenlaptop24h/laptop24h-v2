@@ -266,7 +266,7 @@ export async function mount(container) {
   function quickChangeStatus(record) {
     if (!record) return;
     const formWrap = container.querySelector('#rep-form-wrap');
-    formWrap.innerHTML = '<div class="form-card" style="max-width:360px;margin:1rem auto;padding:1.2rem">' +
+    formWrap.innerHTML = '<div class="form-card" style="background:#dbeafe;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25);max-width:360px;margin:1rem auto;padding:1.2rem">' +
       '<h3 style="margin:0 0 .4rem">⇄ Đổi trạng thái</h3>' +
       '<p style="color:#555;margin:0 0 .8rem;font-size:.88rem"><strong>' + record.customerName + '</strong> — ' + (record.device||'') + '</p>' +
       '<div style="display:flex;flex-direction:column;gap:.35rem">' +
@@ -357,7 +357,7 @@ function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
     formWrap.innerHTML = `
       <style>#rep-form-wrap .form-group{margin-bottom:1px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:1px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}#rep-form-wrap .form-card{max-width:920px}#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}.rep-modal .form-card{margin:0 auto}</style>
-      <div class="form-card">
+      <div class="form-card" style="background:#dbeafe;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
         <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
         <div class="form-grid" style="gap:.2rem">
           <div class="form-group"><label>Khách hàng *</label><input id="f-customerName" type="text" value="${record?.customerName||''}"/></div>
