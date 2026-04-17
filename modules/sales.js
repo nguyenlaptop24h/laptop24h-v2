@@ -1,349 +1,225 @@
-// modules/sales.js - Bán hàng
+// modules/sales.js - Ban hang
 import { registerRoute } from '../core/router.js';
-import { getAll, addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
-import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
+import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
+import { toast, showModal, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
 const COLLECTION = 'sales';
-
 registerRoute('#sales', mount);
 
 export async function mount(container) {
+  const todayISO = new Date().toISOString().slice(0, 10);
+
   container.innerHTML = `
-    <div class="module-header">
-      <h2>Bán hàng</h2>
-      <div class="module-actions">
-        <input id="sale-search" type="text" placeholder="Tìm theo khách/bill..." class="search-input" />
-        <button id="sale-add" class="btn btn--primary">+ Thêm đơn</button>
+    <div style="text-align:center; padding:1.25rem 1rem 0.75rem">
+      <h2 style="margin:0 0 0.75rem; font-size:1.4rem">Ban hang</h2>
+      <button id="sale-add" class="btn btn--primary" style="min-width:160px; font-size:1rem; margin-bottom:0.75rem">+ Ban hang</button>
+      <div style="display:flex; gap:0.5rem; align-items:center; justify-content:center; flex-wrap:wrap">
+        <label style="font-weight:500">Ngay:</label>
+        <input id="sale-date-filter" type="date" value="${todayISO}"
+          style="padding:0.3rem 0.6rem; border:1px solid #cbd5e0; border-radius:6px; font-size:0.9rem" />
+        <span id="sale-count" style="color:#718096; font-size:0.85rem"></span>
       </div>
     </div>
-    <div id="sale-table-wrap"></div>
-    <div id="sale-form-wrap" class="hidden"></div>
-    <div id="sale-detail-wrap" class="hidden"></div>
+    <div id="sale-form-wrap"></div>
+    <div id="sale-list-wrap" style="padding:0.75rem 1rem 2rem"></div>
   `;
 
   let allData = [];
-  let allProducts = [];
-
-  // Load products for autocomplete
-  try {
-    const db = getDB();
-    const snap = await db.ref('products').once('value');
-    const val = snap.val() || {};
-    allProducts = Object.entries(val).map(([k,v]) => ({ _key: k, ...v }));
-  } catch(e) {}
+  let selectedKey = null;
 
   const unsub = onSnapshot(COLLECTION, items => {
     allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    renderTable(allData);
+    renderList();
   });
-
   container.addEventListener('unmount', () => unsub && unsub());
 
-  document.getElementById('sale-search').addEventListener('input', () => {
-    const q = document.getElementById('sale-search').value.toLowerCase();
-    const filtered = allData.filter(s =>
-      (s.customer||'').toLowerCase().includes(q) ||
-      (s.billNo||'').toLowerCase().includes(q) ||
-      (s.phone||'').toLowerCase().includes(q)
-    );
-    renderTable(filtered);
+  document.getElementById('sale-date-filter').addEventListener('change', () => {
+    selectedKey = null;
+    renderList();
   });
-
-  function renderTable(data) {
-    const wrap = document.getElementById('sale-table-wrap');
-    if (!data.length) {
-      wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>';
-      return;
-    }
-    const cols = [
-      { label: 'Số bill',      key: s => s.billNo || '' },
-      { label: 'Ngày',         key: s => s.date || formatDate(s.ts) },
-      { label: 'Khách hàng',   key: s => s.customer || '' },
-      { label: 'SĐT',          key: s => s.phone || '' },
-      { label: 'Mặt hàng',     key: s => {
-          const items = s.items || [];
-          if (!items.length) return '';
-          if (items.length === 1) return items[0].name || '';
-          return items[0].name + ` (+${items.length-1})`;
-        }
-      },
-      { label: 'Tổng tiền',    key: s => formatVND(s.total || 0) },
-      { label: 'Đã trả',       key: s => formatVND(s.paid || 0) },
-      { label: 'Còn lại',      key: s => {
-          const rem = (s.total||0) - (s.paid||0);
-          return rem > 0
-            ? `<span style="color:#e53e3e">${formatVND(rem)}</span>`
-            : `<span style="color:#38a169">${formatVND(0)}</span>`;
-        }
-      },
-      { label: 'TT',           key: s => s.paymethod || '' },
-      { label: '',             key: s => `
-        <button class="btn btn--sm btn--secondary sale-view" data-key="${s._key}">Chi tiết</button>
-        <button class="btn btn--sm btn--secondary sale-edit" data-key="${s._key}">Sửa</button>
-        ${isAdmin() ? `<button class="btn btn--sm btn--danger sale-del" data-key="${s._key}">Xóa</button>` : ''}
-      `}
-    ];
-    wrap.innerHTML = buildTable(cols, data);
-    wrap.querySelectorAll('.sale-view').forEach(btn =>
-      btn.addEventListener('click', () => showDetail(data.find(s => s._key === btn.dataset.key)))
-    );
-    wrap.querySelectorAll('.sale-edit').forEach(btn =>
-      btn.addEventListener('click', () => openForm(data.find(s => s._key === btn.dataset.key)))
-    );
-    wrap.querySelectorAll('.sale-del').forEach(btn =>
-      btn.addEventListener('click', () => confirmDelete(btn.dataset.key))
-    );
-  }
-
-  function showDetail(sale) {
-    const detailWrap = document.getElementById('sale-detail-wrap');
-    detailWrap.classList.remove('hidden');
-    const items = sale.items || [];
-    const rowsHtml = items.map(it => `
-      <tr>
-        <td>${it.code||''}</td>
-        <td>${it.name||''}</td>
-        <td style="text-align:right">${it.qty||1}</td>
-        <td>${it.unit||''}</td>
-        <td style="text-align:right">${formatVND(it.price||0)}</td>
-        <td style="text-align:right">${formatVND(it.disc||0)}</td>
-        <td style="text-align:right">${formatVND((it.price||0)*(it.qty||1)-(it.disc||0))}</td>
-        <td>${it.prodWarranty||0} tháng</td>
-      </tr>
-    `).join('');
-    detailWrap.innerHTML = `
-      <div class="form-card">
-        <h3>Chi tiết đơn hàng - ${sale.billNo||''}</h3>
-        <div class="form-grid" style="margin-bottom:1rem">
-          <div><strong>Khách:</strong> ${sale.customer||''}</div>
-          <div><strong>SĐT:</strong> ${sale.phone||''}</div>
-          <div><strong>Ngày:</strong> ${sale.date||''}</div>
-          <div><strong>TT:</strong> ${sale.paymethod||''}</div>
-          <div><strong>BH máy:</strong> ${sale.warranty||0} tháng</div>
-          <div><strong>Ghi chú:</strong> ${sale.note||''}</div>
-        </div>
-        <table class="data-table" style="margin-bottom:1rem">
-          <thead><tr>
-            <th>Mã</th><th>Tên SP</th><th>SL</th><th>ĐVT</th>
-            <th>Đơn giá</th><th>CK</th><th>Thành tiền</th><th>BH</th>
-          </tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-        <div style="text-align:right">
-          <div>Tạm tính: <strong>${formatVND(sale.subtotal||sale.total||0)}</strong></div>
-          ${sale.extraDiscount ? `<div>Giảm thêm: <strong>-${formatVND(sale.extraDiscount)}</strong></div>` : ''}
-          <div>Tổng: <strong style="color:#2b6cb0">${formatVND(sale.total||0)}</strong></div>
-          <div>Khách trả: <strong>${formatVND(sale.paid||0)}</strong></div>
-          <div>Tiền thừa: <strong>${formatVND(sale.change||0)}</strong></div>
-        </div>
-        <div class="form-actions">
-          <button id="detail-close" class="btn btn--secondary">Đóng</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('detail-close').addEventListener('click', () => {
-      detailWrap.classList.add('hidden');
-      detailWrap.innerHTML = '';
-    });
-  }
 
   document.getElementById('sale-add').addEventListener('click', () => openForm(null));
 
-  function openForm(record) {
-    const wrap = document.getElementById('sale-form-wrap');
-    wrap.classList.remove('hidden');
-    const items = record?.items ? [...record.items] : [{ id: Date.now(), code:'', name:'', qty:1, unit:'Cái', price:0, disc:0, prodWarranty:0 }];
+  function getFiltered() {
+    const iso = document.getElementById('sale-date-filter').value;
+    if (!iso) return allData;
+    const ds = iso.split('-').reverse().join('/');
+    return allData.filter(s => (s.date || '') === ds);
+  }
 
-    function renderForm() {
-      const itemRows = items.map((it, i) => `
-        <tr data-idx="${i}">
-          <td><input class="item-code" type="text" value="${it.code||''}" placeholder="Mã SP" style="width:80px" /></td>
-          <td><input class="item-name" type="text" value="${it.name||''}" placeholder="Tên sản phẩm" style="width:180px" /></td>
-          <td><input class="item-qty"  type="number" value="${it.qty||1}" min="1" style="width:55px" /></td>
-          <td><input class="item-unit" type="text" value="${it.unit||'Cái'}" style="width:50px" /></td>
-          <td><input class="item-price" type="number" value="${it.price||0}" style="width:100px" /></td>
-          <td><input class="item-disc"  type="number" value="${it.disc||0}" style="width:80px" /></td>
-          <td><input class="item-pw"   type="number" value="${it.prodWarranty||0}" style="width:55px" /></td>
-          <td><button class="btn btn--sm btn--danger item-remove" data-i="${i}">✕</button></td>
-        </tr>
-      `).join('');
-
-      wrap.innerHTML = `
-        <div class="form-card">
-          <h3>${record ? 'Cập nhật đơn hàng' : 'Thêm đơn hàng'}</h3>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Số bill</label>
-              <input id="f-billNo" type="text" value="${record?.billNo||''}" placeholder="Tự động nếu để trống" />
-            </div>
-            <div class="form-group">
-              <label>Ngày bán</label>
-              <input id="f-date" type="date" value="${record?.date ? record.date.split('/').reverse().join('-') : new Date().toISOString().slice(0,10)}" />
-            </div>
-            <div class="form-group">
-              <label>Khách hàng *</label>
-              <input id="f-customer" type="text" value="${record?.customer||''}" />
-            </div>
-            <div class="form-group">
-              <label>SĐT</label>
-              <input id="f-phone" type="text" value="${record?.phone||''}" />
-            </div>
-            <div class="form-group">
-              <label>Hình thức TT</label>
-              <select id="f-paymethod">
-                ${['Tiền mặt','Chuyển khoản','Công nợ'].map(p =>
-                  `<option ${record?.paymethod===p?'selected':''}>${p}</option>`
-                ).join('')}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>BH máy (tháng)</label>
-              <input id="f-warranty" type="number" value="${record?.warranty||0}" />
-            </div>
-            <div class="form-group">
-              <label>Giảm thêm (đ)</label>
-              <input id="f-extraDiscount" type="number" value="${record?.extraDiscount||0}" />
-            </div>
-            <div class="form-group">
-              <label>Khách trả (đ)</label>
-              <input id="f-paid" type="number" value="${record?.paid||0}" />
-            </div>
-            <div class="form-group" style="grid-column:1/-1">
-              <label>Ghi chú</label>
-              <input id="f-note" type="text" value="${record?.note||''}" />
+  function renderList() {
+    const data = getFiltered();
+    const wrap = document.getElementById('sale-list-wrap');
+    const cnt = document.getElementById('sale-count');
+    if (cnt) cnt.textContent = '(' + data.length + ' phieu)';
+    if (!data.length) {
+      wrap.innerHTML = '<p style="text-align:center;color:#888;padding:2rem">Khong co phieu ban trong ngay nay</p>';
+      return;
+    }
+    wrap.innerHTML = data.map(s => {
+      const sel = s._key === selectedKey;
+      const remain = (s.total || 0) - (s.paid || 0);
+      const rc = remain > 0 ? '#e53e3e' : '#38a169';
+      const items = s.items || [];
+      const summary = !items.length ? '' : items.length === 1 ? items[0].name : items[0].name + ' (+' + (items.length - 1) + ')';
+      return `<div class="sale-card" data-key="${s._key}" style="background:#fff;border:1.5px solid ${sel?'#4299e1':'#e2e8f0'};border-radius:10px;margin-bottom:0.65rem;box-shadow:${sel?'0 0 0 3px #bee3f8':'0 1px 3px rgba(0,0,0,0.07)'};cursor:pointer;transition:all 0.18s">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;gap:1rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:0.65rem;flex:1;min-width:0">
+            <input type="checkbox" class="sale-chk" data-key="${s._key}" ${sel?'checked':''} style="width:17px;height:17px;cursor:pointer;flex-shrink:0" onclick="event.stopPropagation()"/>
+            <div style="min-width:0">
+              <div style="font-weight:600;color:#2d3748">${s.billNo||'—'}</div>
+              <div style="font-size:0.8rem;color:#718096">${s.customer||''}${s.phone?' · '+s.phone:''}</div>
             </div>
           </div>
-          <h4 style="margin:.75rem 0 .25rem">Sản phẩm</h4>
-          <div style="overflow-x:auto">
-            <table class="data-table">
-              <thead><tr>
-                <th>Mã</th><th>Tên SP</th><th>SL</th><th>ĐVT</th>
-                <th>Giá (đ)</th><th>CK (đ)</th><th>BH(th)</th><th></th>
-              </tr></thead>
-              <tbody id="item-tbody">${itemRows}</tbody>
-            </table>
-          </div>
-          <button id="item-add-row" class="btn btn--secondary" style="margin-top:.5rem">+ Thêm dòng</button>
-          <div id="f-total-display" style="text-align:right;margin-top:.5rem;font-weight:600"></div>
-          <div class="form-actions">
-            <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu đơn'}</button>
-            <button id="f-cancel" class="btn btn--secondary">Hủy</button>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:700;color:#2b6cb0">${formatVND(s.total||0)}</div>
+            <div style="font-size:0.8rem;color:${rc}">${remain>0?'Con: '+formatVND(remain):'Da thanh toan'}</div>
           </div>
         </div>
-      `;
+        ${sel?`<div style="border-top:1px solid #e2e8f0;padding:0.6rem 1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;background:#f7fafc">
+          <span style="font-size:0.83rem;color:#4a5568;flex:1">${summary} · ${s.paymethod||''}</span>
+          <button class="btn btn--sm btn--secondary sale-view" data-key="${s._key}" onclick="event.stopPropagation()">Chi tiet</button>
+          <button class="btn btn--sm btn--secondary sale-edit" data-key="${s._key}" onclick="event.stopPropagation()">Sua</button>
+          ${isAdmin()?'<button class="btn btn--sm btn--danger sale-del" data-key="'+s._key+'" onclick="event.stopPropagation()">Xoa</button>':''}
+        </div>`:''}
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('.sale-card').forEach(card => {
+      card.addEventListener('click', () => { selectedKey = selectedKey===card.dataset.key?null:card.dataset.key; renderList(); });
+    });
+    wrap.querySelectorAll('.sale-chk').forEach(chk => {
+      chk.addEventListener('change', () => { selectedKey = chk.checked?chk.dataset.key:null; renderList(); });
+    });
+    wrap.querySelectorAll('.sale-view').forEach(btn => btn.addEventListener('click', () => showDetail(allData.find(s=>s._key===btn.dataset.key))));
+    wrap.querySelectorAll('.sale-edit').forEach(btn => btn.addEventListener('click', () => openForm(allData.find(s=>s._key===btn.dataset.key))));
+    wrap.querySelectorAll('.sale-del').forEach(btn => btn.addEventListener('click', () => confirmDelete(btn.dataset.key)));
+  }
 
-      updateTotal();
+  function showDetail(sale) {
+    if (!sale) return;
+    const fw = document.getElementById('sale-form-wrap');
+    const rows = (sale.items||[]).map(it => `<tr><td>${it.code||''}</td><td>${it.name||''}</td><td style="text-align:right">${it.qty||1}</td><td>${it.unit||''}</td><td style="text-align:right">${formatVND(it.price||0)}</td><td style="text-align:right">${formatVND(it.disc||0)}</td><td style="text-align:right">${formatVND((it.price||0)*(it.qty||1)-(it.disc||0))}</td><td>${it.prodWarranty||0}th</td></tr>`).join('');
+    fw.innerHTML = `<div class="repair-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem"><div style="background:#fff;border-radius:12px;padding:1.5rem 2rem;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <h3 style="margin:0 0 1rem;text-align:center">Chi tiet don hang - ${sale.billNo||''}</h3>
+      <div class="form-grid" style="margin-bottom:1rem">
+        <div><strong>Khach:</strong> ${sale.customer||''}</div><div><strong>SDT:</strong> ${sale.phone||''}</div>
+        <div><strong>Ngay:</strong> ${sale.date||''}</div><div><strong>TT:</strong> ${sale.paymethod||''}</div>
+        <div><strong>BH may:</strong> ${sale.warranty||0} thang</div><div><strong>Ghi chu:</strong> ${sale.note||''}</div>
+      </div>
+      <table class="data-table" style="margin-bottom:1rem"><thead><tr><th>Ma</th><th>Ten SP</th><th>SL</th><th>DVT</th><th>Don gia</th><th>CK</th><th>Thanh tien</th><th>BH</th></tr></thead><tbody>${rows}</tbody></table>
+      <div style="text-align:right">
+        <div>Tam tinh: <strong>${formatVND(sale.subtotal||sale.total||0)}</strong></div>
+        ${sale.extraDiscount?'<div>Giam them: <strong>-'+formatVND(sale.extraDiscount)+'</strong></div>':''}
+        <div>Tong: <strong style="color:#2b6cb0">${formatVND(sale.total||0)}</strong></div>
+        <div>Khach tra: <strong>${formatVND(sale.paid||0)}</strong></div>
+        <div>Tien thua: <strong>${formatVND(sale.change||0)}</strong></div>
+      </div>
+      <div class="form-actions" style="justify-content:center;margin-top:1rem"><button id="det-close" class="btn btn--secondary">Dong</button></div>
+    </div></div>`;
+    const close = () => { fw.innerHTML = ''; };
+    document.getElementById('det-close').addEventListener('click', close);
+    fw.querySelector('.repair-overlay').addEventListener('click', e => { if(e.target===fw.querySelector('.repair-overlay')) close(); });
+  }
 
-      wrap.querySelectorAll('.item-remove').forEach(btn => {
-        btn.addEventListener('click', () => {
-          items.splice(parseInt(btn.dataset.i), 1);
-          if (!items.length) items.push({ id: Date.now(), code:'', name:'', qty:1, unit:'Cái', price:0, disc:0, prodWarranty:0 });
-          renderForm();
-        });
-      });
-
-      wrap.querySelector('#item-add-row').addEventListener('click', () => {
-        items.push({ id: Date.now(), code:'', name:'', qty:1, unit:'Cái', price:0, disc:0, prodWarranty:0 });
-        renderForm();
-      });
-
-      wrap.querySelectorAll('#item-tbody input').forEach(inp => {
-        inp.addEventListener('input', () => syncItemsFromDOM());
-      });
-
-      document.getElementById('f-extraDiscount')?.addEventListener('input', updateTotal);
-      document.getElementById('f-paid')?.addEventListener('input', updateTotal);
-
-      document.getElementById('f-cancel').addEventListener('click', () => {
-        wrap.classList.add('hidden');
-        wrap.innerHTML = '';
-      });
-
-      document.getElementById('f-save').addEventListener('click', () => saveForm());
+  function openForm(record) {
+    const fw = document.getElementById('sale-form-wrap');
+    const items = record?.items ? [...record.items] : [{id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0}];
+    const todayDef = new Date().toISOString().slice(0,10);
+    function render() {
+      const rows = items.map((it,i) => `<tr data-idx="${i}">
+        <td><input class="ic" type="text" value="${it.code||''}" placeholder="Ma SP" style="width:70px"/></td>
+        <td><input class="in" type="text" value="${it.name||''}" placeholder="Ten san pham" style="width:160px"/></td>
+        <td><input class="iq" type="number" value="${it.qty||1}" min="1" style="width:50px"/></td>
+        <td><input class="iu" type="text" value="${it.unit||'Cai'}" style="width:45px"/></td>
+        <td><input class="ip" type="number" value="${it.price||0}" style="width:95px"/></td>
+        <td><input class="id" type="number" value="${it.disc||0}" style="width:75px"/></td>
+        <td><input class="iw" type="number" value="${it.prodWarranty||0}" style="width:50px"/></td>
+        <td><button class="btn btn--sm btn--danger ir" data-i="${i}">x</button></td>
+      </tr>`).join('');
+      fw.innerHTML = `<div class="repair-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem"><div style="background:#fff;border-radius:12px;padding:1.5rem 2rem;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <h3 style="margin:0 0 1rem;text-align:center">${record?'Cap nhat don hang':'Lap phieu ban hang'}</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>So bill</label><input id="f-bill" type="text" value="${record?.billNo||''}" placeholder="Tu dong neu de trong"/></div>
+          <div class="form-group"><label>Ngay ban</label><input id="f-date" type="date" value="${record?.date?record.date.split('/').reverse().join('-'):todayDef}"/></div>
+          <div class="form-group"><label>Khach hang *</label><input id="f-cust" type="text" value="${record?.customer||''}"/></div>
+          <div class="form-group"><label>SDT</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
+          <div class="form-group"><label>Hinh thuc TT</label><select id="f-pay">${['Tien mat','Chuyen khoan','Cong no'].map(p=>'<option'+(record?.paymethod===p?' selected':'')+'>'+p+'</option>').join('')}</select></div>
+          <div class="form-group"><label>BH may (thang)</label><input id="f-war" type="number" value="${record?.warranty||0}"/></div>
+          <div class="form-group"><label>Giam them (d)</label><input id="f-exd" type="number" value="${record?.extraDiscount||0}"/></div>
+          <div class="form-group"><label>Khach tra (d)</label><input id="f-paid" type="number" value="${record?.paid||0}"/></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Ghi chu</label><input id="f-note" type="text" value="${record?.note||''}"/></div>
+        </div>
+        <h4 style="margin:.75rem 0 .25rem">San pham</h4>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Ma</th><th>Ten SP</th><th>SL</th><th>DVT</th><th>Gia(d)</th><th>CK(d)</th><th>BH(th)</th><th></th></tr></thead><tbody id="itb">${rows}</tbody></table></div>
+        <button id="add-row" class="btn btn--secondary" style="margin-top:.5rem">+ Them dong</button>
+        <div id="f-tot" style="text-align:right;margin-top:.5rem;font-weight:600;color:#2b6cb0"></div>
+        <div class="form-actions" style="justify-content:center;gap:1rem;margin-top:1rem">
+          <button id="f-save" class="btn btn--primary" style="min-width:120px">${record?'Cap nhat':'Luu phieu'}</button>
+          <button id="f-cancel" class="btn btn--secondary">Huy</button>
+        </div>
+      </div></div>`;
+      calcTotal();
+      fw.querySelectorAll('.ir').forEach(b => b.addEventListener('click', () => { items.splice(+b.dataset.i,1); if(!items.length) items.push({id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0}); render(); }));
+      fw.querySelector('#add-row').addEventListener('click', () => { items.push({id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0}); render(); });
+      fw.querySelectorAll('#itb input').forEach(inp => inp.addEventListener('input', syncItems));
+      document.getElementById('f-exd')?.addEventListener('input', calcTotal);
+      document.getElementById('f-paid')?.addEventListener('input', calcTotal);
+      document.getElementById('f-cancel').addEventListener('click', () => { fw.innerHTML = ''; });
+      document.getElementById('f-save').addEventListener('click', save);
+      const ov = fw.querySelector('.repair-overlay');
+      ov.addEventListener('click', e => { if(e.target===ov) fw.innerHTML = ''; });
     }
-
-    function syncItemsFromDOM() {
-      wrap.querySelectorAll('#item-tbody tr').forEach((row, i) => {
-        if (!items[i]) return;
-        items[i].code    = row.querySelector('.item-code').value.trim();
-        items[i].name    = row.querySelector('.item-name').value.trim();
-        items[i].qty     = parseFloat(row.querySelector('.item-qty').value) || 1;
-        items[i].unit    = row.querySelector('.item-unit').value.trim();
-        items[i].price   = parseFloat(row.querySelector('.item-price').value) || 0;
-        items[i].disc    = parseFloat(row.querySelector('.item-disc').value) || 0;
-        items[i].prodWarranty = parseInt(row.querySelector('.item-pw').value) || 0;
+    function syncItems() {
+      fw.querySelectorAll('#itb tr').forEach((row,i) => {
+        if(!items[i]) return;
+        items[i].code=row.querySelector('.ic').value.trim(); items[i].name=row.querySelector('.in').value.trim();
+        items[i].qty=parseFloat(row.querySelector('.iq').value)||1; items[i].unit=row.querySelector('.iu').value.trim();
+        items[i].price=parseFloat(row.querySelector('.ip').value)||0; items[i].disc=parseFloat(row.querySelector('.id').value)||0;
+        items[i].prodWarranty=parseInt(row.querySelector('.iw').value)||0;
       });
-      updateTotal();
+      calcTotal();
     }
-
-    function updateTotal() {
-      syncItemsFromDOM();
-      const subtotal = items.reduce((sum, it) => sum + (it.price||0)*(it.qty||1) - (it.disc||0), 0);
-      const extraDiscount = parseFloat(document.getElementById('f-extraDiscount')?.value) || 0;
-      const total = subtotal - extraDiscount;
-      const paid  = parseFloat(document.getElementById('f-paid')?.value) || 0;
-      const change = paid - total;
-      const el = document.getElementById('f-total-display');
-      if (el) el.innerHTML = `Tạm tính: ${formatVND(subtotal)} | Tổng: ${formatVND(total)} | Tiền thừa: ${formatVND(change)}`;
+    function calcTotal() {
+      syncItems();
+      const sub=items.reduce((s,it)=>s+(it.price||0)*(it.qty||1)-(it.disc||0),0);
+      const exd=parseFloat(document.getElementById('f-exd')?.value)||0;
+      const tot=sub-exd; const paid=parseFloat(document.getElementById('f-paid')?.value)||0;
+      const el=document.getElementById('f-tot');
+      if(el) el.innerHTML='Tam tinh: '+formatVND(sub)+' | Tong: '+formatVND(tot)+' | Tien thua: '+formatVND(paid-tot);
     }
-
-    async function saveForm() {
-      syncItemsFromDOM();
-      const customer = document.getElementById('f-customer').value.trim();
-      if (!customer) { toast('Vui lòng nhập khách hàng', 'error'); return; }
-      const validItems = items.filter(it => it.name);
-      if (!validItems.length) { toast('Vui lòng nhập ít nhất 1 sản phẩm', 'error'); return; }
-
-      const dateVal = document.getElementById('f-date').value;
-      const dateStr = dateVal ? dateVal.split('-').reverse().join('/') : '';
-      const extraDiscount = parseFloat(document.getElementById('f-extraDiscount').value) || 0;
-      const subtotal = validItems.reduce((s, it) => s + (it.price||0)*(it.qty||1) - (it.disc||0), 0);
-      const total = subtotal - extraDiscount;
-      const paid  = parseFloat(document.getElementById('f-paid').value) || 0;
-
-      const data = {
-        billNo:       document.getElementById('f-billNo').value.trim() || (dateStr.replace(/\//g,'') + '-' + Math.floor(Math.random()*90+10)),
-        date:         dateStr,
-        customer,
-        phone:        document.getElementById('f-phone').value.trim(),
-        items:        validItems,
-        subtotal,
-        extraDiscount,
-        total,
-        paid,
-        change:       paid - total,
-        paymethod:    document.getElementById('f-paymethod').value,
-        warranty:     parseInt(document.getElementById('f-warranty').value) || 0,
-        note:         document.getElementById('f-note').value.trim(),
-        ts:           record?.ts || Date.now()
+    async function save() {
+      syncItems();
+      const cust=document.getElementById('f-cust').value.trim();
+      if(!cust){toast('Vui long nhap khach hang','error');return;}
+      const valid=items.filter(it=>it.name);
+      if(!valid.length){toast('Vui long nhap it nhat 1 san pham','error');return;}
+      const dv=document.getElementById('f-date').value;
+      const ds=dv?dv.split('-').reverse().join('/'):'';
+      const exd=parseFloat(document.getElementById('f-exd').value)||0;
+      const sub=valid.reduce((s,it)=>s+(it.price||0)*(it.qty||1)-(it.disc||0),0);
+      const tot=sub-exd; const paid=parseFloat(document.getElementById('f-paid').value)||0;
+      const data={
+        billNo:document.getElementById('f-bill').value.trim()||(ds.replace(/\/g,'')+'-'+Math.floor(Math.random()*90+10)),
+        date:ds,customer:cust,phone:document.getElementById('f-phone').value.trim(),
+        items:valid,subtotal:sub,extraDiscount:exd,total:tot,paid,change:paid-tot,
+        paymethod:document.getElementById('f-pay').value,
+        warranty:parseInt(document.getElementById('f-war').value)||0,
+        note:document.getElementById('f-note').value.trim(),ts:record?.ts||Date.now()
       };
       try {
-        if (record) {
-          await updateItem(COLLECTION, record._key, data);
-          toast('Đã cập nhật đơn hàng');
-        } else {
-          await addItem(COLLECTION, data);
-          toast('Đã thêm đơn hàng');
-        }
-        wrap.classList.add('hidden');
-        wrap.innerHTML = '';
-      } catch(e) {
-        toast('Lỗi: ' + e.message, 'error');
-      }
+        if(record){await updateItem(COLLECTION,record._key,data);toast('Da cap nhat don hang');}
+        else{await addItem(COLLECTION,data);toast('Da them don hang');}
+        fw.innerHTML='';
+      } catch(e){toast('Loi: '+e.message,'error');}
     }
-
-    renderForm();
+    render();
   }
 
   async function confirmDelete(key) {
-    const ok = await showModal('Xác nhận', 'Xóa đơn hàng này?', true);
-    if (!ok) return;
-    try {
-      await deleteItem(COLLECTION, key);
-      toast('Đã xóa đơn hàng');
-    } catch(e) {
-      toast('Lỗi: ' + e.message, 'error');
-    }
+    const ok = await showModal('Xac nhan','Xoa don hang nay?',true);
+    if(!ok) return;
+    try{await deleteItem(COLLECTION,key);toast('Da xoa don hang');}
+    catch(e){toast('Loi: '+e.message,'error');}
   }
 }
