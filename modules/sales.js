@@ -1,5 +1,4 @@
-// modules/sales.js - Ban hang
-import { registerRoute } from '../core/router.js';
+// test// dirty markerimport { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, showModal, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
