@@ -34,8 +34,8 @@ export async function mount(container) {
     </div>
 
     <div id="tab-categories" style="display:none">
-      <div style="display:flex;gap:1rem;align-items:flex-start">
-        <div style="flex:0 0 380px;min-width:0">
+      <div style="display:flex;gap:1rem;align-items:flex-start;height:calc(100vh - 160px);overflow:hidden">
+        <div style="flex:0 0 380px;min-width:0;overflow-y:auto;height:100%">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
             <button id="cat-add" class="btn btn--primary btn--sm">+ Thêm danh mục gốc</button>
             <button id="cat-del-selected" class="btn btn--danger btn--sm" style="display:none">🗑 Xóa (<span id="cat-del-count">0</span>)</button>
@@ -43,7 +43,7 @@ export async function mount(container) {
           <div id="cat-folders"></div>
           <div id="cat-form-wrap"></div>
         </div>
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:0;overflow-y:auto;height:100%">
           <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
             <input id="pool-search" type="text" placeholder="Tìm sản phẩm..." class="search-input" style="flex:1;min-width:140px" />
             <label style="display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap">
