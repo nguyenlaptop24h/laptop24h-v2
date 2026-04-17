@@ -49,6 +49,60 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <!-- App bootstrap (ES module) -->
+  <script type="module" src="app.js?v=20"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laptop 24h - QuÃ¡ÂºÂ£n lÃÂ½</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+
+  <!-- MÃÂ n hÃÂ¬nh ÃÂÃÂng nhÃ¡ÂºÂ­p -->
+  <div id="auth-screen" class="screen">
+    <div class="login-box">
+      <h2>Laptop 24h</h2>
+      <input id="auth-email" type="text" placeholder="TÃÂªn ÃÂÃÂng nhÃ¡ÂºÂ­p" autocomplete="username" />
+      <input id="auth-pass" type="password" placeholder="MÃ¡ÂºÂ­t khÃ¡ÂºÂ©u" autocomplete="current-password" />
+      <button id="auth-btn">ÃÂÃÂng nhÃ¡ÂºÂ­p</button>
+      <p id="auth-err" class="error"></p>
+    </div>
+  </div>
+
+  <!-- Giao diÃ¡Â»Ân chÃÂ­nh -->
+  <div id="app" class="screen hidden">
+    <nav id="sidebar">
+      <div class="logo">Laptop 24h</div>
+      <ul id="nav-links">
+        <li><a href="#repairs">Ã°ÂÂÂ§ PhiÃ¡ÂºÂ¿u sÃ¡Â»Â­a chÃ¡Â»Â¯a</a></li>
+        <li><a href="#sales">Ã°ÂÂÂ° BÃÂ¡n hÃÂ ng</a></li>
+        <li><a href="#inventory">Ã°ÂÂÂ¦ Kho hÃÂ ng</a></li>
+        <li><a href="#customers">Ã°ÂÂÂ¥ KhÃÂ¡ch hÃÂ ng</a></li>
+        <li><a href="#debts">Ã°ÂÂÂ CÃÂ´ng nÃ¡Â»Â£</a></li>
+        <li><a href="#stats">Ã°ÂÂÂ ThÃ¡Â»Âng kÃÂª</a></li>
+        <li class="admin-only"><a href="#users">Ã°ÂÂÂ¤ NhÃÂ¢n viÃÂªn</a></li>
+        <li class="admin-only"><a href="#settings">Ã¢ÂÂÃ¯Â¸Â CÃÂ i ÃÂÃ¡ÂºÂ·t</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span id="user-name"></span>
+        <button id="logout-btn">ÃÂÃÂng xuÃ¡ÂºÂ¥t</button>
+      </div>
+    </nav>
+    <main id="main-content"></main>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container"></div>
+
+  <!-- Firebase SDK (chÃ¡Â»Â cÃ¡ÂºÂ§n app + database, khÃÂ´ng cÃ¡ÂºÂ§n auth) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- App bootstrap (ES module) -->
   <script type="module" src="app.js?v=19"></script>
 </body>
 </html>
