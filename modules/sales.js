@@ -83,11 +83,11 @@ export async function mount(container) {
         <div style="padding:1rem 1.25rem;border-bottom:1px solid #eee">
           <div style="font-weight:700;color:#1a73e8;margin-bottom:.85rem;font-size:.95rem">\ud83d\uded2 Danh s\u00e1ch s\u1ea3n ph\u1ea9m</div>
           <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:580px">
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:720px">
             <thead>
               <tr style="background:#f8f9fa">
                 <th style="padding:.45rem .4rem;text-align:left;width:80px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">M\u00e3 SP</th>
-                <th style="padding:.45rem .4rem;text-align:left;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase">T\u00ean SP</th>
+                <th style="padding:.45rem .4rem;text-align:left;min-width:220px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase">T\u00ean SP</th>
                 <th style="padding:.45rem .4rem;text-align:center;width:55px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase">SL</th>
                 <th style="padding:.45rem .4rem;text-align:right;width:110px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">\u0110\u01a1n gi\u00e1</th>
                 <th style="padding:.45rem .4rem;text-align:center;width:65px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">G.Gi\u00e1%</th>
@@ -139,7 +139,7 @@ export async function mount(container) {
     if (existing) {
       formWrap.querySelector('#sf-del').onclick = () => showModal({
         title: 'X\u00f3a \u0111\u01a1n h\u00e0ng',
-        body: 'X\u00e1c nh\u1eadn x\u00f3a \u0111\u01a1n m\u00e0y?',
+        body: 'X\u00e1c nh\u1eadn x\u00f3a \u0111\u01a1n n\u00e0y?',
         confirmText: 'X\u00f3a',
         onConfirm: async () => {
           await deleteItem(COLLECTION, existing._key);
@@ -207,7 +207,7 @@ export async function mount(container) {
         <div class="sp-opt" data-key="${p._key}"
           style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
           <div style="min-width:0">
-            <div style="font-size:.82rem;font-weight:600;white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
+            <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
             <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '· '+p.unit : ''}</div>
           </div>
           <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
@@ -297,7 +297,7 @@ export async function mount(container) {
     currentList = items;
     countEl.textContent = '(' + items.length + ')';
     if (!items.length) {
-      listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n m\u00e0o h\u00f4m nay</p>';
+      listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n n\u00e0o h\u00f4m nay</p>';
       return;
     }
     listWrap.innerHTML = items.map(s => `
