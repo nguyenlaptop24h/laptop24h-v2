@@ -126,6 +126,8 @@ export async function mount(container) {
       <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4">🖨 In bill BH</button>
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
       <button id="rep-trash-btn" class="btn btn--secondary" style="font-size:.9rem">🗑 Thùng rác</button>
+      <button id="rep-deliver-btn" class="btn btn--primary" disabled style="display:none;opacity:.4">📦 Giao</button>
+      <button id="rep-status-btn" class="btn btn--secondary" disabled style="display:none;background:#7c3aed;color:#fff;opacity:.4">⇄</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
     <div id="rep-table-wrap"></div>
@@ -233,8 +235,9 @@ export async function mount(container) {
       tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
     });
     container.querySelectorAll('.rep-radio').forEach(rb => { rb.checked = rb.dataset.key === key; });
-    document.querySelectorAll('.rep-deliver,.rep-status').forEach(b => b.style.display = 'none');
-    if (key) { const selRow = container.querySelector('tr[data-key="' + key + '"]'); if (selRow) selRow.querySelectorAll('.rep-deliver,.rep-status').forEach(b => b.style.display = ''); }
+    const _db=document.getElementById('rep-deliver-btn'),_sb=document.getElementById('rep-status-btn');
+    if(_db){_db.style.display=on?'':'none';_db.disabled=!on;_db.style.opacity=on?'1':'.4';}
+    if(_sb){_sb.style.display=on?'':'none';_sb.disabled=!on;_sb.style.opacity=on?'1':'.4';}
   }
 
   function filterData() {
@@ -268,13 +271,7 @@ export async function mount(container) {
       { label: 'KTV',        key: r => r.techName || '' },
       { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
       { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' },
-      { label: '',           key: r =>
-          '<div style="display:flex;gap:.3rem">' +
-          (r.status !== 'Đã giao' && r.status !== 'Huỷ'
-            ? '<button class="btn btn--sm btn--primary rep-deliver" style="display:none" data-key="' + r._key + '" style="background:#16a34a;white-space:nowrap">📦 Giao</button>' : '') +
-          '<button class="btn btn--sm btn--primary rep-status" style="display:none" data-key="' + r._key + '" style="background:#7c3aed" title="Đổi trạng thái">⇄</button>' +
-          '</div>'
-      }
+      { label: '', key: r => '' }
     ];
     wrap.innerHTML = buildTable(cols, data);
 
@@ -298,12 +295,10 @@ export async function mount(container) {
       rb.checked = rb.dataset.key === selectedKey;
       rb.addEventListener('change', () => { if (rb.checked) setSelected(rb.dataset.key); });
     });
-    wrap.querySelectorAll('.rep-deliver').forEach(btn =>
-      btn.addEventListener('click', e => { e.stopPropagation(); quickDeliver(data.find(r => r._key === btn.dataset.key)); })
-    );
-    wrap.querySelectorAll('.rep-status').forEach(btn =>
-      btn.addEventListener('click', e => { e.stopPropagation(); quickChangeStatus(data.find(r => r._key === btn.dataset.key)); })
-    );
+    const _rdb=document.getElementById('rep-deliver-btn');
+    if(_rdb)_rdb.onclick=()=>{if(selectedKey)quickDeliver(data.find(r=>r._key===selectedKey));};
+    const _rsb=document.getElementById('rep-status-btn');
+    if(_rsb)_rsb.onclick=()=>{if(selectedKey)quickChangeStatus(data.find(r=>r._key===selectedKey));};
   }
 
   async function quickDeliver(record) {
