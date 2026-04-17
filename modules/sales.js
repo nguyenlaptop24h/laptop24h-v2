@@ -36,6 +36,63 @@ export async function mount(container) {
   const listWrap = container.querySelector('#sale-list-wrap');
   const countEl = container.querySelector('#sale-count');
 
+  // ===================== GLOBAL PRODUCT DROPDOWN =====================
+  let globalDrop = null;
+  let dropTarget = null; // the rname input currently bound
+
+  function ensureGlobalDrop() {
+    if (globalDrop && document.body.contains(globalDrop)) return;
+    globalDrop = document.createElement('div');
+    globalDrop.id = 'sf-prod-drop';
+    globalDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #1a73e8;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:99999;max-height:220px;overflow-y:auto;min-width:220px';
+    document.body.appendChild(globalDrop);
+  }
+
+  function positionDrop(inputEl) {
+    const r = inputEl.getBoundingClientRect();
+    globalDrop.style.top  = (r.bottom + 2) + 'px';
+    globalDrop.style.left = r.left + 'px';
+    globalDrop.style.width = Math.max(r.width, 260) + 'px';
+  }
+
+  function hideDrop() {
+    if (globalDrop) globalDrop.style.display = 'none';
+    dropTarget = null;
+  }
+
+  function showDrop(q, inputEl, selectCb) {
+    ensureGlobalDrop();
+    if (!q) { hideDrop(); return; }
+    const ql = q.toLowerCase();
+    const hits = invItems.filter(p =>
+      (p.name||'').toLowerCase().includes(ql) ||
+      String(p.id||'').toLowerCase().includes(ql)
+    ).slice(0, 10);
+    if (!hits.length) { hideDrop(); return; }
+    globalDrop.innerHTML = hits.map(p => `
+      <div class="sp-opt" data-key="${p._key}"
+        style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
+        <div style="min-width:0">
+          <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
+          <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '\u00b7 '+p.unit : ''}</div>
+        </div>
+        <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
+      </div>`).join('');
+    globalDrop.querySelectorAll('.sp-opt').forEach(opt => {
+      opt.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const p = invItems.find(x => x._key === opt.dataset.key);
+        if (p) selectCb(p);
+        hideDrop();
+      });
+      opt.addEventListener('mouseover', () => { opt.style.background = '#f0f6ff'; });
+      opt.addEventListener('mouseout',  () => { opt.style.background = ''; });
+    });
+    dropTarget = inputEl;
+    positionDrop(inputEl);
+    globalDrop.style.display = 'block';
+  }
+
   // ===================== FORM =====================
   function openForm(existing) {
     editKey = existing ? existing._key : null;
@@ -163,9 +220,8 @@ export async function mount(container) {
       <td style="padding:.32rem .4rem">
         <input class="rsku form-control" style="font-size:.8rem;width:70px" placeholder="M\u00e3" value="${item.sku||''}">
       </td>
-      <td style="padding:.32rem .4rem;position:relative">
+      <td style="padding:.32rem .4rem">
         <input class="rname form-control" style="font-size:.8rem;width:100%" placeholder="G\u00f5 t\u00ean ho\u1eb7c m\u00e3 SP..." value="${nm}" autocomplete="off">
-        <div class="sp-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #1a73e8;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:9999;max-height:220px;overflow-y:auto"></div>
       </td>
       <td style="padding:.32rem .4rem">
         <input class="rqty form-control" type="number" min="1" value="${item.qty||1}" style="text-align:center;font-size:.8rem;width:48px">
@@ -185,56 +241,28 @@ export async function mount(container) {
     const rname  = tr.querySelector('.rname');
     const rsku   = tr.querySelector('.rsku');
     const rprice = tr.querySelector('.rprice');
-    const drop   = tr.querySelector('.sp-drop');
 
     function selectProduct(p) {
       rname.value  = p.name  || '';
       rsku.value   = p.id    || '';
       rprice.value = p.price || 0;
-      drop.style.display = 'none';
       recalc();
     }
 
-    function showDrop(q) {
-      if (!q) { drop.style.display = 'none'; return; }
-      const ql = q.toLowerCase();
-      const hits = invItems.filter(p =>
-        (p.name||'').toLowerCase().includes(ql) ||
-        String(p.id||'').toLowerCase().includes(ql)
-      ).slice(0, 10);
-      if (!hits.length) { drop.style.display = 'none'; return; }
-      drop.innerHTML = hits.map(p => `
-        <div class="sp-opt" data-key="${p._key}"
-          style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
-          <div style="min-width:0">
-            <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
-            <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '· '+p.unit : ''}</div>
-          </div>
-          <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
-        </div>`).join('');
-      drop.querySelectorAll('.sp-opt').forEach(opt => {
-        opt.addEventListener('mousedown', e => {
-          e.preventDefault();
-          const p = invItems.find(x => x._key === opt.dataset.key);
-          if (p) selectProduct(p);
-        });
-        opt.addEventListener('mouseover', () => { opt.style.background = '#f0f6ff'; });
-        opt.addEventListener('mouseout',  () => { opt.style.background = ''; });
-      });
-      drop.style.display = 'block';
-    }
-
-    rname.addEventListener('input',  () => showDrop(rname.value.trim()));
-    rname.addEventListener('focus',  () => { if (rname.value.trim()) showDrop(rname.value.trim()); });
-    rname.addEventListener('blur',   () => setTimeout(() => { drop.style.display = 'none'; }, 200));
+    rname.addEventListener('input',  () => showDrop(rname.value.trim(), rname, selectProduct));
+    rname.addEventListener('focus',  () => { if (rname.value.trim()) showDrop(rname.value.trim(), rname, selectProduct); });
+    rname.addEventListener('blur',   () => setTimeout(() => { if (dropTarget === rname) hideDrop(); }, 200));
     rname.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { drop.style.display = 'none'; }
+      if (e.key === 'Escape') { hideDrop(); }
       if (e.key === 'Enter') {
-        const first = drop.querySelector('.sp-opt');
-        if (first && drop.style.display !== 'none') {
-          e.preventDefault();
-          const p = invItems.find(x => x._key === first.dataset.key);
-          if (p) selectProduct(p);
+        if (globalDrop && globalDrop.style.display !== 'none') {
+          const first = globalDrop.querySelector('.sp-opt');
+          if (first) {
+            e.preventDefault();
+            const p = invItems.find(x => x._key === first.dataset.key);
+            if (p) selectProduct(p);
+            hideDrop();
+          }
         }
       }
     });
