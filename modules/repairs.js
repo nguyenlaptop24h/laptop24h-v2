@@ -121,9 +121,9 @@ export async function mount(container) {
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
       <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
-      <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎ Sửa</button>
-      <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕ Xóa</button>
-      <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">🖨 In bill BH</button>
+      <button id="rep-edit-btn" class="btn btn--secondary" style="display:none">✎ Sửa</button>
+      <button id="rep-del-btn"  class="btn btn--danger"    style="display:none">✕ Xóa</button>
+      <button id="rep-print-btn" class="btn btn--secondary" style="display:none">🖨 In bill BH</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
     <div id="rep-table-wrap"></div>
