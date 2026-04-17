@@ -289,16 +289,9 @@ export async function mount(container) {
         tr.style.cursor = 'pointer';
         if (key === selectedKey) tr.style.background = '#dbeafe';
         tr.addEventListener('click', e => {
-          if (e.target.classList.contains('btn') || e.target.closest('.btn')) return;
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
           setSelected(key === selectedKey ? null : key);
         
-    const _hs=!!wrap.querySelector('tr.selected');
-    ['rep-edit-btn','rep-del-btn','rep-print-btn'].forEach(function(_id){const _b=wrap.querySelector('#'+_id);if(_b)_b.style.display=_hs?'':'none';});
-    const _sh=wrap.querySelector('#rep-sel-hint');if(_sh)_sh.style.display=_hs?'none':'';});
-    document.querySelectorAll('.rep-deliver,.rep-status').forEach(b=>b.style.display='none');if(_hs)tr.querySelectorAll('.rep-deliver,.rep-status').forEach(b=>b.style.display='');
-      });
-    }
-
     wrap.querySelectorAll('.rep-radio').forEach(rb => {
       rb.checked = rb.dataset.key === selectedKey;
       rb.addEventListener('change', () => { if (rb.checked) setSelected(rb.dataset.key); });
