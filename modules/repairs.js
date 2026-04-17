@@ -121,9 +121,11 @@ export async function mount(container) {
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
       <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
-      <button id="rep-edit-btn" class="btn btn--secondary" style="display:none">✎ Sửa</button>
-      <button id="rep-del-btn"  class="btn btn--danger"    style="display:none">✕ Xóa</button>
-      <button id="rep-print-btn" class="btn btn--secondary" style="display:none">🖨 In bill BH</button>
+      <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎ Sửa</button>
+      <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕ Xóa</button>
+      <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4">🖨 In bill BH</button>
+      <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
+      <button id="rep-trash-btn" class="btn btn--secondary" style="font-size:.9rem">🗑 Thùng rác</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
     <div id="rep-table-wrap"></div>
@@ -131,10 +133,12 @@ export async function mount(container) {
   `;
 
   let allData = [];
+  let trashData = [];
   let selectedKey = null;
 
   const unsub = onSnapshot(COLLECTION, items => {
-    allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    trashData = items.filter(r => r.deleted);
+    allData = items.filter(r => !r.deleted).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     filterData();
   });
   container.addEventListener('unmount', () => unsub && unsub());
@@ -147,6 +151,7 @@ export async function mount(container) {
   const delBtn     = container.querySelector('#rep-del-btn');
   const printBtn   = container.querySelector('#rep-print-btn');
   const selHint    = container.querySelector('#rep-sel-hint');
+  const trashBtn   = container.querySelector('#rep-trash-btn');
 
   searchEl.addEventListener('input', filterData);
   statusEl.addEventListener('change', filterData);
@@ -167,6 +172,57 @@ export async function mount(container) {
     const rec = allData.find(r => r._key === selectedKey);
     if (rec) printWarrantyBill(rec);
   });
+
+  trashBtn.addEventListener('click', () => showTrash());
+
+  function showTrash() {
+    // Auto-purge items older than 1 day
+    const oneDayAgo = Date.now() - 86400000;
+    trashData.forEach(r => {
+      if ((r.deletedAt || 0) < oneDayAgo) {
+        deleteItem(COLLECTION, r._key).catch(() => {});
+      }
+    });
+    const valid = trashData.filter(r => (r.deletedAt || 0) >= oneDayAgo);
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;padding:1.5rem;width:min(96vw,640px);max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.22)';
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🗑 Thùng rác phíiếu sửa</h3>
+      <button id="trash-close" class="btn btn--secondary" style="padding:.3rem .8rem">&#x2715;</button>
+    </div>
+    ${valid.length === 0
+      ? '<p style="color:#888;text-align:center;padding:1rem">Thùng rác trống</p>'
+      : valid.map(r => `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:.7rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:600">${r.customerName||'(không tên)'}</div>
+            <div style="font-size:.8rem;color:#666">${r.device||''}${r.serial?' · '+r.serial:''} · ${new Date(r.deletedAt||0).toLocaleString('vi-VN')}</div>
+          </div>
+          <div style="display:flex;gap:.4rem;flex-shrink:0">
+            <button class="btn btn--secondary trash-restore" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">Khôi phục</button>
+            <button class="btn btn--danger trash-perm" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">Xóa hẳn</button>
+          </div>
+        </div>`).join('')
+    }`;
+    wrap.appendChild(box);
+    document.body.appendChild(wrap);
+
+    wrap.addEventListener('click', e => {
+      if (e.target === wrap || e.target.id === 'trash-close') { wrap.remove(); return; }
+      const restoreBtn = e.target.closest('.trash-restore');
+      const permBtn = e.target.closest('.trash-perm');
+      if (restoreBtn) {
+        const key = restoreBtn.dataset.key;
+        updateItem(COLLECTION, key, {deleted:false, deletedAt:null}).then(() => { wrap.remove(); }).catch(() => {});
+      }
+      if (permBtn) {
+        const key = permBtn.dataset.key;
+        deleteItem(COLLECTION, key).then(() => { wrap.remove(); }).catch(() => {});
+      }
+    });
+  }
 
   function setSelected(key) {
     selectedKey = key;
@@ -444,7 +500,7 @@ function openForm(record) {
   async function confirmDelete(key) {
     const ok = await showModal('Xác nhận', 'Xóa phiếu sửa chữa này?', true);
     if (!ok) return;
-    try { await deleteItem(COLLECTION, key); toast('Đã xóa phiếu'); setSelected(null); }
+    try { await updateItem(COLLECTION, key, {deleted:true, deletedAt:Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
     catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 }
