@@ -389,7 +389,7 @@ function openForm(record) {
         </div>
       </div>
     `;
-    formWrap.classList.add('rep-modal');
+    formWrap.classList.add('rep-modal');formWrap.querySelector('.form-card').style.background='#dbeafe';
     formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); });
     formWrap.querySelector('#f-print').addEventListener('click', () => {
       const fv = id => formWrap.querySelector('#'+id).value;
