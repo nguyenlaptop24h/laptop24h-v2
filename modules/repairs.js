@@ -58,7 +58,7 @@ function printWarrantyBill(record) {
     '@media print { .btn-bar { display: none; } }' +
   '#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}' +
   '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
-  '.rep-modal .form-card{margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25)}' +
+  '.rep-modal .form-card{margin:0 auto;background:#dbeafe;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25)}' +
   '</style></head><body>' +
   '<div class="header"><h2>LAPTOP 24H</h2><p>Địa chỉ cửa hàng của bạn | SĐT: 0xxx xxx xxx</p></div>' +
   '<div class="divider"></div>' +
