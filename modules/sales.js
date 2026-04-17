@@ -15,7 +15,7 @@ export async function mount(container) {
   let editKey = null;
 
   try {
-    const snap = await firebase.database().ref('inventory').once('value');
+    const snap = await firebase.database().ref('products').once('value');
     snap.forEach(c => { invItems.push({ _key: c.key, ...c.val() }); });
   } catch(e) {}
 
@@ -127,7 +127,7 @@ export async function mount(container) {
 
         <div style="padding:1rem 1.25rem;display:flex;gap:.75rem;align-items:center">
           <button id="sf-print" style="flex:1;background:#2ecc71;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udda8 In Bill + BH</button>
-          <button id="sf-save" style="flex:1;background:#1a3a6b;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udcbe L\u01b0u \u0110\u01a1n H\u00e0ng</button>
+          <button id="sf-save" style="flex:1;background:#1a3a6b;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udcbe L\u01b0u \u0111\u01a1n H\u00e0ng</button>
           ${existing ? '<button id="sf-del" style="background:none;border:1px solid #ddd;border-radius:8px;padding:.78rem .95rem;cursor:pointer;font-size:1.1rem;color:#999">\ud83d\uddd1</button>' : ''}
         </div>
       </div>
@@ -331,3 +331,4 @@ export async function mount(container) {
   dateFilter.addEventListener('change', () => loadDate(dateFilter.value));
   loadDate(todayStr);
 }
+ 
