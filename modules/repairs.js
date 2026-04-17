@@ -58,7 +58,7 @@ function printWarrantyBill(record) {
     '@media print { .btn-bar { display: none; } }' +
   '#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}' +
   '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
-  '.rep-modal .form-card{margin:0 auto}' +
+  '.rep-modal .form-card{margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25)}' +
   '</style></head><body>' +
   '<div class="header"><h2>LAPTOP 24H</h2><p>Địa chỉ cửa hàng của bạn | SĐT: 0xxx xxx xxx</p></div>' +
   '<div class="divider"></div>' +
@@ -213,8 +213,8 @@ export async function mount(container) {
       { label: '',           key: r =>
           '<div style="display:flex;gap:.3rem">' +
           (r.status !== 'Đã giao' && r.status !== 'Huỷ'
-            ? '<button class="btn btn--sm btn--primary rep-deliver" data-key="' + r._key + '" style="background:#16a34a;white-space:nowrap">📦 Giao</button>' : '') +
-          '<button class="btn btn--sm btn--primary rep-status" data-key="' + r._key + '" style="background:#7c3aed" title="Đổi trạng thái">⇄</button>' +
+            ? '<button class="btn btn--sm btn--primary rep-deliver" style="display:none" data-key="' + r._key + '" style="background:#16a34a;white-space:nowrap">📦 Giao</button>' : '') +
+          '<button class="btn btn--sm btn--primary rep-status" style="display:none" data-key="' + r._key + '" style="background:#7c3aed" title="Đổi trạng thái">⇄</button>' +
           '</div>'
       }
     ];
@@ -237,6 +237,7 @@ export async function mount(container) {
     const _hs=!!wrap.querySelector('tr.selected');
     ['rep-edit-btn','rep-del-btn','rep-print-btn'].forEach(function(_id){const _b=wrap.querySelector('#'+_id);if(_b)_b.style.display=_hs?'':'none';});
     const _sh=wrap.querySelector('#rep-sel-hint');if(_sh)_sh.style.display=_hs?'none':'';});
+    document.querySelectorAll('.rep-deliver,.rep-status').forEach(b=>b.style.display='none');if(_hs)tr.querySelectorAll('.rep-deliver,.rep-status').forEach(b=>b.style.display='');
       });
     }
 
