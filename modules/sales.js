@@ -3,117 +3,155 @@ import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, showModal, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
+
 const COLLECTION = 'sales';
 registerRoute('#sales', mount);
+
 export async function mount(container) {
-  const todayISO = new Date().toISOString().slice(0, 10);
-  container.innerHTML = `<div style="text-align:center;padding:1.25rem 1rem 0.75rem">
-    <h2 style="margin:0 0 0.75rem;font-size:1.4rem">Ban hang</h2>
-    <button id="sale-add" class="btn btn--primary" style="min-width:160px;font-size:1rem;margin-bottom:0.75rem">+ Ban hang</button>
-    <div style="display:flex;gap:0.5rem;align-items:center;justify-content:center;flex-wrap:wrap">
-      <label style="font-weight:500">Ngay:</label>
-      <input id="sale-date-filter" type="date" value="${todayISO}" style="padding:0.3rem 0.6rem;border:1px solid #cbd5e0;border-radius:6px;font-size:0.9rem"/>
-      <span id="sale-count" style="color:#718096;font-size:0.85rem"></span>
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let selectedKey = null;
+  let unsub = null;
+
+  container.innerHTML = `
+    <div style="text-align:center;padding:1.25rem 1rem 0.5rem">
+      <h2 style="margin:0 0 0.75rem">B\u00e1n h\u00e0ng</h2>
+      <button id="sale-add" class="btn btn--primary" style="margin-bottom:0.75rem">+ B\u00e1n h\u00e0ng</button><br>
+      <label>Ng\u00e0y: <input id="sale-date-filter" type="date" value="${todayStr}" style="margin-left:4px"></label>
+      <span id="sale-count" style="margin-left:8px;color:#666"></span>
     </div>
-  </div>
-  <div id="sale-form-wrap"></div>
-  <div id="sale-list-wrap" style="padding:0.75rem 1rem 2rem"></div>`;
-  let allData = [], selectedKey = null;
-  const unsub = onSnapshot(COLLECTION, items => { allData = items.sort((a,b)=>(b.ts||0)-(a.ts||0)); renderList(); });
-  container.addEventListener('unmount', () => unsub && unsub());
-  document.getElementById('sale-date-filter').addEventListener('change', () => { selectedKey=null; renderList(); });
-  document.getElementById('sale-add').addEventListener('click', () => openForm(null));
-  function getFiltered() {
-    const iso = document.getElementById('sale-date-filter').value;
-    if (!iso) return allData;
-    const ds = iso.split('-').reverse().join('/');
-    return allData.filter(s => (s.date||'') === ds);
-  }
-  function renderList() {
-    const data = getFiltered(), wrap = document.getElementById('sale-list-wrap'), cnt = document.getElementById('sale-count');
-    if (cnt) cnt.textContent = '(' + data.length + ' phieu)';
-    if (!data.length) { wrap.innerHTML = '<p style="text-align:center;color:#888;padding:2rem">Khong co phieu ban trong ngay nay</p>'; return; }
-    wrap.innerHTML = data.map(s => {
-      const sel = s._key === selectedKey, remain = (s.total||0)-(s.paid||0), rc = remain>0?'#e53e3e':'#38a169';
-      const its = s.items||[], sm = !its.length?'':its.length===1?its[0].name:its[0].name+' (+'+(its.length-1)+')';
-      return `<div class="sale-card" data-key="${s._key}" style="background:#fff;border:1.5px solid ${sel?'#4299e1':'#e2e8f0'};border-radius:10px;margin-bottom:0.65rem;box-shadow:${sel?'0 0 0 3px #bee3f8':'0 1px 3px rgba(0,0,0,0.07)'};cursor:pointer;transition:all 0.18s">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;gap:1rem;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:0.65rem;flex:1;min-width:0">
-            <input type="checkbox" class="sale-chk" data-key="${s._key}" ${sel?'checked':''} style="width:17px;height:17px;cursor:pointer;flex-shrink:0" onclick="event.stopPropagation()"/>
-            <div style="min-width:0"><div style="font-weight:600;color:#2d3748">${s.billNo||'—'}</div><div style="font-size:0.8rem;color:#718096">${s.customer||''}${s.phone?' · '+s.phone:''}</div></div>
+    <div id="sale-form-wrap"></div>
+    <div id="sale-list-wrap" style="padding:0 0.75rem 2rem"></div>
+  `;
+
+  function renderList(items) {
+    const wrap = container.querySelector('#sale-list-wrap');
+    const count = container.querySelector('#sale-count');
+    if (!items.length) {
+      wrap.innerHTML = '<p style="text-align:center;color:#888">Kh\u00f4ng c\u00f3 phi\u1ebfu n\u00e0o</p>';
+      count.textContent = '(0)';
+      return;
+    }
+    count.textContent = '(' + items.length + ')';
+    wrap.innerHTML = items.map(s => {
+      const paid = s.paid || 0;
+      const total = (s.items || []).reduce((a, it) => a + ((it.price || 0) * (it.qty || 1) - (it.disc || 0)), 0);
+      const remain = total - paid;
+      const isSelected = selectedKey === s._key;
+      return `<div class="card" data-key="${s._key}" style="margin-bottom:0.5rem;padding:0.75rem;border:1px solid #ddd;border-radius:8px;background:${isSelected ? '#f0f4ff' : '#fff'}">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" class="sale-chk" data-key="${s._key}" ${isSelected ? 'checked' : ''}>
+          <div style="flex:1">
+            <div style="font-weight:bold">${s.customer || 'Kh\u00e1ch l\u1ebb'} - ${s.phone || ''}</div>
+            <div style="font-size:0.85rem;color:#555">${s.date || ''} | T\u1ed5ng: ${formatVND(total)} | C\u00f2n: ${formatVND(remain)}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:#2b6cb0">${formatVND(s.total||0)}</div><div style="font-size:0.8rem;color:${rc}">${remain>0?'Con: '+formatVND(remain):'Da thanh toan'}</div></div>
-        </div>
-        ${sel?`<div style="border-top:1px solid #e2e8f0;padding:0.6rem 1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;background:#f7fafc">
-          <span style="font-size:0.83rem;color:#4a5568;flex:1">${sm} · ${s.paymethod||''}</span>
-          <button class="btn btn--sm btn--secondary sale-view" data-key="${s._key}" onclick="event.stopPropagation()">Chi tiet</button>
-          <button class="btn btn--sm btn--secondary sale-edit" data-key="${s._key}" onclick="event.stopPropagation()">Sua</button>
-          ${isAdmin()?'<button class="btn btn--sm btn--danger sale-del" data-key="'+s._key+'" onclick="event.stopPropagation()">Xoa</button>':''}
-        </div>`:''}
+        </label>
+        ${isSelected ? `<div style="margin-top:0.5rem;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn--sm sale-detail" data-key="${s._key}">Chi ti\u1ebft</button>
+          <button class="btn btn--sm btn--secondary sale-edit" data-key="${s._key}">S\u1eeda</button>
+          ${isAdmin() ? `<button class="btn btn--sm btn--danger sale-del" data-key="${s._key}">X\u00f3a</button>` : ''}
+        </div>` : ''}
       </div>`;
     }).join('');
-    wrap.querySelectorAll('.sale-card').forEach(c => c.addEventListener('click', () => { selectedKey=selectedKey===c.dataset.key?null:c.dataset.key; renderList(); }));
-    wrap.querySelectorAll('.sale-chk').forEach(k => k.addEventListener('change', () => { selectedKey=k.checked?k.dataset.key:null; renderList(); }));
-    wrap.querySelectorAll('.sale-view').forEach(b => b.addEventListener('click', () => showDetail(allData.find(s=>s._key===b.dataset.key))));
-    wrap.querySelectorAll('.sale-edit').forEach(b => b.addEventListener('click', () => openForm(allData.find(s=>s._key===b.dataset.key))));
-    wrap.querySelectorAll('.sale-del').forEach(b => b.addEventListener('click', () => confirmDelete(b.dataset.key)));
+
+    wrap.querySelectorAll('.sale-chk').forEach(chk => {
+      chk.addEventListener('change', e => {
+        const k = e.target.dataset.key;
+        selectedKey = e.target.checked ? k : null;
+        const dateVal = container.querySelector('#sale-date-filter').value;
+        loadDate(dateVal);
+      });
+    });
+    wrap.querySelectorAll('.sale-detail').forEach(btn => {
+      btn.addEventListener('click', e => showDetail(e.target.dataset.key, items));
+    });
+    wrap.querySelectorAll('.sale-edit').forEach(btn => {
+      btn.addEventListener('click', e => openForm(items.find(s => s._key === e.target.dataset.key)));
+    });
+    wrap.querySelectorAll('.sale-del').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        if (!confirm('X\u00f3a phi\u1ebfu n\u00e0y?')) return;
+        await deleteItem(COLLECTION, e.target.dataset.key);
+        toast('\u0110\u00e3 x\u00f3a');
+      });
+    });
   }
-  function showDetail(sale) {
-    if (!sale) return;
-    const fw = document.getElementById('sale-form-wrap');
-    const rows = (sale.items||[]).map(it => `<tr><td>${it.code||''}</td><td>${it.name||''}</td><td style="text-align:right">${it.qty||1}</td><td>${it.unit||''}</td><td style="text-align:right">${formatVND(it.price||0)}</td><td style="text-align:right">${formatVND(it.disc||0)}</td><td style="text-align:right">${formatVND((it.price||0)*(it.qty||1)-(it.disc||0))}</td><td>${it.prodWarranty||0}th</td></tr>`).join('');
-    fw.innerHTML = `<div class="repair-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem"><div style="background:#fff;border-radius:12px;padding:1.5rem 2rem;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-      <h3 style="margin:0 0 1rem;text-align:center">Chi tiet - ${sale.billNo||''}</h3>
-      <div class="form-grid" style="margin-bottom:1rem"><div><b>Khach:</b> ${sale.customer||''}</div><div><b>SDT:</b> ${sale.phone||''}</div><div><b>Ngay:</b> ${sale.date||''}</div><div><b>TT:</b> ${sale.paymethod||''}</div><div><b>BH:</b> ${sale.warranty||0}th</div><div><b>Note:</b> ${sale.note||''}</div></div>
-      <table class="data-table" style="margin-bottom:1rem"><thead><tr><th>Ma</th><th>Ten SP</th><th>SL</th><th>DVT</th><th>Don gia</th><th>CK</th><th>Thanh tien</th><th>BH</th></tr></thead><tbody>${rows}</tbody></table>
-      <div style="text-align:right"><div>Tam tinh:<b>${formatVND(sale.subtotal||sale.total||0)}</b></div>${sale.extraDiscount?'<div>Giam them:<b>-'+formatVND(sale.extraDiscount)+'</b></div>':''}<div>Tong:<b style="color:#2b6cb0">${formatVND(sale.total||0)}</b></div><div>Khach tra:<b>${formatVND(sale.paid||0)}</b></div><div>Tien thua:<b>${formatVND(sale.change||0)}</b></div></div>
-      <div class="form-actions" style="justify-content:center;margin-top:1rem"><button id="det-close" class="btn btn--secondary">Dong</button></div>
-    </div></div>`;
-    const cl=()=>{fw.innerHTML='';};
-    document.getElementById('det-close').addEventListener('click',cl);
-    fw.querySelector('.repair-overlay').addEventListener('click',e=>{if(e.target===fw.querySelector('.repair-overlay'))cl();});
+
+  function loadDate(dateStr) {
+    if (unsub) unsub();
+    unsub = onSnapshot(COLLECTION, items => {
+      const filtered = items.filter(s => (s.date || '').startsWith(dateStr));
+      renderList(filtered);
+    });
   }
-  function openForm(record) {
-    const fw=document.getElementById('sale-form-wrap'), tdDef=new Date().toISOString().slice(0,10);
-    const items=record?.items?[...record.items]:[{id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0}];
-    function render(){
-      const rows=items.map((it,i)=>`<tr data-idx="${i}"><td><input class="ic" type="text" value="${it.code||''}" placeholder="Ma" style="width:65px"/></td><td><input class="in" type="text" value="${it.name||''}" placeholder="Ten SP" style="width:155px"/></td><td><input class="iq" type="number" value="${it.qty||1}" style="width:48px"/></td><td><input class="iu" type="text" value="${it.unit||'Cai'}" style="width:42px"/></td><td><input class="ip" type="number" value="${it.price||0}" style="width:90px"/></td><td><input class="id" type="number" value="${it.disc||0}" style="width:70px"/></td><td><input class="iw" type="number" value="${it.prodWarranty||0}" style="width:48px"/></td><td><button class="btn btn--sm btn--danger ir" data-i="${i}">x</button></td></tr>`).join('');
-      fw.innerHTML=`<div class="repair-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem"><div style="background:#fff;border-radius:12px;padding:1.5rem 2rem;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-        <h3 style="margin:0 0 1rem;text-align:center">${record?'Cap nhat':'Lap phieu ban hang'}</h3>
-        <div class="form-grid">
-          <div class="form-group"><label>So bill</label><input id="f-bill" type="text" value="${record?.billNo||''}" placeholder="Tu dong"/></div>
-          <div class="form-group"><label>Ngay ban</label><input id="f-date" type="date" value="${record?.date?record.date.split('/').reverse().join('-'):tdDef}"/></div>
-          <div class="form-group"><label>Khach hang *</label><input id="f-cust" type="text" value="${record?.customer||''}"/></div>
-          <div class="form-group"><label>SDT</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
-          <div class="form-group"><label>Hinh thuc TT</label><select id="f-pay">${['Tien mat','Chuyen khoan','Cong no'].map(p=>'<option'+(record?.paymethod===p?' selected':'')+'>'+p+'</option>').join('')}</select></div>
-          <div class="form-group"><label>BH may (thang)</label><input id="f-war" type="number" value="${record?.warranty||0}"/></div>
-          <div class="form-group"><label>Giam them (d)</label><input id="f-exd" type="number" value="${record?.extraDiscount||0}"/></div>
-          <div class="form-group"><label>Khach tra (d)</label><input id="f-paid" type="number" value="${record?.paid||0}"/></div>
-          <div class="form-group" style="grid-column:1/-1"><label>Ghi chu</label><input id="f-note" type="text" value="${record?.note||''}"/></div>
+
+  container.querySelector('#sale-add').addEventListener('click', () => openForm(null));
+  container.querySelector('#sale-date-filter').addEventListener('change', e => {
+    selectedKey = null;
+    loadDate(e.target.value);
+  });
+
+  function openForm(existing) {
+    const wrap = container.querySelector('#sale-form-wrap');
+    const isEdit = !!existing;
+    const s = existing || { customer: '', phone: '', date: todayStr, paymethod: 'Tien mat', warranty: 0, note: '', paid: 0, items: [] };
+    wrap.innerHTML = `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem">
+      <div style="background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto">
+        <h3 style="margin:0 0 1rem">${isEdit ? 'S\u1eeda phi\u1ebfu' : 'T\u1ea1o phi\u1ebfu b\u00e1n'}</h3>
+        <label>Kh\u00e1ch h\u00e0ng<input id="sf-customer" class="input" value="${s.customer || ''}" placeholder="T\u00ean kh\u00e1ch"></label>
+        <label>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i<input id="sf-phone" class="input" value="${s.phone || ''}"></label>
+        <label>Ng\u00e0y<input id="sf-date" class="input" type="date" value="${s.date || todayStr}"></label>
+        <label>Ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n<input id="sf-paymethod" class="input" value="${s.paymethod || 'Tien mat'}"></label>
+        <label>B\u1ea3o h\u00e0nh (th\u00e1ng)<input id="sf-warranty" class="input" type="number" value="${s.warranty || 0}"></label>
+        <label>\u0110\u00e3 thu (VND)<input id="sf-paid" class="input" type="number" value="${s.paid || 0}"></label>
+        <label>Ghi ch\u00fa<input id="sf-note" class="input" value="${s.note || ''}"></label>
+        <div style="margin-top:1rem;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" id="sf-cancel">H\u1ee7y</button>
+          <button class="btn btn--primary" id="sf-save">L\u01b0u</button>
         </div>
-        <h4 style="margin:.75rem 0 .25rem">San pham</h4>
-        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Ma</th><th>Ten SP</th><th>SL</th><th>DVT</th><th>Gia</th><th>CK</th><th>BH</th><th></th></tr></thead><tbody id="itb">${rows}</tbody></table></div>
-        <button id="add-row" class="btn btn--secondary" style="margin-top:.5rem">+ Them dong</button>
-        <div id="f-tot" style="text-align:right;margin-top:.5rem;font-weight:600;color:#2b6cb0"></div>
-        <div class="form-actions" style="justify-content:center;gap:1rem;margin-top:1rem">
-          <button id="f-save" class="btn btn--primary" style="min-width:120px">${record?'Cap nhat':'Luu phieu'}</button>
-          <button id="f-cancel" class="btn btn--secondary">Huy</button>
-        </div>
-      </div></div>`;
-      calcTotal();
-      fw.querySelectorAll('.ir').forEach(b=>b.addEventListener('click',()=>{items.splice(+b.dataset.i,1);if(!items.length)items.push({id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0});render();}));
-      fw.querySelector('#add-row').addEventListener('click',()=>{items.push({id:Date.now(),code:'',name:'',qty:1,unit:'Cai',price:0,disc:0,prodWarranty:0});render();});
-      fw.querySelectorAll('#itb input').forEach(inp=>inp.addEventListener('input',syncItems));
-      document.getElementById('f-exd')?.addEventListener('input',calcTotal);
-      document.getElementById('f-paid')?.addEventListener('input',calcTotal);
-      document.getElementById('f-cancel').addEventListener('click',()=>{fw.innerHTML='';});
-      document.getElementById('f-save').addEventListener('click',save);
-      fw.querySelector('.repair-overlay').addEventListener('click',e=>{if(e.target===fw.querySelector('.repair-overlay'))fw.innerHTML='';});
-    }
-    function syncItems(){fw.querySelectorAll('#itb tr').forEach((row,i)=>{if(!items[i])return;items[i].code=row.querySelector('.ic').value.trim();items[i].name=row.querySelector('.in').value.trim();items[i].qty=parseFloat(row.querySelector('.iq').value)||1;items[i].unit=row.querySelector('.iu').value.trim();items[i].price=parseFloat(row.querySelector('.ip').value)||0;items[i].disc=parseFloat(row.querySelector('.id').value)||0;items[i].prodWarranty=parseInt(row.querySelector('.iw').value)||0;});calcTotal();}
-    function calcTotal(){syncItems();const sub=items.reduce((s,it)=>s+(it.price||0)*(it.qty||1)-(it.disc||0),0),exd=parseFloat(document.getElementById('f-exd')?.value)||0,tot=sub-exd,paid=parseFloat(document.getElementById('f-paid')?.value)||0,el=document.getElementById('f-tot');if(el)el.innerHTML='Tam tinh:'+formatVND(sub)+' | Tong:'+formatVND(tot)+' | Thua:'+formatVND(paid-tot);}
-    async function save(){syncItems();const cust=document.getElementById('f-cust').value.trim();if(!cust){toast('Vui long nhap khach hang','error');return;}const valid=items.filter(it=>it.name);if(!valid.length){toast('Vui long nhap san pham','error');return;}const dv=document.getElementById('f-date').value,ds=dv?dv.split('-').reverse().join('/'):'',exd=parseFloat(document.getElementById('f-exd').value)||0,sub=valid.reduce((s,it)=>s+(it.price||0)*(it.qty||1)-(it.disc||0),0),tot=sub-exd,paid=parseFloat(document.getElementById('f-paid').value)||0;const data={billNo:document.getElementById('f-bill').value.trim()||(ds.replace(/\/g,'')+'-'+Math.floor(Math.random()*90+10)),date:ds,customer:cust,phone:document.getElementById('f-phone').value.trim(),items:valid,subtotal:sub,extraDiscount:exd,total:tot,paid,change:paid-tot,paymethod:document.getElementById('f-pay').value,warranty:parseInt(document.getElementById('f-war').value)||0,note:document.getElementById('f-note').value.trim(),ts:record?.ts||Date.now()};try{if(record){await updateItem(COLLECTION,record._key,data);toast('Da cap nhat');}else{await addItem(COLLECTION,data);toast('Da them phieu');}fw.innerHTML='';}catch(e){toast('Loi: '+e.message,'error');}}
-    render();
+      </div>
+    </div>`;
+    wrap.querySelector('#sf-cancel').onclick = () => { wrap.innerHTML = ''; };
+    wrap.querySelector('#sf-save').onclick = async () => {
+      const data = {
+        customer: wrap.querySelector('#sf-customer').value.trim(),
+        phone: wrap.querySelector('#sf-phone').value.trim(),
+        date: wrap.querySelector('#sf-date').value,
+        paymethod: wrap.querySelector('#sf-paymethod').value.trim(),
+        warranty: Number(wrap.querySelector('#sf-warranty').value) || 0,
+        paid: Number(wrap.querySelector('#sf-paid').value) || 0,
+        note: wrap.querySelector('#sf-note').value.trim(),
+        items: s.items || []
+      };
+      if (isEdit) await updateItem(COLLECTION, existing._key, data);
+      else await addItem(COLLECTION, data);
+      wrap.innerHTML = '';
+      toast(isEdit ? '\u0110\u00e3 c\u1eadp nh\u1eadt' : '\u0110\u00e3 t\u1ea1o phi\u1ebfu');
+    };
   }
-  async function confirmDelete(key){const ok=await showModal('Xac nhan','Xoa don hang nay?',true);if(!ok)return;try{await deleteItem(COLLECTION,key);toast('Da xoa');}catch(e){toast('Loi: '+e.message,'error');}}
+
+  function showDetail(key, items) {
+    const s = items.find(x => x._key === key);
+    if (!s) return;
+    const total = (s.items || []).reduce((a, it) => a + ((it.price || 0) * (it.qty || 1) - (it.disc || 0)), 0);
+    const remain = total - (s.paid || 0);
+    const wrap = container.querySelector('#sale-form-wrap');
+    wrap.innerHTML = `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem">
+      <div style="background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto">
+        <h3>Chi ti\u1ebft phi\u1ebfu b\u00e1n</h3>
+        <p><b>Kh\u00e1ch:</b> ${s.customer || ''}</p>
+        <p><b>\u0110i\u1ec7n tho\u1ea1i:</b> ${s.phone || ''}</p>
+        <p><b>Ng\u00e0y:</b> ${s.date || ''}</p>
+        <p><b>Thanh to\u00e1n:</b> ${s.paymethod || ''}</p>
+        <p><b>B\u1ea3o h\u00e0nh:</b> ${s.warranty || 0} th\u00e1ng</p>
+        <p><b>Ghi ch\u00fa:</b> ${s.note || ''}</p>
+        <p><b>T\u1ed5ng:</b> ${formatVND(total)}</p>
+        <p><b>\u0110\u00e3 thu:</b> ${formatVND(s.paid || 0)}</p>
+        <p><b>C\u00f2n n\u1ee3:</b> ${formatVND(remain)}</p>
+        <button class="btn" id="sd-close">\u0110\u00f3ng</button>
+      </div>
+    </div>`;
+    wrap.querySelector('#sd-close').onclick = () => { wrap.innerHTML = ''; };
+  }
+
+  loadDate(todayStr);
 }
