@@ -182,7 +182,22 @@ export async function mount(container) {
     formWrap.querySelector('#sf-add-row').onclick = () => { addRow({}); recalc(); };
     formWrap.querySelector('#sf-extra-disc').oninput = recalc;
     formWrap.querySelector('#sf-save').onclick = saveForm;
-    formWrap.querySelector('#sf-print').onclick = () => toast('Ch\u1ee9c n\u0103ng in \u0111ang ph\u00e1t tri\u1ec3n');
+    formWrap.querySelector('#sf-print').onclick = () => {
+      var d = {
+        customer: formWrap.querySelector('#sf-customer')?.value||'',
+        phone: formWrap.querySelector('#sf-phone')?.value||'',
+        note: formWrap.querySelector('#sf-note')?.value||'',
+        warranty: formWrap.querySelector('#sf-warranty')?.value||'',
+        payMethod: formWrap.querySelector('#sf-pay')?.value||'',
+        date: formWrap.querySelector('#sf-date')?.value||'',
+        items: window._saleItems||[],
+        subtotal: Number(formWrap.querySelector('#sf-subtotal')?.textContent?.replace(/[^0-9]/g,'')||0),
+        extraDiscount: Number(formWrap.querySelector('#sf-extdisc')?.value||0),
+        total: Number(formWrap.querySelector('#sf-total')?.textContent?.replace(/[^0-9]/g,'')||0),
+        paid: Number(formWrap.querySelector('#sf-paid')?.value?.replace(/[^0-9]/g,'')||0)
+      };
+      printSaleBill(d);
+    };
     if (existing) {
       formWrap.querySelector('#sf-del').onclick = () => showModal({
         title: 'X\u00f3a \u0111\u01a1n h\u00e0ng',
@@ -393,5 +408,38 @@ export async function mount(container) {
 
   addBtn.onclick = () => { editKey = null; openForm(null); window.scrollTo(0, formWrap.offsetTop - 60); };
   dateFilter.addEventListener('change', () => loadDate(dateFilter.value));
+
+  function printSaleBill(d) {
+    var fmt = n => Number(n||0).toLocaleString('vi-VN');
+    var rows = (d.items||[]).map(it =>
+      '<tr><td style="padding:3px 6px">' + (it.sku||'') + '</td>' +
+      '<td style="padding:3px 6px">' + (it.name||'') + '</td>' +
+      '<td style="padding:3px 6px;text-align:center">' + (it.qty||1) + '</td>' +
+      '<td style="padding:3px 6px;text-align:right">' + fmt(it.price) + '</td>' +
+      '<td style="padding:3px 6px;text-align:center">' + (it.disc||0) + '%</td>' +
+      '<td style="padding:3px 6px;text-align:right;font-weight:bold">' + fmt(it.qty*it.price*(1-it.disc/100)) + '</td></tr>'
+    ).join('');
+    var change = Math.max(0, (d.paid||0) - (d.total||0));
+    var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Hóa đơn bán hàng</title>' +
+      '<style>body{font-family:Arial,sans-serif;font-size:13px;padding:16px;color:#222}h2{text-align:center;font-size:17px;margin:0 0 2px}.sub{text-align:center;font-size:13px;font-weight:bold;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#f0f0f0;padding:4px 6px;text-align:left;font-size:12px}td{border-bottom:1px solid #eee}.tot{font-weight:bold;font-size:14px}.sign{display:flex;justify-content:space-between;margin-top:24px}.line{border-top:1px solid #333;margin-top:32px;text-align:center;padding-top:4px;font-size:12px;color:#555}</style></head><body>' +
+      '<h2>LAPTOP24H</h2><p class="sub">HÓA ĐƠN BÁN HÀNG</p>' +
+      '<table><tr><td style="width:50%;padding:2px 0"><strong>KH:</strong> ' + (d.customer||'') + '</td>' +
+      '<td style="padding:2px 0"><strong>SĐT:</strong> ' + (d.phone||'') + '</td></tr>' +
+      '<tr><td><strong>Ngày:</strong> ' + (d.date||'') + '</td>' +
+      '<td><strong>TT:</strong> ' + (d.payMethod||'') + '</td></tr></table>' +
+      '<table><thead><tr><th>Mã</th><th>Tên SP</th><th style="text-align:center">SL</th><th style="text-align:right">Đơn giá</th><th style="text-align:center">CK%</th><th style="text-align:right">Thành tiền</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<table><tr><td>Tạm tính</td><td style="text-align:right">' + fmt(d.subtotal) + ' đ</td></tr>' +
+      (d.extraDiscount>0?'<tr><td>Giảm thêm</td><td style="text-align:right">-'+fmt(d.extraDiscount)+' đ</td></tr>':'') +
+      '<tr class="tot"><td>TỔNG THANH TOÁN</td><td style="text-align:right">' + fmt(d.total) + ' đ</td></tr>' +
+      '<tr><td>Khách trả</td><td style="text-align:right">' + fmt(d.paid) + ' đ</td></tr>' +
+      '<tr><td>Tiền thừa</td><td style="text-align:right">' + fmt(change) + ' đ</td></tr></table>' +
+      (d.warranty?'<p style="font-size:12px;color:#555">Bảo hành: '+d.warranty+'</p>':'') +
+      (d.note?'<p style="font-size:12px;color:#555">Ghi chú: '+d.note+'</p>':'') +
+      '<div class="sign"><div style="width:45%"><div class="line">Khách hàng</div></div><div style="width:45%"><div class="line">Người bán</div></div></div>' +
+      '<div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:6px 20px;cursor:pointer">🖨 In hóa đơn</button></div>' +
+      '</body></html>';
+    var w = window.open('','_blank','width=620,height=820');
+    w.document.write(html); w.document.close();
+  }
   loadDate(todayStr);
 }
