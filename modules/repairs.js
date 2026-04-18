@@ -369,8 +369,8 @@ function openForm(record) {
           <div class="form-group"><label>Kỹ thuật viên</label><input id="f-techName" type="text" value="${record?.techName||''}"/></div>
           <div class="form-group"><label>Ngày nhận</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
           <div class="form-group"><label>Ngày giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
-          <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="number" value="${record?.cost||0}"/></div>
-          <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="number" value="${record?.deposit||0}"/></div>
+          <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="text" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" /></div>
+          <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="text" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" /></div>
           <div class="form-group"><label>Hình thức TT</label>
             <select id="f-paymentType">${['Tiền mặt','Chuyển khoản','Công nợ'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
           </div>
@@ -397,7 +397,7 @@ function openForm(record) {
         device: fv('f-device'), serial: fv('f-serial'), password: fv('f-password'),
         accessories: fv('f-accessories'), techName: fv('f-techName'),
         receivedDate: fv('f-receivedDate'), deliveredDate: fv('f-deliveredDate'),
-        cost: fv('f-cost'), deposit: fv('f-deposit'), paymentType: fv('f-paymentType'),
+        cost: Number((fv('f-cost')||'').replace(/\./g,''))||0, deposit: Number((fv('f-deposit')||'').replace(/\./g,''))||0, paymentType: fv('f-paymentType'),
         status: fv('f-status'), cpu: fv('f-cpu'), ram: fv('f-ram'), ssd: fv('f-ssd'), vga: fv('f-vga'), initialCondition: fv('f-initialCondition'),
         repairRequest: fv('f-repairRequest')
       };
@@ -417,8 +417,8 @@ function openForm(record) {
         techName:       formWrap.querySelector('#f-techName').value.trim(),
         receivedDate:   formWrap.querySelector('#f-receivedDate').value,
         deliveredDate:  formWrap.querySelector('#f-deliveredDate').value,
-        cost:           parseFloat(formWrap.querySelector('#f-cost').value) || 0,
-        deposit:        parseFloat(formWrap.querySelector('#f-deposit').value) || 0,
+        cost:           parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,'')) || 0,
+        deposit:        parseFloat((formWrap.querySelector('#f-deposit').value||'').replace(/\./g,'')) || 0,
         paymentType:    formWrap.querySelector('#f-paymentType').value,
         status:         formWrap.querySelector('#f-status').value,
         cpu:            formWrap.querySelector('#f-cpu').value.trim(),
