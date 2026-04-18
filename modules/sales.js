@@ -106,85 +106,75 @@ export async function mount(container) {
     const pOpts = pays.map(p => `<option value="${p}"${(d.payMethod||'Ti\u1ec1n m\u1eb7t')===p?' selected':''}>${p}</option>`).join('');
 
     formWrap.innerHTML = `
-      <div style="padding:0 1rem">
-      <div style="background:#fff;border-radius:12px;box-shadow:0 2px 14px rgba(0,0,0,.09);margin-bottom:1rem;overflow:hidden">
-
-        <div style="padding:1rem 1.25rem;border-bottom:1px solid #eee">
-          <div style="font-weight:700;color:#1a73e8;margin-bottom:.85rem;font-size:.95rem">\ud83d\udc64 Th\u00f4ng tin kh\u00e1ch h\u00e0ng</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
-            <div>
-              <div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:.3rem">Kh\u00e1ch h\u00e0ng</div>
-              <input id="sf-customer" class="form-control" placeholder="T\u00ean ho\u1eb7c t\u00ecm KH m\u1edbi..." value="${d.customer||''}">
-            </div>
-            <div>
-              <div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:.3rem">S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</div>
-              <input id="sf-phone" class="form-control" placeholder="0xxx xxx xxx" value="${d.phone||''}">
-            </div>
-            <div>
-              <div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:.3rem">Ghi ch\u00fa \u0111\u01a1n</div>
-              <input id="sf-note" class="form-control" placeholder="B\u1ea3o h\u00e0nh, giao h\u00e0ng..." value="${d.note||''}">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem">
-            <div>
-              <div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:.3rem">B\u1ea3o h\u00e0nh</div>
-              <select id="sf-warranty" class="form-control">${wOpts}</select>
-            </div>
-            <div>
-              <div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:.3rem">H\u00ecnh th\u1ee9c thanh to\u00e1n</div>
-              <select id="sf-paymethod" class="form-control">${pOpts}</select>
-            </div>
-          </div>
-        </div>
-
-        <div style="padding:1rem 1.25rem;border-bottom:1px solid #eee">
-          <div style="font-weight:700;color:#1a73e8;margin-bottom:.85rem;font-size:.95rem">\ud83d\uded2 Danh s\u00e1ch s\u1ea3n ph\u1ea9m</div>
-          <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:720px">
-            <thead>
-              <tr style="background:#f8f9fa">
-                <th style="padding:.45rem .4rem;text-align:left;width:80px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">M\u00e3 SP</th>
-                <th style="padding:.45rem .4rem;text-align:left;min-width:220px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase">T\u00ean SP</th>
-                <th style="padding:.45rem .4rem;text-align:center;width:55px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase">SL</th>
-                <th style="padding:.45rem .4rem;text-align:right;width:110px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">\u0110\u01a1n gi\u00e1</th>
-                <th style="padding:.45rem .4rem;text-align:center;width:65px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">G.Gi\u00e1%</th>
-                <th style="padding:.45rem .4rem;text-align:right;width:110px;font-size:.7rem;color:#666;font-weight:700;text-transform:uppercase;white-space:nowrap">Th\u00e0nh ti\u1ec1n</th>
-                <th style="width:32px"></th>
-              </tr>
-            </thead>
-            <tbody id="sf-rows"></tbody>
-          </table>
-          </div>
-          <button id="sf-add-row" style="margin-top:.6rem;background:none;border:1px dashed #bbb;color:#555;padding:.32rem .75rem;border-radius:6px;cursor:pointer;font-size:.82rem">+ Th\u00eam d\u00f2ng</button>
-        </div>
-
-        <div style="padding:1rem 1.25rem;border-bottom:1px solid #eee">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0">
-            <span style="color:#555;font-size:.9rem">T\u1ed5ng ti\u1ec1n h\u00e0ng</span>
-            <span id="sf-subtotal" style="font-weight:600;font-size:.9rem">0 \u0111</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0">
-            <span style="color:#555;font-size:.9rem">Gi\u1ea3m gi\u00e1 th\u00eam (\u0111)</span>
-            <input id="sf-extra-disc" type="number" min="0" value="${d.extraDiscount||0}" style="width:130px;text-align:right;border:1px solid #ddd;border-radius:6px;padding:.3rem .5rem;font-size:.9rem">
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;background:#1a3a6b;color:#fff;padding:.8rem 1rem;border-radius:8px;margin:.5rem 0">
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:.88rem">T\u1ed4NG THANH TO\u00c1N</span>
-            <span id="sf-total" style="font-weight:700;font-size:1.1rem">0 \u0111</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0">
-            <span style="color:#555;font-size:.9rem">Kh\u00e1ch tr\u1ea3 (\u0111)</span>
-            <input id="sf-paid" type="number" min="0" value="${d.paid||0}" style="width:130px;text-align:right;border:1px solid #ddd;border-radius:6px;padding:.3rem .5rem;font-size:.9rem">
-          </div>
-        </div>
-
-        <div style="padding:1rem 1.25rem;display:flex;gap:.75rem;align-items:center">
-          <button id="sf-print" style="flex:1;background:#2ecc71;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udda8 In Bill + BH</button>
-          <button id="sf-save" style="flex:1;background:#1a3a6b;color:#fff;border:none;padding:.78rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.92rem">\ud83d\udcbe L\u01b0u \u0110\u01a1n H\u00e0ng</button>
-          ${existing ? '<button id="sf-del" style="background:none;border:1px solid #ddd;border-radius:8px;padding:.78rem .95rem;cursor:pointer;font-size:1.1rem;color:#999">\ud83d\uddd1</button>' : ''}
-        </div>
-      </div>
-      </div>
-    `;
+<div style="padding:0 0 80px">
+  <style>
+    #sale-form-wrap .fcard{background:#fff;border-radius:12px;box-shadow:0 2px 14px rgba(0,0,0,.09);padding:1rem 1.25rem;margin-bottom:1rem}
+    #sale-form-wrap .fcard h3{margin:0 0 .85rem;font-size:.97rem;display:flex;align-items:center;gap:.4rem;color:#1e293b;font-weight:700}
+    #sale-form-wrap label.flbl{font-size:.72rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+    #sale-form-wrap .finput,#sale-form-wrap .form-control{width:100%;box-sizing:border-box;padding:5px 8px;height:32px;font-size:.85rem;border:1px solid #cbd5e1;border-radius:6px;outline:none}
+    #sale-form-wrap .finput:focus,#sale-form-wrap .form-control:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
+    #sale-form-wrap table{width:100%;border-collapse:collapse}
+    #sale-form-wrap thead th{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;padding:6px 6px;text-align:left;background:#f8fafc;border-bottom:2px solid #e2e8f0}
+    #sale-form-wrap tbody td{padding:3px 3px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    #sale-form-wrap tbody td .finput,#sale-form-wrap tbody td .form-control{height:28px;font-size:.82rem;padding:3px 5px}
+    #sale-form-wrap .rtotal{font-weight:600;font-size:.85rem;color:#1e293b;text-align:right;padding-right:6px;white-space:nowrap;min-width:90px}
+    #sale-form-wrap .rdel{background:#fee2e2;color:#dc2626;border:none;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:.9rem}
+    #sale-form-wrap .rdel:hover{background:#fecaca}
+  </style>
+  <div class="fcard">
+    <h3>👤 Thông tin khách hàng</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+      <div><label class="flbl">Khách hàng</label><input id="sf-customer" class="finput" placeholder="Tên hoặc tìm KH mới..." value="${d.customer||''}"></div>
+      <div><label class="flbl">Số điện thoại</label><input id="sf-phone" class="finput" placeholder="0xxx xxx xxx" value="${d.phone||''}"></div>
+      <div><label class="flbl">Ghi chú đơn</label><input id="sf-note" class="finput" placeholder="Bảo hành, giao hàng..." value="${d.note||''}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+      <div><label class="flbl">Bảo hành</label>
+        <select id="sf-warranty" class="finput">${['3 tháng','6 tháng','12 tháng','24 tháng','Không BH'].map(v=>`<option${(d.warranty||'3 tháng')===v?' selected':''}>${v}</option>`).join('')}</select></div>
+      <div><label class="flbl">Hình thức thanh toán</label>
+        <select id="sf-paymethod" class="finput">${['Tiền mặt','Chuyển khoản','Thẻ'].map(v=>`<option${(d.payMethod||'Tiền mặt')===v?' selected':''}>${v}</option>`).join('')}</select></div>
+    </div>
+  </div>
+  <div class="fcard">
+    <h3>🛒 Danh sách sản phẩm</h3>
+    <table>
+      <thead><tr>
+        <th style="width:90px">Mã SP</th><th>Tên SP</th>
+        <th style="width:52px;text-align:center">SL</th>
+        <th style="width:110px;text-align:right">Đơn giá</th>
+        <th style="width:68px;text-align:center">G.Giá%</th>
+        <th style="width:110px;text-align:right">Thành tiền</th>
+        <th style="width:36px"></th>
+      </tr></thead>
+      <tbody id="sf-rows"></tbody>
+    </table>
+    <button id="sf-add-row" style="margin-top:.5rem;padding:5px 14px;font-size:.85rem;background:#f8fafc;border:1px dashed #94a3b8;border-radius:6px;cursor:pointer;color:#475569;font-weight:600">+ Thêm dòng</button>
+  </div>
+  <div class="fcard">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
+      <span style="color:#475569">Tổng tiền hàng</span>
+      <span id="sf-subtotal" style="font-weight:600;font-size:.95rem">0 đ</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
+      <span style="color:#475569">Giảm giá thêm (đ)</span>
+      <input id="sf-extra-disc" type="number" class="finput" value="${d.extraDiscount||0}" style="width:120px;text-align:right;font-weight:600">
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#1a3a6b;border-radius:8px;padding:.7rem 1rem;margin:.5rem 0">
+      <span style="color:#fff;font-weight:700;letter-spacing:.5px;text-transform:uppercase">Tổng thanh toán</span>
+      <span id="sf-total" style="color:#fff;font-weight:700;font-size:1.1rem">0 đ</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0">
+      <span style="color:#475569">Khách trả (đ)</span>
+      <input id="sf-paid" type="number" class="finput" value="${d.paid||0}" style="width:120px;text-align:right;font-weight:600">
+    </div>
+  </div>
+</div>
+<div style="position:sticky;bottom:0;left:0;right:0;display:flex;gap:.5rem;padding:.65rem 1rem;background:#fff;border-top:2px solid #e2e8f0;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
+  <button id="sf-print" style="flex:1;padding:.6rem;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">🖨 In Bill + BH</button>
+  <button id="sf-save" style="flex:1.5;padding:.6rem;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">💾 Lưu Đơn Hàng</button>
+  ${existing?`<button id="sf-del" style="padding:.6rem .75rem;background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:8px;font-size:1rem;cursor:pointer" title="Xóa">🗑</button>`:''}
+</div>
+`;
 
     rows.forEach(r => addRow(r));
     recalc();
