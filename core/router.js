@@ -1,5 +1,5 @@
 // core/router.js - Hash-based routing
-// MÃÂ¡ÃÂ»ÃÂi module ÃÂÃÂÃÂÃÂng kÃÂÃÂ½ route cÃÂ¡ÃÂ»ÃÂ§a mÃÂÃÂ¬nh qua registerRoute()
+// Má»i module ÄÄng kÃ½ route cá»§a mÃ¬nh qua registerRoute()
 
 const routes = {};
 let currentRoute = null;
@@ -21,7 +21,7 @@ export function initRouter() {
         const mountFn = routes[hash];
         const main = document.getElementById('main-content');
         if (!mountFn) {
-            main.innerHTML = '<p class="empty">Trang khÃÂÃÂ´ng tÃÂ¡ÃÂ»ÃÂn tÃÂ¡ÃÂºÃÂ¡i.</p>';
+            main.innerHTML = '<p class="empty">Trang khÃ´ng tá»n táº¡i.</p>';
             return;
         }
         if (currentRoute === hash) return;
@@ -32,9 +32,9 @@ export function initRouter() {
     }
 
     window.addEventListener('hashchange', navigate);
-    navigate(); // render trang ÃÂÃÂÃÂ¡ÃÂºÃÂ§u tiÃÂÃÂªn
+    navigate(); // render trang Äáº§u tiÃªn
 
-    // Import tÃÂ¡ÃÂºÃÂ¥t cÃÂ¡ÃÂºÃÂ£ modules ÃÂÃÂÃÂ¡ÃÂ»ÃÂng thÃÂ¡ÃÂ»ÃÂi cÃÂÃÂ¹ng kÃÂÃÂ½ routes
+    // Import táº¥t cáº£ modules Äá»ng thá»i cÃ¹ng kÃ½ routes
     Promise.all([
         import('../modules/repairs.js?v=26'),
         import('../modules/sales.js?v=12'),
