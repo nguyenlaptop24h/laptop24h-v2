@@ -202,8 +202,8 @@ export async function mount(container) {
         <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
         <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
         <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>Giá vốn<br><input id="f-cost" type="number" class="search-input" value="${p.cost||0}" style="width:100%" /></label>
-        <label>Giá bán<br><input id="f-sell" type="number" class="search-input" value="${p.price||0}" style="width:100%" /></label>
+        <label>Giá vốn<br><input id="f-cost" type="text" class="search-input" value="${String(p.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" style="width:100%" /></label>
+        <label>Giá bán<br><input id="f-sell" type="text" class="search-input" value="${String(p.price||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" style="width:100%" /></label>
         <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
       confirmText: 'Lưu',
@@ -216,8 +216,8 @@ export async function mount(container) {
           categoryKey: document.querySelector('#f-cat')?.value || null,
           unit:        document.querySelector('#f-unit')?.value.trim() || '',
           stock:       Number(document.querySelector('#f-stock')?.value) || 0,
-          cost: Number(document.querySelector('#f-cost')?.value) || 0,
-          price: Number(document.querySelector('#f-sell')?.value) || 0,
+          cost: Number((document.querySelector('#f-cost')?.value||'').replace(/\./g,'')) || 0,
+          price: Number((document.querySelector('#f-sell')?.value||'').replace(/\./g,'')) || 0,
           warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
         };
         key ? await updateItem(COL_PRODUCTS, key, data) : await addItem(COL_PRODUCTS, data);
