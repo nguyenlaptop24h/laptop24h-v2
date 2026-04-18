@@ -122,57 +122,57 @@ export async function mount(container) {
     #sale-form-wrap .rdel:hover{background:#fecaca}
   </style>
   <div class="fcard">
-    <h3>= Th�ng tin kh�ch h�ng</h3>
+    <h3>👤 Thông tin khách hàng</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.6rem">
-      <div><label class="flbl">Kh�ch h�ng</label><input id="sf-customer" class="finput" placeholder="T�n ho�c t�m KH m�i..." value="${d.customer||''}"></div>
-      <div><label class="flbl">S� i�n tho�i</label><input id="sf-phone" class="finput" placeholder="0xxx xxx xxx" value="${d.phone||''}"></div>
-      <div><label class="flbl">Ghi ch� �n</label><input id="sf-note" class="finput" placeholder="B�o h�nh, giao h�ng..." value="${d.note||''}"></div>
+      <div><label class="flbl">Khách hàng</label><input id="sf-customer" class="finput" placeholder="Tên hoặc tìm KH mới..." value="${d.customer||''}"></div>
+      <div><label class="flbl">Số điện thoại</label><input id="sf-phone" class="finput" placeholder="0xxx xxx xxx" value="${d.phone||''}"></div>
+      <div><label class="flbl">Ghi chú đơn</label><input id="sf-note" class="finput" placeholder="Bảo hành, giao hàng..." value="${d.note||''}"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
-      <div><label class="flbl">B�o h�nh</label>
-        <select id="sf-warranty" class="finput">${['3 th�ng','6 th�ng','12 th�ng','24 th�ng','Kh�ng BH'].map(v=>`<option${(d.warranty||'3 th�ng')===v?' selected':''}>${v}</option>`).join('')}</select></div>
-      <div><label class="flbl">H�nh th�c thanh to�n</label>
-        <select id="sf-paymethod" class="finput">${['Ti�n m�t','Chuy�n kho�n','Th�'].map(v=>`<option${(d.payMethod||'Ti�n m�t')===v?' selected':''}>${v}</option>`).join('')}</select></div>
+      <div><label class="flbl">Bảo hành</label>
+        <select id="sf-warranty" class="finput">${['3 tháng','6 tháng','12 tháng','24 tháng','Không BH'].map(v=>`<option${(d.warranty||'3 tháng')===v?' selected':''}>${v}</option>`).join('')}</select></div>
+      <div><label class="flbl">Hình thức thanh toán</label>
+        <select id="sf-paymethod" class="finput">${['Tiền mặt','Chuyển khoản','Thẻ'].map(v=>`<option${(d.payMethod||'Tiền mặt')===v?' selected':''}>${v}</option>`).join('')}</select></div>
     </div>
   </div>
   <div class="fcard">
-    <h3>= Danh s�ch s�n ph�m</h3>
+    <h3>🛒 Danh sách sản phẩm</h3>
     <table>
       <thead><tr>
-        <th style="width:90px">M� SP</th><th>T�n SP</th>
+        <th style="width:90px">Mã SP</th><th>Tên SP</th>
         <th style="width:52px;text-align:center">SL</th>
-        <th style="width:110px;text-align:right">�n gi�</th>
-        <th style="width:68px;text-align:center">G.Gi�%</th>
-        <th style="width:110px;text-align:right">Th�nh ti�n</th>
+        <th style="width:110px;text-align:right">Đơn giá</th>
+        <th style="width:68px;text-align:center">G.Giá%</th>
+        <th style="width:110px;text-align:right">Thành tiền</th>
         <th style="width:36px"></th>
       </tr></thead>
       <tbody id="sf-rows"></tbody>
     </table>
-    <button id="sf-add-row" style="margin-top:.5rem;padding:5px 14px;font-size:.85rem;background:#f8fafc;border:1px dashed #94a3b8;border-radius:6px;cursor:pointer;color:#475569;font-weight:600">+ Th�m d�ng</button>
+    <button id="sf-add-row" style="margin-top:.5rem;padding:5px 14px;font-size:.85rem;background:#f8fafc;border:1px dashed #94a3b8;border-radius:6px;cursor:pointer;color:#475569;font-weight:600">+ Thêm dòng</button>
   </div>
   <div class="fcard">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
-      <span style="color:#475569">T�ng ti�n h�ng</span>
-      <span id="sf-subtotal" style="font-weight:600;font-size:.95rem">0 </span>
+      <span style="color:#475569">Tổng tiền hàng</span>
+      <span id="sf-subtotal" style="font-weight:600;font-size:.95rem">0 đ</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
-      <span style="color:#475569">Gi�m gi� th�m ()</span>
+      <span style="color:#475569">Giảm giá thêm (đ)</span>
       <input id="sf-extra-disc" type="number" class="finput" value="${d.extraDiscount||0}" style="width:120px;text-align:right;font-weight:600">
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;background:#1a3a6b;border-radius:8px;padding:.7rem 1rem;margin:.5rem 0">
-      <span style="color:#fff;font-weight:700;letter-spacing:.5px;text-transform:uppercase">T�ng thanh to�n</span>
-      <span id="sf-total" style="color:#fff;font-weight:700;font-size:1.1rem">0 </span>
+      <span style="color:#fff;font-weight:700;letter-spacing:.5px;text-transform:uppercase">Tổng thanh toán</span>
+      <span id="sf-total" style="color:#fff;font-weight:700;font-size:1.1rem">0 đ</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0">
-      <span style="color:#475569">Kh�ch tr� ()</span>
+      <span style="color:#475569">Khách trả (đ)</span>
       <input id="sf-paid" type="number" class="finput" value="${d.paid||0}" style="width:120px;text-align:right;font-weight:600">
     </div>
   </div>
 </div>
 <div style="position:sticky;bottom:0;left:0;right:0;display:flex;gap:.5rem;padding:.65rem 1rem;background:#fff;border-top:2px solid #e2e8f0;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
-  <button id="sf-print" style="flex:1;padding:.6rem;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">= In Bill + BH</button>
-  <button id="sf-save" style="flex:1.5;padding:.6rem;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">= L�u �n H�ng</button>
-  ${existing?`<button id="sf-del" style="padding:.6rem .75rem;background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:8px;font-size:1rem;cursor:pointer" title="X�a">=</button>`:''}
+  <button id="sf-print" style="flex:1;padding:.6rem;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">🖨 In Bill + BH</button>
+  <button id="sf-save" style="flex:1.5;padding:.6rem;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">💾 Lưu Đơn Hàng</button>
+  ${existing?`<button id="sf-del" style="padding:.6rem .75rem;background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:8px;font-size:1rem;cursor:pointer" title="Xóa">🗑</button>`:''}
 </div>
 `;
 
