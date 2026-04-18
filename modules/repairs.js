@@ -211,6 +211,22 @@ export async function mount(container) {
       { label: 'Chi phÃ­',    key: r => formatVND(r.cost || 0) },
       { label: 'Tráº¡ng thÃ¡i', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
     ];
+    const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
+    const trs = data.map(r =>
+      '<tr class="rep-row" data-key="' + r._key + '">' +
+      cols.map(c => '<td style="padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;font-size:.85rem;vertical-align:middle">' + c.key(r) + '</td>').join('') +
+      '</tr>'
+    ).join('');
+    wrap.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">' +
+      '<thead><tr style="background:#f9fafb">' + ths + '</tr></thead>' +
+      '<tbody>' + trs + '</tbody></table></div>';
+    wrap.querySelectorAll('.rep-radio').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const rec = data.find(r => r._key === radio.dataset.key);
+        setSelected(rec || null);
+      });
+    });
+  }
 
   async function quickDeliver(record) {
     if (!record) return;
