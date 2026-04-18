@@ -19,3 +19,18 @@ async function main() {
     initRouter();
 }
 main().catch(console.error);
+
+
+// Number format: auto-add dots every 3 digits for inputs with data-fmt="number"
+document.addEventListener('input', function(e) {
+  if (e.target.dataset && e.target.dataset.fmt === 'number') {
+    const pos = e.target.selectionStart;
+    const before = e.target.value.length;
+    const v = e.target.value.replace(/[^0-9]/g, '');
+    const fmt = v.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    e.target.value = fmt;
+    // Restore cursor roughly
+    const diff = fmt.length - before;
+    e.target.setSelectionRange(pos + diff, pos + diff);
+  }
+});
