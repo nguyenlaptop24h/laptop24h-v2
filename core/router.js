@@ -36,14 +36,14 @@ export function initRouter() {
 
     // Import tất cả modules đồng thời cùng ký routes
     Promise.all([
-        import('../modules/repairs.js?v=29'),
-        import('../modules/sales.js?v=13'),
-        import('../modules/inventory.js?v=16'),
-        import('../modules/customers.js?v=2'),
-        import('../modules/debts.js?v=2'),
-        import('../modules/stats.js?v=2'),
-        import('../modules/users.js?v=2'),
-        import('../modules/settings.js?v=2'),
+        import('../modules/repairs.js?v=30'),
+        import('../modules/sales.js?v=14'),
+        import('../modules/inventory.js?v=17'),
+        import('../modules/customers.js?v=3'),
+        import('../modules/debts.js?v=3'),
+        import('../modules/stats.js?v=3'),
+        import('../modules/users.js?v=3'),
+        import('../modules/settings.js?v=3'),
     ]).then(([repairs, sales, inventory, customers, debts, stats, users, settings]) => {
         registerRoute('#repairs',   repairs.mount);
         registerRoute('#sales',     sales.mount);
