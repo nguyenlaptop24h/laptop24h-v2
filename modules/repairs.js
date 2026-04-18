@@ -308,6 +308,7 @@ export async function mount(container) {
     try {
       await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: todayStr() });
       toast('✅ Đã giao máy thành công');
+      printWarrantyBill({...record, status: 'Đã giao', deliveredDate: todayStr()});
     } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 
