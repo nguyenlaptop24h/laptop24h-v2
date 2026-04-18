@@ -124,8 +124,6 @@ export async function mount(container) {
       <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">â</button>
       <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">â</button>
       <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">ð¨ In bill BH</button>
-      <button id="rep-deliver-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#16a34a;color:#fff;border-color:#16a34a">ð¦ Giao</button>
-      <button id="rep-status-btn"  class="btn btn--secondary" disabled style="opacity:.4;background:#7c3aed;color:#fff;border-color:#7c3aed">â</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">â Chá»n 1 phiáº¿u Äá» thao tÃ¡c</span>
     </div>
     <div id="rep-table-wrap"></div>
@@ -148,8 +146,6 @@ export async function mount(container) {
   const editBtn    = container.querySelector('#rep-edit-btn');
   const delBtn     = container.querySelector('#rep-del-btn');
   const printBtn   = container.querySelector('#rep-print-btn');
-  const deliverBtn = container.querySelector('#rep-deliver-btn');
-  const statusBtn  = container.querySelector('#rep-status-btn');
   const selHint    = container.querySelector('#rep-sel-hint');
 
   searchEl.addEventListener('input', filterData);
@@ -171,19 +167,11 @@ export async function mount(container) {
     const rec = allData.find(r => r._key === selectedKey);
     if (rec) printWarrantyBill(rec);
   });
-  deliverBtn.addEventListener('click', () => {
-    const rec = allData.find(r => r._key === selectedKey);
-    if (rec) quickDeliver(rec);
-  });
-  statusBtn.addEventListener('click', () => {
-    const rec = allData.find(r => r._key === selectedKey);
-    if (rec) quickChangeStatus(rec);
-  });
 
   function setSelected(key) {
     selectedKey = key;
     const on = !!key;
-    [editBtn, delBtn, printBtn, deliverBtn, statusBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
+    [editBtn, delBtn, printBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
     selHint.style.display = on ? 'none' : '';
     container.querySelectorAll('.rep-row').forEach(tr => {
       tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
@@ -222,47 +210,6 @@ export async function mount(container) {
       { label: 'KTV',        key: r => r.techName || '' },
       { label: 'Chi phÃ­',    key: r => formatVND(r.cost || 0) },
       { label: 'Tráº¡ng thÃ¡i', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' },
-      { label: '',           key: r =>
-          '<div style="display:flex;gap:.3rem">' +
-          (r.status !== 'ÄÃ£ giao' && r.status !== 'Huá»·'
-            ? '<button class="btn btn--sm btn--primary rep-deliver" data-key="' + r._key + '" style="background:#16a34a;white-space:nowrap">ð¦ Giao</button>' : '') +
-          '<button class="btn btn--sm btn--primary rep-status" data-key="' + r._key + '" style="background:#7c3aed" title="Äá»i tráº¡ng thÃ¡i">â</button>' +
-          '</div>'
-      }
-    ];
-    wrap.innerHTML = buildTable(cols, data);
-
-    // Tag tbody rows with data-key and style
-    const tbody = wrap.querySelector('tbody');
-    if (tbody) {
-      [...tbody.querySelectorAll('tr')].forEach((tr, i) => {
-        if (!data[i]) return;
-        const key = data[i]._key;
-        tr.dataset.key = key;
-        tr.classList.add('rep-row');
-        tr.style.cursor = 'pointer';
-        if (key === selectedKey) tr.style.background = '#dbeafe';
-        tr.addEventListener('click', e => {
-          if (e.target.classList.contains('btn') || e.target.closest('.btn')) return;
-          setSelected(key === selectedKey ? null : key);
-        
-    const _hs=!!wrap.querySelector('tr.selected');
-    ['rep-edit-btn','rep-del-btn','rep-print-btn'].forEach(function(_id){const _b=wrap.querySelector('#'+_id);if(_b)_b.style.display=_hs?'':'none';});
-    const _sh=wrap.querySelector('#rep-sel-hint');if(_sh)_sh.style.display=_hs?'none':'';});
-      });
-    }
-
-    wrap.querySelectorAll('.rep-radio').forEach(rb => {
-      rb.checked = rb.dataset.key === selectedKey;
-      rb.addEventListener('change', () => { if (rb.checked) setSelected(rb.dataset.key); });
-    });
-    wrap.querySelectorAll('.rep-deliver').forEach(btn =>
-      btn.addEventListener('click', e => { e.stopPropagation(); quickDeliver(data.find(r => r._key === btn.dataset.key)); })
-    );
-    wrap.querySelectorAll('.rep-status').forEach(btn =>
-      btn.addEventListener('click', e => { e.stopPropagation(); quickChangeStatus(data.find(r => r._key === btn.dataset.key)); })
-    );
-  }
 
   async function quickDeliver(record) {
     if (!record) return;
@@ -389,7 +336,7 @@ function openForm(record) {
 <input type="hidden" id="f-paymentType" value="${record?.paymentType||'Tiền mặt'}">
 <input type="hidden" id="f-deliveredDate" value="${record?.deliveredDate||''}">
 </div>
-<div class="rfm-foot"><button class="rfm-cancbtn" id="f-cancel">Hủy</button><button class="rfm-savbtn" id="f-save">💾 Lưu phiếu</button></div>
+<div class="rfm-foot"><button class="rfm-cancbtn" id="f-cancel">Hủy</button><button id="f-print" style="padding:9px 22px;border:1.5px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500">🖨 In phiếu</button><button class="rfm-savbtn" id="f-save">💾 Lưu phiếu</button></div>
 </div></div>`;
     formWrap.classList.add('rep-modal');
     formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); });
