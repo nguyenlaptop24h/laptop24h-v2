@@ -202,8 +202,8 @@ export async function mount(container) {
         <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
         <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
         <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>Giá vốn<br><input id="f-cost" type="text" class="search-input" value="${String(p.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" style="width:100%" /></label>
-        <label>Giá bán<br><input id="f-sell" type="text" class="search-input" value="${String(p.price||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" style="width:100%" /></label>
+        <label>Giá vốn<br><input id="f-cost" type="text" class="search-input" data-fmt="number" value="${String(p.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" style="width:100%" /></label>
+        <label>Giá bán<br><input id="f-sell" type="text" class="search-input" data-fmt="number" value="${String(p.price||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" style="width:100%" /></label>
         <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
       confirmText: 'Lưu',
