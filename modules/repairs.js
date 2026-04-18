@@ -296,9 +296,9 @@ export async function mount(container) {
       rb.addEventListener('change', () => { if (rb.checked) setSelected(rb.dataset.key); });
     });
     const _rdb=document.getElementById('rep-deliver-btn');
-    if(_rdb)_rdb.onclick=()=>{if(selectedKey)quickDeliver(data.find(r=>r._key===selectedKey));};
+    if(_rdb)_rdb.onclick=()=>{if(selectedKey)quickDeliver(allData.find(r=>r._key===selectedKey));};
     const _rsb=document.getElementById('rep-status-btn');
-    if(_rsb)_rsb.onclick=()=>{if(selectedKey)quickChangeStatus(data.find(r=>r._key===selectedKey));};
+    if(_rsb)_rsb.onclick=()=>{if(selectedKey)quickChangeStatus(allData.find(r=>r._key===selectedKey));};
   }
 
   async function quickDeliver(record) {
