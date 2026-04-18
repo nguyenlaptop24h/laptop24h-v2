@@ -1,4 +1,4 @@
-// modules/users.js - Quản lý người dùng (admin only)
+// modules/users.js - Qu�n l� ng��i d�ng (admin only)
 import { registerRoute } from '../core/router.js';
 import { getAll, addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal } from '../core/ui.js';
@@ -8,19 +8,19 @@ const COLLECTION = 'users';
 
 registerRoute('#users', mount);
 
-const ROLE_LABEL = { admin: 'Quản trị', staff: 'Nhân viên' };
+const ROLE_LABEL = { admin: 'Qu�n tr�', staff: 'Nh�n vi�n' };
 
 export async function mount(container) {
   if (!isAdmin()) {
-    container.innerHTML = '<div style="padding:2rem;color:#e53e3e">Bạn không có quyền truy cập trang này.</div>';
+    container.innerHTML = '<div style="padding:2rem;color:#e53e3e">B�n kh�ng c� quy�n truy c�p trang n�y.</div>';
     return;
   }
 
   container.innerHTML = `
     <div class="module-header">
-      <h2>Quản lý người dùng</h2>
+      <h2>Qu�n l� ng��i d�ng</h2>
       <div class="module-actions">
-        <button id="user-add" class="btn btn--primary">+ Thêm người dùng</button>
+        <button id="user-add" class="btn btn--primary">+ Th�m ng��i d�ng</button>
       </div>
     </div>
     <div id="user-table-wrap"></div>
@@ -40,13 +40,13 @@ export async function mount(container) {
   function renderTable(data) {
     const wrap = document.getElementById('user-table-wrap');
     if (!data.length) {
-      wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>';
+      wrap.innerHTML = '<p style="padding:1rem;color:#888">Kh�ng c� d� li�u</p>';
       return;
     }
     const cols = [
-      { label: 'Tên đăng nhập', key: u => u.username || '' },
-      { label: 'Họ tên',        key: u => u.name || '' },
-      { label: 'Vai trò',       key: u => {
+      { label: 'T�n ng nh�p', key: u => u.username || '' },
+      { label: 'H� t�n',        key: u => u.name || '' },
+      { label: 'Vai tr�',       key: u => {
           const role = u.role || 'staff';
           return `<span class="badge ${role==='admin'?'badge-purple':'badge-blue'}">${ROLE_LABEL[role]||role}</span>`;
         }
@@ -54,8 +54,8 @@ export async function mount(container) {
       { label: '',              key: u => {
           const isSelf = u._key === me?._key;
           return `
-            <button class="btn btn--sm btn--secondary user-edit" data-key="${u._key}">Sửa</button>
-            ${!isSelf ? `<button class="btn btn--sm btn--danger user-del" data-key="${u._key}">Xóa</button>` : ''}
+            <button class="btn btn--sm btn--secondary user-edit" data-key="${u._key}">S�a</button>
+            ${!isSelf ? `<button class="btn btn--sm btn--danger user-del" data-key="${u._key}">X�a</button>` : ''}
           `;
         }
       }
@@ -76,31 +76,31 @@ export async function mount(container) {
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
       <div class="form-card">
-        <h3>${record ? 'Cập nhật người dùng' : 'Thêm người dùng'}</h3>
+        <h3>${record ? 'C�p nh�t ng��i d�ng' : 'Th�m ng��i d�ng'}</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label>Tên đăng nhập *</label>
+            <label>T�n ng nh�p *</label>
             <input id="f-username" type="text" value="${record?.username||''}" ${record?'readonly':''} />
           </div>
           <div class="form-group">
-            <label>Mật khẩu ${record?'(để trống = không đổi)':'*'}</label>
-            <input id="f-password" type="password" placeholder="${record?'Nhập mật khẩu mới nếu muốn đổi':'Mật khẩu'}" />
+            <label>M�t kh�u ${record?'(� tr�ng = kh�ng �i)':'*'}</label>
+            <input id="f-password" type="password" placeholder="${record?'Nh�p m�t kh�u m�i n�u mu�n �i':'M�t kh�u'}" />
           </div>
           <div class="form-group">
-            <label>Họ tên</label>
+            <label>H� t�n</label>
             <input id="f-name" type="text" value="${record?.name||''}" />
           </div>
           <div class="form-group">
-            <label>Vai trò</label>
+            <label>Vai tr�</label>
             <select id="f-role">
-              <option value="staff" ${record?.role==='staff'||!record?.role?'selected':''}>Nhân viên</option>
-              <option value="admin" ${record?.role==='admin'?'selected':''}>Quản trị</option>
+              <option value="staff" ${record?.role==='staff'||!record?.role?'selected':''}>Nh�n vi�n</option>
+              <option value="admin" ${record?.role==='admin'?'selected':''}>Qu�n tr�</option>
             </select>
           </div>
         </div>
         <div class="form-actions">
-          <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Tạo tài khoản'}</button>
-          <button id="f-cancel" class="btn btn--secondary">Hủy</button>
+          <button id="f-save" class="btn btn--primary">${record ? 'C�p nh�t' : 'T�o t�i kho�n'}</button>
+          <button id="f-cancel" class="btn btn--secondary">H�y</button>
         </div>
       </div>
     `;
@@ -116,8 +116,8 @@ export async function mount(container) {
       const name     = document.getElementById('f-name').value.trim();
       const role     = document.getElementById('f-role').value;
 
-      if (!username) { toast('Vui lòng nhập tên đăng nhập', 'error'); return; }
-      if (!record && !password) { toast('Vui lòng nhập mật khẩu', 'error'); return; }
+      if (!username) { toast('Vui l�ng nh�p t�n ng nh�p', 'error'); return; }
+      if (!record && !password) { toast('Vui l�ng nh�p m�t kh�u', 'error'); return; }
 
       const data = { username, name, role };
       if (password) data.password = password;
@@ -125,27 +125,27 @@ export async function mount(container) {
       try {
         if (record) {
           await updateItem(COLLECTION, record._key, data);
-          toast('Đã cập nhật người dùng');
+          toast('� c�p nh�t ng��i d�ng');
         } else {
           await addItem(COLLECTION, data);
-          toast('Đã tạo tài khoản');
+          toast('� t�o t�i kho�n');
         }
         wrap.classList.add('hidden');
         wrap.innerHTML = '';
       } catch(e) {
-        toast('Lỗi: ' + e.message, 'error');
+        toast('L�i: ' + e.message, 'error');
       }
     });
   }
 
   async function confirmDelete(key) {
-    const ok = await showModal('Xác nhận', 'Xóa người dùng này?', true);
+    const ok = await showModal('X�c nh�n', 'X�a ng��i d�ng n�y?', true);
     if (!ok) return;
     try {
       await deleteItem(COLLECTION, key);
-      toast('Đã xóa người dùng');
+      toast('� x�a ng��i d�ng');
     } catch(e) {
-      toast('Lỗi: ' + e.message, 'error');
+      toast('L�i: ' + e.message, 'error');
     }
   }
 }
