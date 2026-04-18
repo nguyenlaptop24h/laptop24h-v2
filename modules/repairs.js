@@ -371,7 +371,13 @@ function openForm(record) {
 <div class="rfm-head"><h2>🔧 Phiếu Nhận Máy Sửa</h2><button class="rfm-x" onclick="document.getElementById('f-cancel').click()">✕</button></div>
 <div class="rfm-body">
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>TÊN KHÁCH HÀNG *</label><input id="f-customerName" type="text" placeholder="Tên KH..." value="${record?.customerName||''}"></div><div class="rfm-f"><label>SỐ ĐIỆN THOẠI *</label><input id="f-phone" type="text" placeholder="0xxx..." value="${record?.phone||''}"></div><div class="rfm-f"><label>ĐỊA CHỈ</label><input id="f-address" type="text" placeholder="Địa chỉ..." value="${record?.address||''}"></div></div>
-<div class="rfm-r rfm-r3"><div class="rfm-f"><label>THIẾT BỊ *</label><input id="f-device" type="text" placeholder="Dell Inspiron 15 3520" value="${record?.device||''}"></div><div class="rfm-f"><label>MODEL MÃY</label><input id="f-serial" type="text" placeholder="SN12345..." value="${record?.serial||''}"></div><div class="rfm-f"><label>MẬT KHẨU MÁY</label><input id="f-password" type="text" placeholder="Password..." value="${record?.password||''}"></div></div>
+<div class="rfm-r rfm-r3"><div class="rfm-f"><label>THIẾT BỊ *</label><input id="f-device" type="text" placeholder="Dell Inspiron 15 3520" value="${record?.device||''}"></div><div class="rfm-f"><label>SERIAL / IMEI</label><input id="f-serial" type="text" placeholder="SN12345..." value="${record?.serial||''}"></div><div class="rfm-f"><label>MẬT KHẨU MÁY</label><input id="f-password" type="text" placeholder="Password..." value="${record?.password||''}"></div></div>
+<div class="rfm-r rfm-r4">
+<div class="rfm-f"><label>CPU</label><input id="f-cpu" placeholder="Intel i5-..." value="${record?.cpu||''}"></div>
+<div class="rfm-f"><label>RAM</label><input id="f-ram" placeholder="8GB DDR4" value="${record?.ram||''}"></div>
+<div class="rfm-f"><label>SSD</label><input id="f-ssd" placeholder="256GB NVMe" value="${record?.ssd||''}"></div>
+<div class="rfm-f"><label>VGA</label><input id="f-vga" placeholder="GTX 1650" value="${record?.vga||''}"></div>
+</div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>TÌNH TRẠNG KHI NHẬN (MÔ TẢ LỖI)</label><textarea id="f-initialCondition" placeholder="Không lên nguồn, màn hình trắng, bàn phím liệt...">${record?.initialCondition||''}</textarea></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>PHỤ KIỆN KÈM THEO</label><input id="f-accessories" type="text" placeholder="Sạc, túi, chuột..." value="${record?.accessories||''}"></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>NGÀY NHẬN *</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||new Date().toISOString().slice(0,10)}"></div><div class="rfm-f"><label>CHI PHÍ DỰ KIẾN (Đ)</label><input id="f-cost" type="text" data-fmt="number" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>TIỀN CỌC (Đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
@@ -382,12 +388,6 @@ function openForm(record) {
 <input type="hidden" id="f-status" value="${record?.status||'Tiếp nhận'}">
 <input type="hidden" id="f-paymentType" value="${record?.paymentType||'Tiền mặt'}">
 <input type="hidden" id="f-deliveredDate" value="${record?.deliveredDate||''}">
-<div class="rfm-r rfm-r4">
-<div class="rfm-f"><label>CPU</label><input id="f-cpu" placeholder="Intel i5-..." value="${record?.cpu||''}"></div>
-<div class="rfm-f"><label>RAM</label><input id="f-ram" placeholder="8GB DDR4" value="${record?.ram||''}"></div>
-<div class="rfm-f"><label>SSD</label><input id="f-ssd" placeholder="256GB NVMe" value="${record?.ssd||''}"></div>
-<div class="rfm-f"><label>VGA</label><input id="f-vga" placeholder="GTX 1650" value="${record?.vga||''}"></div>
-</div>
 </div>
 <div class="rfm-foot"><button class="rfm-cancbtn" id="f-cancel">Hủy</button><button class="rfm-savbtn" id="f-save">💾 Lưu phiếu</button></div>
 </div></div>`;
