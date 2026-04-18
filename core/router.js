@@ -1,5 +1,5 @@
 // core/router.js - Hash-based routing
-// Má»i module ÄÄng kÃ½ route cá»§a mÃ¬nh qua registerRoute()
+// Mỗi module đăng ký route của mình qua registerRoute()
 
 const routes = {};
 let currentRoute = null;
@@ -21,7 +21,7 @@ export function initRouter() {
         const mountFn = routes[hash];
         const main = document.getElementById('main-content');
         if (!mountFn) {
-            main.innerHTML = '<p class="empty">Trang khÃ´ng tá»n táº¡i.</p>';
+            main.innerHTML = '<p class="empty">Trang không tồn tại.</p>';
             return;
         }
         if (currentRoute === hash) return;
@@ -32,18 +32,18 @@ export function initRouter() {
     }
 
     window.addEventListener('hashchange', navigate);
-    navigate(); // render trang Äáº§u tiÃªn
+    navigate(); // render trang đầu tiên
 
-    // Import táº¥t cáº£ modules Äá»ng thá»i cÃ¹ng kÃ½ routes
+    // Import tất cả modules đồng thời cùng ký routes
     Promise.all([
-        import('../modules/repairs.js?v=27'),
-        import('../modules/sales.js?v=12'),
-        import('../modules/inventory.js?v=15'),
-        import('../modules/customers.js'),
-        import('../modules/debts.js'),
-        import('../modules/stats.js'),
-        import('../modules/users.js'),
-        import('../modules/settings.js'),
+        import('../modules/repairs.js?v=28'),
+        import('../modules/sales.js?v=13'),
+        import('../modules/inventory.js?v=16'),
+        import('../modules/customers.js?v=2'),
+        import('../modules/debts.js?v=2'),
+        import('../modules/stats.js?v=2'),
+        import('../modules/users.js?v=2'),
+        import('../modules/settings.js?v=2'),
     ]).then(([repairs, sales, inventory, customers, debts, stats, users, settings]) => {
         registerRoute('#repairs',   repairs.mount);
         registerRoute('#sales',     sales.mount);
