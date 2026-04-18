@@ -1,17 +1,17 @@
-// modules/repairs.js - Phiáº¿u sá»­a chá»¯a
+// modules/repairs.js - Phiếu sửa chữa
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
 const COLLECTION = 'repairs';
 
-const STATUS_LIST = ['Tiáº¿p nháº­n','Äang sá»­a','HoÃ n thÃ nh','ÄÃ£ giao','Huá»·'];
+const STATUS_LIST = ['Tiếp nhận','Đang sửa','Hoàn thành','Đã giao','Huỷ'];
 const STATUS_CLASS = {
-  'Tiáº¿p nháº­n': 'badge-blue',
-  'Äang sá»­a':  'badge-orange',
-  'HoÃ n thÃ nh':'badge-green',
-  'ÄÃ£ giao':   'badge-purple',
-  'Huá»·':       'badge-red'
+  'Tiếp nhận': 'badge-blue',
+  'Đang sửa':  'badge-orange',
+  'Hoàn thành':'badge-green',
+  'Đã giao':   'badge-purple',
+  'Huỷ':       'badge-red'
 };
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -51,7 +51,7 @@ function printWarrantyBill(record) {
       '</tr>';
   }).join('');
   const html = `<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>Phiếu SC</title>
+<meta charset="utf-8"><title>Phi�u SC</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -73,43 +73,43 @@ ${BSr.logo?`<img src="${BSr.logo}" style="height:48px;margin-bottom:4px"><br>`:"
 <div contenteditable="true" style="font-size:12px;color:#666">${BSr.phone||""}</div>
 </div>
 <div style="text-align:center;margin-bottom:14px">
-<div contenteditable="true" style="font-size:15px;font-weight:700;color:${bc};letter-spacing:1px">PHIẼU B�N GIAO M�Y</div>
-<div contenteditable="true" style="font-size:12px;color:#888;margin-top:2px">M� phiếu: ${record._key||""} &nbsp;|� ${dateStr}</div>
+<div contenteditable="true" style="font-size:15px;font-weight:700;color:${bc};letter-spacing:1px">PHI�U B�N GIAO M�Y</div>
+<div contenteditable="true" style="font-size:12px;color:#888;margin-top:2px">M� phi�u: ${record._key||""} &nbsp;|� ${dateStr}</div>
 </div>
 <div style="background:#f0f4ff;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;line-height:2">
-<div><b>Kh�ch h�ng:</b> <span contenteditable="true">${record.customerName||""}</span> &nbsp; <b>SĐT:</b> <span contenteditable="true">${record.phone||""}</span></div>
-<div><b>Thiết bị:</b> <span contenteditable="true">${record.device||""}</span>${record.serial?` &nbsp; <b>S/N:</b> <span contenteditable="true">${record.serial}</span>`:""}</div>
-<div><b>T�nh trạng:</b> <span contenteditable="true">${record.issue||""}</span></div>
+<div><b>Kh�ch h�ng:</b> <span contenteditable="true">${record.customerName||""}</span> &nbsp; <b>ST:</b> <span contenteditable="true">${record.phone||""}</span></div>
+<div><b>Thi�t b�:</b> <span contenteditable="true">${record.device||""}</span>${record.serial?` &nbsp; <b>S/N:</b> <span contenteditable="true">${record.serial}</span>`:""}</div>
+<div><b>T�nh tr�ng:</b> <span contenteditable="true">${record.issue||""}</span></div>
 </div>
 <div style="margin-bottom:12px">
-<div style="font-weight:600;color:${bc};margin-bottom:5px;font-size:12px;text-transform:uppercase">HẠNG MỤC DỊCH VỤ / LINH KIỆN</div>
+<div style="font-weight:600;color:${bc};margin-bottom:5px;font-size:12px;text-transform:uppercase">H�NG M�C D�CH V� / LINH KI�N</div>
 <table id="tbl" style="width:100%;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:${bc};color:#fff">
 <th style="padding:6px 5px;border:1px solid #aaa;width:22px">#</th>
-<th style="padding:6px 5px;border:1px solid #aaa;text-align:left">M� tả</th>
+<th style="padding:6px 5px;border:1px solid #aaa;text-align:left">M� t�</th>
 <th style="padding:6px 5px;border:1px solid #aaa;width:38px">SL</th>
-<th style="padding:6px 5px;border:1px solid #aaa;width:88px">Đơn gi�</th>
-<th style="padding:6px 5px;border:1px solid #aaa;width:88px">Th�nh tiền</th>
+<th style="padding:6px 5px;border:1px solid #aaa;width:88px">�n gi�</th>
+<th style="padding:6px 5px;border:1px solid #aaa;width:88px">Th�nh ti�n</th>
 </tr></thead>
 <tbody id="tb">${itemRows}</tbody>
 </table>
 <div class="no-print" style="margin-top:5px;display:flex;gap:6px">
-<button onclick="addR()" style="font-size:11px;padding:3px 9px;border-radius:4px;border:1px solid ${bc};color:${bc};background:#fff;cursor:pointer">＋ Th�m h�ng</button>
-<button onclick="delR()" style="font-size:11px;padding:3px 9px;border-radius:4px;border:1px solid #e74c3c;color:#e74c3c;background:#fff;cursor:pointer">− X�a h�ng cuối</button>
+<button onclick="addR()" style="font-size:11px;padding:3px 9px;border-radius:4px;border:1px solid ${bc};color:${bc};background:#fff;cursor:pointer"> Th�m h�ng</button>
+<button onclick="delR()" style="font-size:11px;padding:3px 9px;border-radius:4px;border:1px solid #e74c3c;color:#e74c3c;background:#fff;cursor:pointer"> X�a h�ng cu�i</button>
 </div></div>
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px">
-<tr><td style="padding:4px 8px;color:#555">Tổng cộng:</td><td id="tot" style="padding:4px 8px;text-align:right;font-weight:600">${fmtN(cost)} ₫</td></tr>
-<tr><td style="padding:4px 8px;color:#555">Tiền cọc:</td><td style="padding:4px 8px;text-align:right;color:#e74c3c" contenteditable="true">${fmtN(dep)} ₫</td></tr>
-${dvPaid>0?`<tr><td style="padding:4px 8px;color:#555">Đ� thanh to�n th�m:</td><td style="padding:4px 8px;text-align:right;color:#27ae60">${fmtN(dvPaid)} ₫</td></tr>`:""}
-${disc>0?`<tr><td style="padding:4px 8px;color:#555">Giảm gi�:</td><td style="padding:4px 8px;text-align:right;color:#e67e22">-${fmtN(disc)} ₫</td></tr>`:""}
-<tr style="background:#fff3cd"><td style="padding:6px 8px;font-weight:700;font-size:14px">������ C�N LẠI:</td><td id="rem" style="padding:6px 8px;text-align:right;font-weight:700;font-size:14px;color:${bc}" contenteditable="true">${fmtN(remaining)} ₫</td></tr>
-<tr><td style="padding:4px 8px;color:#555">H�nh thức TT:</td><td style="padding:4px 8px;text-align:right" contenteditable="true">${record.paymentMethod||"Tiền mặt"}</td></tr>
+<tr><td style="padding:4px 8px;color:#555">T�ng c�ng:</td><td id="tot" style="padding:4px 8px;text-align:right;font-weight:600">${fmtN(cost)} �</td></tr>
+<tr><td style="padding:4px 8px;color:#555">Ti�n c�c:</td><td style="padding:4px 8px;text-align:right;color:#e74c3c" contenteditable="true">${fmtN(dep)} �</td></tr>
+${dvPaid>0?`<tr><td style="padding:4px 8px;color:#555">� thanh to�n th�m:</td><td style="padding:4px 8px;text-align:right;color:#27ae60">${fmtN(dvPaid)} �</td></tr>`:""}
+${disc>0?`<tr><td style="padding:4px 8px;color:#555">Gi�m gi�:</td><td style="padding:4px 8px;text-align:right;color:#e67e22">-${fmtN(disc)} �</td></tr>`:""}
+<tr style="background:#fff3cd"><td style="padding:6px 8px;font-weight:700;font-size:14px">������ C�N L�I:</td><td id="rem" style="padding:6px 8px;text-align:right;font-weight:700;font-size:14px;color:${bc}" contenteditable="true">${fmtN(remaining)} �</td></tr>
+<tr><td style="padding:4px 8px;color:#555">H�nh th�c TT:</td><td style="padding:4px 8px;text-align:right" contenteditable="true">${record.paymentMethod||"Ti�n m�t"}</td></tr>
 </table>
 ${wm>0?`<div style="border:1.5px dashed ${bc};border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px">
-<div style="font-weight:700;color:${bc};margin-bottom:3px">������ BẢO H�NH</div>
-<div>Thời hạn: <b contenteditable="true">${wm} th�ng</b></div>
-<div>Hết hạn: <b contenteditable="true">${wExp}</b></div>
-<div contenteditable="true" style="color:#555;margin-top:3px">${BSr.warrantyNote||"Bảo h�nh đ�ng lỗi, kh�ng bảo h�nh hư hỏng do t�c động ngoại lực."}</div>
+<div style="font-weight:700;color:${bc};margin-bottom:3px">������ B�O H�NH</div>
+<div>Th�i h�n: <b contenteditable="true">${wm} th�ng</b></div>
+<div>H�t h�n: <b contenteditable="true">${wExp}</b></div>
+<div contenteditable="true" style="color:#555;margin-top:3px">${BSr.warrantyNote||"B�o h�nh �ng l�i, kh�ng b�o h�nh h� h�ng do t�c �ng ngo�i l�c."}</div>
 </div>`:""}
 <div style="margin-bottom:14px">
 <div style="font-size:12px;color:#888;margin-bottom:3px">Ghi ch�:</div>
@@ -117,7 +117,7 @@ ${wm>0?`<div style="border:1.5px dashed ${bc};border-radius:6px;padding:8px 12px
 </div>
 <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;text-align:center">
 <div style="width:44%"><div style="height:40px"></div><div style="border-top:1px solid #999;padding-top:5px;color:#777">Kh�ch h�ng k� t�n</div></div>
-<div style="width:44%"><div style="height:40px"></div><div style="border-top:1px solid #999;padding-top:5px;color:#777">Kỹ thuật vi�n</div></div>
+<div style="width:44%"><div style="height:40px"></div><div style="border-top:1px solid #999;padding-top:5px;color:#777">K� thu�t vi�n</div></div>
 </div>
 <div class="no-print" style="text-align:center;margin-top:18px;padding-bottom:10px">
 <button onclick="window.print()" style="background:${bc};color:#fff;border:none;padding:10px 32px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">������ IN NGAY</button>
@@ -154,31 +154,31 @@ export async function mount(container) {
 
   container.innerHTML = `
     <div class="module-header">
-      <h2>Phiáº¿u sá»­a chá»¯a</h2>
+      <h2>Phiếu sửa chữa</h2>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem">
-      <input id="rep-search" type="text" placeholder="ð TÃ¬m kiáº¿m..." class="search-input" style="flex:1;min-width:160px"/>
+      <input id="rep-search" type="text" placeholder="🔍 Tìm kiếm..." class="search-input" style="flex:1;min-width:160px"/>
       <select id="rep-status-filter" class="search-input" style="width:145px">
-        <option value="">Táº¥t cáº£ tráº¡ng thÃ¡i</option>
+        <option value="">Tất cả trạng thái</option>
         ${STATUS_LIST.map(s => '<option>' + s + '</option>').join('')}
       </select>
-      <label style="font-size:.85rem;color:#555">Tá»«:</label>
+      <label style="font-size:.85rem;color:#555">Từ:</label>
       <input id="rep-date-from" type="date" class="search-input" style="width:145px" value="${today}"/>
-      <label style="font-size:.85rem;color:#555">Äáº¿n:</label>
+      <label style="font-size:.85rem;color:#555">Đến:</label>
       <input id="rep-date-to"   type="date" class="search-input" style="width:145px" value="${today}"/>
-      <button id="rep-clear-date" class="btn btn--secondary" style="font-size:.83rem;padding:.35rem .8rem">Táº¥t cáº£ ngÃ y</button>
+      <button id="rep-clear-date" class="btn btn--secondary" style="font-size:.83rem;padding:.35rem .8rem">Tất cả ngày</button>
     </div>
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
-      <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ ThÃªm phiáº¿u má»i</button>
+      <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
-      <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">â Sá»­a</button>
-      <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">â XÃ³a</button>
-      <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4">ð¨ In bill BH</button>
+      <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎ Sửa</button>
+      <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕ Xóa</button>
+      <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4">🖨 In bill BH</button>
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
-      <button id="rep-trash-btn" class="btn btn--secondary" style="font-size:.9rem">ð ThÃ¹ng rÃ¡c</button>
-      <button id="rep-deliver-btn" class="btn btn--primary" disabled style="display:none;opacity:.4">ð¦ Giao</button>
-      <button id="rep-status-btn" class="btn btn--secondary" disabled style="display:none;background:#7c3aed;color:#fff;opacity:.4">â</button>
-      <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">â Chá»n 1 phiáº¿u Äá» thao tÃ¡c</span>
+      <button id="rep-trash-btn" class="btn btn--secondary" style="font-size:.9rem">🗑 Thùng rác</button>
+      <button id="rep-deliver-btn" class="btn btn--primary" disabled style="display:none;opacity:.4">📦 Giao</button>
+      <button id="rep-status-btn" class="btn btn--secondary" disabled style="display:none;background:#7c3aed;color:#fff;opacity:.4">⇄</button>
+      <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
     <div id="rep-table-wrap"></div>
     <div id="rep-form-wrap"></div>
@@ -243,19 +243,19 @@ export async function mount(container) {
     const box = document.createElement('div');
     box.style.cssText = 'background:#fff;border-radius:12px;padding:1.5rem;width:min(96vw,640px);max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.22)';
     box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <h3 style="margin:0">ð ThÃ¹ng rÃ¡c phÃ­iáº¿u sá»­a</h3>
+      <h3 style="margin:0">🗑 Thùng rác phíiếu sửa</h3>
       <button id="trash-close" class="btn btn--secondary" style="padding:.3rem .8rem">&#x2715;</button>
     </div>
     ${valid.length === 0
-      ? '<p style="color:#888;text-align:center;padding:1rem">ThÃ¹ng rÃ¡c trá»ng</p>'
+      ? '<p style="color:#888;text-align:center;padding:1rem">Thùng rác trống</p>'
       : valid.map(r => `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:.7rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem">
           <div style="min-width:0;flex:1">
-            <div style="font-weight:600">${r.customerName||'(khÃ´ng tÃªn)'}</div>
-            <div style="font-size:.8rem;color:#666">${r.device||''}${r.serial?' Â· '+r.serial:''} Â· ${new Date(r.deletedAt||0).toLocaleString('vi-VN')}</div>
+            <div style="font-weight:600">${r.customerName||'(không tên)'}</div>
+            <div style="font-size:.8rem;color:#666">${r.device||''}${r.serial?' · '+r.serial:''} · ${new Date(r.deletedAt||0).toLocaleString('vi-VN')}</div>
           </div>
           <div style="display:flex;gap:.4rem;flex-shrink:0">
-            <button class="btn btn--secondary trash-restore" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">KhÃ´i phá»¥c</button>
-            <button class="btn btn--danger trash-perm" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">XÃ³a háº³n</button>
+            <button class="btn btn--secondary trash-restore" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">Khôi phục</button>
+            <button class="btn btn--danger trash-perm" data-key="${r._key}" style="font-size:.82rem;padding:.3rem .7rem">Xóa hẳn</button>
           </div>
         </div>`).join('')
     }`;
@@ -311,17 +311,17 @@ export async function mount(container) {
 
   function renderTable(data) {
     const wrap = container.querySelector('#rep-table-wrap');
-    if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#888">KhÃ´ng cÃ³ dá»¯ liá»u</p>'; return; }
+    if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>'; return; }
     const cols = [
       { label: '', key: r => '<input type="radio" class="rep-radio" data-key="' + r._key + '" name="rep-sel" style="cursor:pointer;accent-color:#2563eb">' },
-      { label: 'NgÃ y nháº­n',  key: r => formatDate(r.receivedDate || r.ts) },
-      { label: 'KhÃ¡ch hÃ ng', key: r => r.customerName || '' },
-      { label: 'SÄT',        key: r => r.phone || '' },
-      { label: 'Thiáº¿t bá»',   key: r => r.device || formatDeliveryItems(r.deliveryItems) || '' },
+      { label: 'Ngày nhận',  key: r => formatDate(r.receivedDate || r.ts) },
+      { label: 'Khách hàng', key: r => r.customerName || '' },
+      { label: 'SĐT',        key: r => r.phone || '' },
+      { label: 'Thiết bị',   key: r => r.device || formatDeliveryItems(r.deliveryItems) || '' },
       { label: 'Serial',     key: r => r.serial || '' },
       { label: 'KTV',        key: r => r.techName || '' },
-      { label: 'Chi phÃ­',    key: r => formatVND(r.cost || 0) },
-      { label: 'Tráº¡ng thÃ¡i', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' },
+      { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
+      { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' },
       { label: '', key: r => '' }
     ];
     wrap.innerHTML = buildTable(cols, data);
@@ -366,53 +366,53 @@ export async function mount(container) {
   const wrap = document.createElement('div');
   wrap.id = 'dv-modal-wrap';
   wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;';
-  const pmSel = v => (record.paymentMethod || 'Tiền mặt') === v ? ' selected' : '';
+  const pmSel = v => (record.paymentMethod || 'Ti�n m�t') === v ? ' selected' : '';
   wrap.innerHTML =
     '<div style="background:#fff;border-radius:12px;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25)">' +
     '<div style="background:#1a3a6b;color:#fff;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">' +
-    '<span style="font-size:17px;font-weight:700">🚀 Giao máy &amp; Xuất bill</span>' +
-    '<button id="dv-x" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">×</button>' +
+    '<span style="font-size:17px;font-weight:700">= Giao m�y &amp; Xu�t bill</span>' +
+    '<button id="dv-x" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">�</button>' +
     '</div><div style="padding:16px">' +
     '<div style="background:#f0f4ff;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;line-height:1.8">' +
-    '<strong>👤 ' + (record.customerName||'')+'</strong> — '+(record.phone||'')+'<br>' +
-    '📱 '+(record.device||'')+( record.serial?' | S/N: '+record.serial:'')+'<br>' +
-    '🔧 '+(record.issue||'')+'</div>' +
-    '<div style="font-weight:600;margin-bottom:6px">📋 Hạng mục dịch vụ / linh kiện</div>' +
+    '<strong>= ' + (record.customerName||'')+'</strong>  '+(record.phone||'')+'<br>' +
+    '= '+(record.device||'')+( record.serial?' | S/N: '+record.serial:'')+'<br>' +
+    '= '+(record.issue||'')+'</div>' +
+    '<div style="font-weight:600;margin-bottom:6px">= H�ng m�c d�ch v� / linh ki�n</div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px">' +
     '<thead><tr style="background:#f5f5f5">' +
-    '<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Mô tả</th>' +
+    '<th style="padding:6px 8px;border:1px solid #ddd;text-align:left">M� t�</th>' +
     '<th style="padding:6px 8px;border:1px solid #ddd;width:55px">SL</th>' +
-    '<th style="padding:6px 8px;border:1px solid #ddd;width:110px">Đơn giá</th>' +
+    '<th style="padding:6px 8px;border:1px solid #ddd;width:110px">�n gi�</th>' +
     '<th style="padding:6px 8px;border:1px solid #ddd;width:32px"></th>' +
     '</tr></thead><tbody id="dv-tbody"></tbody></table>' +
-    '<button id="dv-add" style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #1a3a6b;color:#1a3a6b;background:#fff;cursor:pointer;margin-bottom:10px">＋ Thêm hàng</button>' +
-    '<div style="margin-bottom:10px"><div style="font-size:12px;color:#666;margin-bottom:4px">🔍 Chọn linh kiện từ kho:</div>' +
+    '<button id="dv-add" style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #1a3a6b;color:#1a3a6b;background:#fff;cursor:pointer;margin-bottom:10px"> Th�m h�ng</button>' +
+    '<div style="margin-bottom:10px"><div style="font-size:12px;color:#666;margin-bottom:4px">= Ch�n linh ki�n t� kho:</div>' +
     '<select id="dv-inv" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;font-size:13px">' +
-    '<option value="">-- Chọn sản phẩm --</option></select></div>' +
+    '<option value="">-- Ch�n s�n ph�m --</option></select></div>' +
     '<div style="background:#f9f9f9;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Tổng hạng mục:</span><span id="dv-sub" style="font-weight:600"></span></div>' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Tiền cọc:</span><span style="color:#e74c3c">' + fmtN(dep) + ' ₫</span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>T�ng h�ng m�c:</span><span id="dv-sub" style="font-weight:600"></span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Ti�n c�c:</span><span style="color:#e74c3c">' + fmtN(dep) + ' �</span></div>' +
     '<div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid #ddd;font-size:14px;font-weight:700">' +
-    '<span>💰 CÒN LẠI THANH TOẢN:</span><span id="dv-rem" style="color:#1a3a6b"></span></div></div>' +
+    '<span>= C�N L�I THANH TO�N:</span><span id="dv-rem" style="color:#1a3a6b"></span></div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">' +
-    '<div><label style="display:block;margin-bottom:3px;color:#555">Thanh toán thêm (₫)</label>' +
+    '<div><label style="display:block;margin-bottom:3px;color:#555">Thanh to�n th�m (�)</label>' +
     '<input id="dv-paid" type="number" value="' + +(record.deliveryPaid||0) + '" min="0" oninput="window._dvCalc()" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box"></div>' +
-    '<div><label style="display:block;margin-bottom:3px;color:#555">Giảm giá (₫)</label>' +
+    '<div><label style="display:block;margin-bottom:3px;color:#555">Gi�m gi� (�)</label>' +
     '<input id="dv-disc" type="number" value="' + +(record.discount||0) + '" min="0" oninput="window._dvCalc()" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box"></div>' +
-    '<div><label style="display:block;margin-bottom:3px;color:#555">Bảo hành (tháng)</label>' +
+    '<div><label style="display:block;margin-bottom:3px;color:#555">B�o h�nh (th�ng)</label>' +
     '<input id="dv-wm" type="number" value="' + +(record.warrantyMonths||3) + '" min="0" max="24" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box"></div>' +
-    '<div><label style="display:block;margin-bottom:3px;color:#555">Ngày giao</label>' +
+    '<div><label style="display:block;margin-bottom:3px;color:#555">Ng�y giao</label>' +
     '<input id="dv-dt" type="date" value="' + (record.deliveredDate||today) + '" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box"></div>' +
-    '<div style="grid-column:1/-1"><label style="display:block;margin-bottom:3px;color:#555">Hình thức thanh toán</label>' +
+    '<div style="grid-column:1/-1"><label style="display:block;margin-bottom:3px;color:#555">H�nh th�c thanh to�n</label>' +
     '<select id="dv-pm" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc">' +
-    '<option value="Tiền mặt"' + pmSel('Tiền mặt') + '>Tiền mặt</option>' +
-    '<option value="Chuyển khoản"' + pmSel('Chuyển khoản') + '>Chuyển khoản</option>' +
-    '<option value="Tiền mặt + CK"' + pmSel('Tiền mặt + CK') + '>Tiền mặt + CK</option>' +
+    '<option value="Ti�n m�t"' + pmSel('Ti�n m�t') + '>Ti�n m�t</option>' +
+    '<option value="Chuy�n kho�n"' + pmSel('Chuy�n kho�n') + '>Chuy�n kho�n</option>' +
+    '<option value="Ti�n m�t + CK"' + pmSel('Ti�n m�t + CK') + '>Ti�n m�t + CK</option>' +
     '</select></div></div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
-    '<button id="dv-cancel" style="padding:8px 18px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer">Hủy</button>' +
-    '<button id="dv-print" style="padding:8px 18px;border-radius:8px;border:none;background:#6c757d;color:#fff;cursor:pointer">🖨 In bill</button>' +
-    '<button id="dv-ok" style="padding:8px 18px;border-radius:8px;border:none;background:#1a3a6b;color:#fff;cursor:pointer;font-weight:600">✅ Xác nhận giao + In</button>' +
+    '<button id="dv-cancel" style="padding:8px 18px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer">H�y</button>' +
+    '<button id="dv-print" style="padding:8px 18px;border-radius:8px;border:none;background:#6c757d;color:#fff;cursor:pointer">= In bill</button>' +
+    '<button id="dv-ok" style="padding:8px 18px;border-radius:8px;border:none;background:#1a3a6b;color:#fff;cursor:pointer;font-weight:600"> X�c nh�n giao + In</button>' +
     '</div></div></div>';
   document.body.appendChild(wrap);
   window._dvCalc = () => {
@@ -422,8 +422,8 @@ export async function mount(container) {
     const rem = Math.max(0, sub - dep - paid - disc);
     const eS = document.getElementById('dv-sub');
     const eR = document.getElementById('dv-rem');
-    if (eS) eS.textContent = fmtN(sub) + ' ₫';
-    if (eR) eR.textContent = fmtN(rem) + ' ₫';
+    if (eS) eS.textContent = fmtN(sub) + ' �';
+    if (eR) eR.textContent = fmtN(rem) + ' �';
   };
   window._dvRm = i => {
     if (_dvItems.length > 1) _dvItems.splice(i, 1);
@@ -444,7 +444,7 @@ export async function mount(container) {
       '" min="1" oninput="window._dvSet(' + i + ',\'qty\',this.value)" style="width:100%;border:none;padding:3px;font-size:12px;text-align:center"></td>' +
       '<td style="padding:4px;border:1px solid #eee"><input type="number" value="' + (+(it.price||0)) +
       '" min="0" oninput="window._dvSet(' + i + ',\'price\',this.value)" style="width:100%;border:none;padding:3px;font-size:12px;text-align:right"></td>' +
-      '<td style="padding:4px;text-align:center;border:1px solid #eee"><button onclick="window._dvRm(' + i + ')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;line-height:1">×</button></td>' +
+      '<td style="padding:4px;text-align:center;border:1px solid #eee"><button onclick="window._dvRm(' + i + ')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;line-height:1">�</button></td>' +
       '</tr>'
     )).join('');
     window._dvCalc();
@@ -456,9 +456,9 @@ export async function mount(container) {
     const sel = document.getElementById('dv-inv');
     if (!sel) return;
     window._dvInv = items.filter(p => +(p.qty||0) > 0);
-    sel.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' +
+    sel.innerHTML = '<option value="">-- Ch�n s�n ph�m --</option>' +
       window._dvInv.map((p, idx) =>
-        '<option value="' + idx + '">' + (p.name||'') + ' — ' + fmtN(+(p.price||0)) + ' ₫ (còn ' + p.qty + ')</option>'
+        '<option value="' + idx + '">' + (p.name||'') + '  ' + fmtN(+(p.price||0)) + ' � (c�n ' + p.qty + ')</option>'
       ).join('');
   });
   document.getElementById('dv-inv').onchange = function() {
@@ -482,7 +482,7 @@ export async function mount(container) {
       deliveredDate: document.getElementById('dv-dt')?.value || today,
       deliveryPaid: +(document.getElementById('dv-paid')?.value || 0),
       discount: +(document.getElementById('dv-disc')?.value || 0),
-      paymentMethod: document.getElementById('dv-pm')?.value || 'Tiền mặt',
+      paymentMethod: document.getElementById('dv-pm')?.value || 'Ti�n m�t',
       cost: _dvItems.reduce((s, i) => s + (+(i.qty||1)) * (+(i.price||0)), 0),
     };
   }
@@ -498,7 +498,7 @@ export async function mount(container) {
     if (btn) btn.disabled = true;
     const d = _collectDv();
     const updates = {
-      status: 'Đã giao',
+      status: '� giao',
       deliveredDate: d.deliveredDate,
       deliveryItems: [..._dvItems],
       warrantyMonths: d.warrantyMonths,
@@ -509,11 +509,11 @@ export async function mount(container) {
     };
     try {
       await updateItem(COLLECTION, record._key, updates);
-      toast('✅ Đã giao máy thành công');
+      toast(' � giao m�y th�nh c�ng');
       _closeDv();
       printWarrantyBill({...record, ...updates});
     } catch(err) {
-      toast('❌ Lỗi: ' + err.message);
+      toast('L L�i: ' + err.message);
       if (btn) btn.disabled = false;
     }
   };
@@ -524,34 +524,34 @@ function openForm(record) {
     formWrap.innerHTML = `
       <style>#rep-form-wrap .form-group{margin-bottom:8px}#rep-form-wrap label{font-size:.74rem;font-weight:600;margin-bottom:3px;display:block;color:#555}#rep-form-wrap input,#rep-form-wrap select{padding:1px 5px;height:24px;font-size:.82rem}#rep-form-wrap textarea{padding:2px 5px;font-size:.82rem}#rep-form-wrap .form-card{max-width:920px}#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}.rep-modal .form-card{margin:2rem auto;padding:1.5rem 2rem;max-width:860px;width:100%}</style>
       <div class="form-card" style="background:#dbeafe;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.25)">
-        <h3>${record ? 'Cáº­p nháº­t phiáº¿u' : 'ThÃªm phiáº¿u má»i'}</h3>
+        <h3>${record ? 'Cập nhật phiếu' : 'Thêm phiếu mới'}</h3>
         <div class="form-grid" style="gap:.2rem">
-          <div class="form-group"><label>KhÃ¡ch hÃ ng *</label><input id="f-customerName" type="text" value="${record?.customerName||''}"/></div>
-          <div class="form-group"><label>Sá» Äiá»n thoáº¡i</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
-          <div class="form-group"><label>Thiáº¿t bá» *</label><input id="f-device" type="text" value="${record?.device||''}" placeholder="VD: LAPTOP ASUS X556"/></div>
+          <div class="form-group"><label>Khách hàng *</label><input id="f-customerName" type="text" value="${record?.customerName||''}"/></div>
+          <div class="form-group"><label>Số điện thoại</label><input id="f-phone" type="text" value="${record?.phone||''}"/></div>
+          <div class="form-group"><label>Thiết bị *</label><input id="f-device" type="text" value="${record?.device||''}" placeholder="VD: LAPTOP ASUS X556"/></div>
           <div class="form-group"><label>Serial</label><input id="f-serial" type="text" value="${record?.serial||''}"/></div>
-          <div class="form-group"><label>Äá»a chá»</label><input id="f-address" type="text" value="${record?.address||''}"/></div>
-          <div class="form-group"><label>Máº­t kháº©u mÃ¡y</label><input id="f-password" type="text" value="${record?.password||''}"/></div>
-          <div class="form-group"><label>Phá»¥ kiá»n Äi kÃ¨m</label><input id="f-accessories" type="text" value="${record?.accessories||''}"/></div>
-          <div class="form-group"><label>Ká»¹ thuáº­t viÃªn</label><input id="f-techName" type="text" value="${record?.techName||''}"/></div>
-          <div class="form-group"><label>NgÃ y nháº­n</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
-          <div class="form-group"><label>NgÃ y giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
-          <div class="form-group"><label>Chi phÃ­ sá»­a (Ä)</label><input id="f-cost" type="number" value="${record?.cost||0}"/></div>
-          <div class="form-group"><label>Äáº·t cá»c (Ä)</label><input id="f-deposit" type="number" value="${record?.deposit||0}"/></div>
-          <div class="form-group"><label>HÃ¬nh thá»©c TT</label>
-            <select id="f-paymentType">${['Tiá»n máº·t','Chuyá»n khoáº£n','CÃ´ng ná»£'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
+          <div class="form-group"><label>Địa chỉ</label><input id="f-address" type="text" value="${record?.address||''}"/></div>
+          <div class="form-group"><label>Mật khẩu máy</label><input id="f-password" type="text" value="${record?.password||''}"/></div>
+          <div class="form-group"><label>Phụ kiện đi kèm</label><input id="f-accessories" type="text" value="${record?.accessories||''}"/></div>
+          <div class="form-group"><label>Kỹ thuật viên</label><input id="f-techName" type="text" value="${record?.techName||''}"/></div>
+          <div class="form-group"><label>Ngày nhận</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
+          <div class="form-group"><label>Ngày giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
+          <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="number" value="${record?.cost||0}"/></div>
+          <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="number" value="${record?.deposit||0}"/></div>
+          <div class="form-group"><label>Hình thức TT</label>
+            <select id="f-paymentType">${['Tiền mặt','Chuyển khoản','Công nợ'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
           </div>
-          <div class="form-group"><label>Tráº¡ng thÃ¡i</label>
-            <select id="f-status">${STATUS_LIST.map(s=>'<option '+((record?.status||'Tiáº¿p nháº­n')===s?'selected':'')+'>'+s+'</option>').join('')}</select>
+          <div class="form-group"><label>Trạng thái</label>
+            <select id="f-status">${STATUS_LIST.map(s=>'<option '+((record?.status||'Tiếp nhận')===s?'selected':'')+'>'+s+'</option>').join('')}</select>
           </div>
-          <div class="form-group" style="grid-column:1/-1"><label>Cáº¥u hÃ¬nh</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.35rem;margin-top:.25rem"><input id="f-cpu" type="text" placeholder="CPU" value="${record?.cpu||''}" /><input id="f-ram" type="text" placeholder="RAM" value="${record?.ram||''}" /><input id="f-ssd" type="text" placeholder="SSD" value="${record?.ssd||''}" /><input id="f-vga" type="text" placeholder="VGA" value="${record?.vga||''}" /></div></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Cấu hình</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.35rem;margin-top:.25rem"><input id="f-cpu" type="text" placeholder="CPU" value="${record?.cpu||''}" /><input id="f-ram" type="text" placeholder="RAM" value="${record?.ram||''}" /><input id="f-ssd" type="text" placeholder="SSD" value="${record?.ssd||''}" /><input id="f-vga" type="text" placeholder="VGA" value="${record?.vga||''}" /></div></div>
         </div>
-        <div class="form-group" style="margin-top:.4rem"><label>TÃ¬nh tráº¡ng ban Äáº§u</label><textarea id="f-initialCondition" rows="3" style="width:100%;resize:vertical">${record?.initialCondition||''}</textarea></div>
-        <div class="form-group" style="margin-top:.4rem"><label>YÃªu cáº§u sá»­a chá»¯a</label><textarea id="f-repairRequest" rows="3" style="width:100%;resize:vertical">${record?.repairRequest||''}</textarea></div>
+        <div class="form-group" style="margin-top:.4rem"><label>Tình trạng ban đầu</label><textarea id="f-initialCondition" rows="3" style="width:100%;resize:vertical">${record?.initialCondition||''}</textarea></div>
+        <div class="form-group" style="margin-top:.4rem"><label>Yêu cầu sửa chữa</label><textarea id="f-repairRequest" rows="3" style="width:100%;resize:vertical">${record?.repairRequest||''}</textarea></div>
         <div class="form-actions">
-          <button id="f-save" class="btn btn--primary">${record ? 'Cáº­p nháº­t' : 'LÆ°u phiáº¿u'}</button>
-          <button id="f-print" class="btn btn--secondary">ð¨ In phiáº¿u</button>
-          <button id="f-cancel" class="btn btn--secondary">Há»§y</button>
+          <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu phiếu'}</button>
+          <button id="f-print" class="btn btn--secondary">🖨 In phiếu</button>
+          <button id="f-cancel" class="btn btn--secondary">Hủy</button>
         </div>
       </div>
     `;
@@ -572,7 +572,7 @@ function openForm(record) {
     });
     formWrap.querySelector('#f-save').addEventListener('click', async () => {
       const customerName = formWrap.querySelector('#f-customerName').value.trim();
-      if (!customerName) { toast('Vui lÃ²ng nháº­p khÃ¡ch hÃ ng', 'error'); return; }
+      if (!customerName) { toast('Vui lòng nhập khách hàng', 'error'); return; }
       const data = {
         customerName,
         phone:          formWrap.querySelector('#f-phone').value.trim(),
@@ -597,18 +597,18 @@ function openForm(record) {
         ts: record?.ts || Date.now()
       };
       try {
-        if (record) { await updateItem(COLLECTION, record._key, data); toast('ÄÃ£ cáº­p nháº­t phiáº¿u'); }
-        else { await addItem(COLLECTION, data); toast('ÄÃ£ thÃªm phiáº¿u má»i'); }
+        if (record) { await updateItem(COLLECTION, record._key, data); toast('Đã cập nhật phiếu'); }
+        else { await addItem(COLLECTION, data); toast('Đã thêm phiếu mới'); }
         formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal');
-      } catch(e) { toast('Lá»i: ' + e.message, 'error'); }
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function confirmDelete(key) {
-    const ok = await showModal('XÃ¡c nháº­n', 'XÃ³a phiáº¿u sá»­a chá»¯a nÃ y?', true);
+    const ok = await showModal('Xác nhận', 'Xóa phiếu sửa chữa này?', true);
     if (!ok) return;
-    try { await updateItem(COLLECTION, key, {deleted:true, deletedAt:Date.now()}); toast('ÄÃ£ xÃ³a phiáº¿u'); setSelected(null); }
-    catch(e) { toast('Lá»i: ' + e.message, 'error'); }
+    try { await updateItem(COLLECTION, key, {deleted:true, deletedAt:Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
+    catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 }
