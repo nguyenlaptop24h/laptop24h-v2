@@ -1,4 +1,4 @@
-// modules/debts.js - C�ng n�
+// modules/debts.js - Công nợ
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
@@ -9,15 +9,15 @@ registerRoute('#debts', mount);
 export async function mount(container) {
   container.innerHTML = `
     <div class="module-header">
-      <h2>C�ng n�</h2>
+      <h2>Công nợ</h2>
       <div class="module-actions">
         <select id="debt-filter">
-          <option value="">T�t c�</option>
-          <option value="unpaid">Ch�a tr�</option>
-          <option value="paid">� tr�</option>
+          <option value="">Tất cả</option>
+          <option value="unpaid">Chưa trả</option>
+          <option value="paid">Đã trả</option>
         </select>
-        <input id="debt-search" type="text" placeholder="T�m ki�m..." class="search-input" />
-        <button id="debt-add" class="btn btn--primary">+ Th�m n�</button>
+        <input id="debt-search" type="text" placeholder="Tìm kiếm..." class="search-input" />
+        <button id="debt-add" class="btn btn--primary">+ Thêm nợ</button>
       </div>
     </div>
     <div id="debt-summary"></div>
@@ -36,7 +36,7 @@ export async function mount(container) {
   function renderSummary(data) {
     const totalDebt = data.filter(d=>d.status!=='paid').reduce((s,d)=>s+(Number(d.amount)||0),0);
     container.querySelector('#debt-summary').innerHTML =
-      `<div class="summary-bar">T�ng c�n n�: <strong class="text--red">${formatVND(totalDebt)}</strong></div>`;
+      `<div class="summary-bar">Tổng còn nợ: <strong class="text--red">${formatVND(totalDebt)}</strong></div>`;
   }
 
   function renderTable(data) {
@@ -51,23 +51,23 @@ export async function mount(container) {
     wrap.innerHTML = '';
     wrap.appendChild(buildTable({
       columns: [
-        { field: 'name', label: 'T�n' },
-        { field: 'phone', label: 'ST', width:'110px' },
-        { field: 'amount', label: 'S� ti�n n�', money:true, width:'120px' },
-        { field: 'paid', label: '� tr�', money:true, width:'110px' },
-        { field: 'remaining', label: 'C�n l�i', width:'110px',
+        { field: 'name', label: 'Tên' },
+        { field: 'phone', label: 'SĐT', width:'110px' },
+        { field: 'amount', label: 'Số tiền nợ', money:true, width:'120px' },
+        { field: 'paid', label: 'Đã trả', money:true, width:'110px' },
+        { field: 'remaining', label: 'Còn lại', width:'110px',
           render:(v,row)=>{
             const rem=(Number(row.amount)||0)-(Number(row.paid)||0);
             return `<span class="${rem>0?'text--red':'text--green'}">${formatVND(rem)}</span>`;
           }},
-        { field: 'status', label: 'Tr�ng th�i', width:'100px',
-          render: v => `<span class="badge badge--${v==='paid'?'green':'red'}">${v==='paid'?'� tr�':'Ch�a tr�'}</span>` },
-        { field: 'dueDate', label: 'H�n tr�', width:'100px', render: v => formatDate(v) },
+        { field: 'status', label: 'Trạng thái', width:'100px',
+          render: v => `<span class="badge badge--${v==='paid'?'green':'red'}">${v==='paid'?'Đã trả':'Chưa trả'}</span>` },
+        { field: 'dueDate', label: 'Hạn trả', width:'100px', render: v => formatDate(v) },
       ],
       data: filtered,
       actions: [
-        { label: 'S�a', type:'primary', onClick: row => showForm(row) },
-        { label: 'Xo�', type:'danger', onClick: row => confirmDelete(row) },
+        { label: 'Sửa', type:'primary', onClick: row => showForm(row) },
+        { label: 'Xoá', type:'danger', onClick: row => confirmDelete(row) },
       ]
     }));
   }
@@ -82,24 +82,24 @@ export async function mount(container) {
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
       <div class="form-panel">
-        <h3>${isEdit?'C�p nh�t n�':'Th�m c�ng n�'}</h3>
+        <h3>${isEdit?'Cập nhật nợ':'Thêm công nợ'}</h3>
         <div class="form-grid">
-          <label>T�n <input name="name" value="${row?.name||''}" /></label>
-          <label>ST <input name="phone" value="${row?.phone||''}" /></label>
-          <label>S� ti�n n� <input name="amount" type="number" value="${row?.amount||0}" /></label>
-          <label>� tr� <input name="paid" type="number" value="${row?.paid||0}" /></label>
-          <label>Tr�ng th�i
+          <label>Tên <input name="name" value="${row?.name||''}" /></label>
+          <label>SĐT <input name="phone" value="${row?.phone||''}" /></label>
+          <label>Số tiền nợ <input name="amount" type="number" value="${row?.amount||0}" /></label>
+          <label>Đã trả <input name="paid" type="number" value="${row?.paid||0}" /></label>
+          <label>Trạng thái
             <select name="status">
-              <option value="unpaid" ${row?.status!=='paid'?'selected':''}>Ch�a tr�</option>
-              <option value="paid" ${row?.status==='paid'?'selected':''}>� tr�</option>
+              <option value="unpaid" ${row?.status!=='paid'?'selected':''}>Chưa trả</option>
+              <option value="paid" ${row?.status==='paid'?'selected':''}>Đã trả</option>
             </select>
           </label>
-          <label>H�n tr� <input name="dueDate" type="date" value="${row?.dueDate||''}" /></label>
-          <label class="full-width">Ghi ch� <textarea name="note">${row?.note||''}</textarea></label>
+          <label>Hạn trả <input name="dueDate" type="date" value="${row?.dueDate||''}" /></label>
+          <label class="full-width">Ghi chú <textarea name="note">${row?.note||''}</textarea></label>
         </div>
         <div class="form-actions">
-          <button class="btn btn--secondary" id="debt-cancel">Hu�</button>
-          <button class="btn btn--primary" id="debt-save">L�u</button>
+          <button class="btn btn--secondary" id="debt-cancel">Huỷ</button>
+          <button class="btn btn--primary" id="debt-save">Lưu</button>
         </div>
       </div>`;
     wrap.querySelector('#debt-cancel').onclick = ()=>{ wrap.classList.add('hidden'); wrap.innerHTML=''; };
@@ -111,17 +111,17 @@ export async function mount(container) {
       try {
         if(isEdit) await updateItem(COLLECTION,row._key,data);
         else await addItem(COLLECTION,data);
-        toast(isEdit?'� c�p nh�t':'� th�m c�ng n�','success');
+        toast(isEdit?'Đã cập nhật':'Đã thêm công nợ','success');
         wrap.classList.add('hidden'); wrap.innerHTML='';
-      } catch(e){ toast('L�i: '+e.message,'error'); }
+      } catch(e){ toast('Lỗi: '+e.message,'error'); }
     };
   }
 
   function confirmDelete(row) {
     showModal({
-      title:'Xo� c�ng n�', body:`X�c nh�n xo� n� c�a <b>${row.name}</b>?`,
-      confirmText:'Xo�', danger:true,
-      onConfirm: async ()=>{ await deleteItem(COLLECTION,row._key); toast('� xo�','success'); }
+      title:'Xoá công nợ', body:`Xác nhận xoá nợ của <b>${row.name}</b>?`,
+      confirmText:'Xoá', danger:true,
+      onConfirm: async ()=>{ await deleteItem(COLLECTION,row._key); toast('Đã xoá','success'); }
     });
   }
 }
