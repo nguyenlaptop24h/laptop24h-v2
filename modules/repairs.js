@@ -209,7 +209,8 @@ export async function mount(container) {
       { label: 'Serial',     key: r => r.serial || '' },
       { label: 'KTV',        key: r => r.techName || '' },
       { label: 'Chi phÃ­',    key: r => formatVND(r.cost || 0) },
-      { label: 'Tráº¡ng thÃ¡i', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' },
+      { label: 'Tráº¡ng thÃ¡i', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
+    ];
 
   async function quickDeliver(record) {
     if (!record) return;
