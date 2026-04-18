@@ -136,7 +136,7 @@ export async function mount(container) {
           <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
           <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '\u00b7 '+p.unit : ''}</div>
         </div>
-        <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.p(p.price||0)}</div>
+        <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
       </div>`).join('');
     globalDrop.querySelectorAll('.sp-opt').forEach(opt => {
       opt.addEventListener('mousedown', e => {
