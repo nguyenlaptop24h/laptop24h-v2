@@ -369,8 +369,8 @@ function openForm(record) {
           <div class="form-group"><label>Kỹ thuật viên</label><input id="f-techName" type="text" value="${record?.techName||''}"/></div>
           <div class="form-group"><label>Ngày nhận</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||today}"/></div>
           <div class="form-group"><label>Ngày giao</label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"/></div>
-          <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="text" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" /></div>
-          <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="text" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" oninput="this.value=this.value.replace(/[^\d]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.')" /></div>
+          <div class="form-group"><label>Chi phí sửa (đ)</label><input id="f-cost" type="text" data-fmt="number" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" /></div>
+          <div class="form-group"><label>Đặt cọc (đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" /></div>
           <div class="form-group"><label>Hình thức TT</label>
             <select id="f-paymentType">${['Tiền mặt','Chuyển khoản','Công nợ'].map(p=>'<option '+(record?.paymentType===p?'selected':'')+'>'+p+'</option>').join('')}</select>
           </div>
