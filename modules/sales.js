@@ -368,7 +368,7 @@ export async function mount(container) {
       return;
     }
     const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">ð <b>${items.length}</b> ÄÆ¡n hÃ ng &nbsp;|Â  ð° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}Ä</b></div>` + items.map(s => `
+    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">Ã°ÂÂÂ <b>${items.length}</b> ÃÂÃÂ¡n hÃÂ ng &nbsp;|ÃÂ  Ã°ÂÂÂ° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}ÃÂ</b></div>` + items.map(s => `
       <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
@@ -440,6 +440,7 @@ export async function mount(container) {
         const item = currentList.find(x => x._key === b.dataset.key);
         if (!item) return;
         await updateItem(COLLECTION, b.dataset.key, { ...item, deletedAt: Date.now() });
+        logToSheet({...item, deletedAt: Date.now()}, 'delete');
         toast('\u0110\u00e3 chuy\u1ec3n v\u00e0o th\u00f9ng r\u00e1c');
       }
     }));
@@ -477,6 +478,7 @@ export async function mount(container) {
       if (!item) return;
       const { deletedAt, ...rest } = item;
       await updateItem(COLLECTION, b.dataset.key, rest);
+      logToSheet(rest, 'restore');
       toast('\u0110\u00e3 kh\u00f4i ph\u1ee5c \u0111\u01a1n h\u00e0ng');
     });
 
