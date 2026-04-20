@@ -99,6 +99,11 @@ function printWarrantyBill(record) {
   win.document.close();
 }
 
+const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
+function logRepairToSheet(data, action) {
+    try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+}
+
 export async function mount(container) {
   const today = todayStr();
 
@@ -399,9 +404,9 @@ function openForm(record) {
         repairRequest:  formWrap.querySelector('#f-repairRequest').value.trim(),
         ts: record?.ts || Date.now()
       };
-      try {
-        if (record) { await updateItem(COLLECTION, record._key, data); toast('ÄÃ£ cáº­p nháº­t phiáº¿u'); }
-        else { await addItem(COLLECTION, data); toast('ÄÃ£ thÃªm phiáº¿u má»i'); }
+      try {h
+        if (record) { await updateItem(COLLECTION, record._key, data); logRepairToSheet({...data, key:record._key}, 'update'); toast('ÄÃ£ cáº­p nháº­t phiáº¿u'); }
+        else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('ÄÃ£ thÃªm phiáº¿u má»i'); }
         formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal');
       } catch(e) { toast('Lá»i: ' + e.message, 'error'); }
     });
