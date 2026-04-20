@@ -7,6 +7,11 @@ import { isAdmin } from '../core/auth.js';
 const COLLECTION = 'sales';
 registerRoute('#sales', mount);
 
+const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
+function logToSheet(data, action) {
+  try { fetch(SALES_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+}
+
 export async function mount(container) {
   const todayStr = new Date().toISOString().slice(0, 10);
   let unsub = null;
@@ -363,7 +368,7 @@ export async function mount(container) {
       return;
     }
     listWrap.innerHTML = items.map(s => `
-      <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:.75rem;padding:.85rem 1rem">
+      <div class="card" style="background:#fff; logToSheet({...data, key:editKey}, 'update');border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); logToSheet({...data, key:_r?.key||''}, 'add')>
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
             <input type="checkbox" class="sale-cb" data-key="${s._key}" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
