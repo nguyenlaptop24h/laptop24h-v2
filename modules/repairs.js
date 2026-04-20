@@ -108,8 +108,9 @@ export async function mount(container) {
   const today = todayStr();
 
   container.innerHTML = `
-    <div class="module-header">
+    <div class="module-header" style="display:flex;align-items:center">
       <h2>Phiếu sửa chữa</h2>
+      <button id="rep-trash-btn" style="margin-left:auto;padding:4px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">🗑 Thùng rác</button>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem">
       <input id="rep-search" type="text" placeholder="🔍 Tìm kiếm..." class="search-input" style="flex:1;min-width:160px"/>
@@ -138,6 +139,7 @@ export async function mount(container) {
 
   let allData = [];
   let selectedKey = null;
+let showTrash = false;
 
   const unsub = onSnapshot(COLLECTION, items => {
     allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -153,12 +155,14 @@ export async function mount(container) {
   const statusBtn = container.querySelector('#rep-status-btn');
   const delBtn     = container.querySelector('#rep-del-btn');
   const printBtn   = container.querySelector('#rep-print-btn');
+  const trashBtn      = container.querySelector('#rep-trash-btn');
   const selHint    = container.querySelector('#rep-sel-hint');
 
   searchEl.addEventListener('input', filterData);
   statusEl.addEventListener('change', filterData);
   dateFromEl.addEventListener('change', filterData);
   dateToEl.addEventListener('change', filterData);
+  trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; filterData(); });
 
   container.querySelector('#rep-clear-date').addEventListener('click', () => {
     dateFromEl.value = ''; dateToEl.value = ''; filterData();
@@ -193,6 +197,8 @@ export async function mount(container) {
     const from = dateFromEl.value;
     const to   = dateToEl.value;
     const filtered = allData.filter(r => {
+      if (showTrash) return !!r.deletedAt;
+      if (r.deletedAt) return false;
       const matchQ = !q || (r.customerName||'').toLowerCase().includes(q) ||
         (r.phone||'').toLowerCase().includes(q) || (r.device||'').toLowerCase().includes(q) ||
         (r.serial||'').toLowerCase().includes(q);
@@ -218,7 +224,8 @@ export async function mount(container) {
       { label: 'KTV',        key: r => r.techName || '' },
       { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
       { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
-    ];
+    ,
+      { label: 'Thao tác', key: r => showTrash ? '<button onclick="window.__restoreRepair(\''+r.key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>' : '' }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const trs = data.map(r =>
       '<tr class="rep-row" data-key="' + r._key + '">' +
@@ -425,10 +432,21 @@ function openForm(record) {
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  async function confirmDelete(key) {
+  async function restoreRepair(key) {
+  const item = allData.find(r => r.key === key);
+  if (!item) return;
+  const {deletedAt, ...rest} = item;
+  try { await updateItem(COLLECTION, key, rest); toast('Khôi phục thành công'); filterData(); }
+  catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+}
+window.__restoreRepair = k => restoreRepair(k);
+
+async function confirmDelete(key) {
     const ok = await showModal('Xác nhận', 'Xóa phiếu sửa chữa này?', true);
     if (!ok) return;
-    try { await deleteItem(COLLECTION, key); toast('Đã xóa phiếu'); setSelected(null); }
+    const item = allData.find(r => r.key === key);
+    if (!item) return;
+    try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
     catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
 }
