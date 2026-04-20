@@ -354,9 +354,9 @@ export async function mount(container) {
     };
     try {
       if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); }
-      logToSheet({...data, key:editKey}, 'update');
+logToSheet({...data, key:editKey}, 'update'); }
       else { const _r = await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); }
-      logToSheet({...data, key:_r?.key||''}, 'add');
+logToSheet({...data, key:_r?.key||''}, 'add'); }
       formWrap.innerHTML=''; editKey=null;
     } catch(e) { toast('L\u1ed7i: '+e.message); }
   }
@@ -370,7 +370,7 @@ export async function mount(container) {
       return;
     }
     const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">📊 <b>${items.length}</b> đơn hàng &nbsp;|  💰 Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}đ</b></div>` + items.map(s => `
+    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">ð <b>${items.length}</b> ÄÆ¡n hÃ ng &nbsp;|Â  ð° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}Ä</b></div>` + items.map(s => `
       <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
