@@ -353,10 +353,8 @@ export async function mount(container) {
       createdAt:Date.now()
     };
     try {
-      if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); }
-logToSheet({...data, key:editKey}, 'update'); }
-      else { const _r = await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); }
-logToSheet({...data, key:_r?.key||''}, 'add'); }
+      if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); await logToSheet({...data, key:editKey}, 'update'); }
+      else { const _r = await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); await logToSheet({...data, key:_r?.key||''}, 'add'); }
       formWrap.innerHTML=''; editKey=null;
     } catch(e) { toast('L\u1ed7i: '+e.message); }
   }
