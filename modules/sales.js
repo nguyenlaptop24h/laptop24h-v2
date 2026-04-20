@@ -386,6 +386,7 @@ export async function mount(container) {
         <div class="sale-acts" style="display:none;margin-top:.6rem;padding-top:.6rem;border-top:1px solid #f0f0f0;gap:.4rem;flex-wrap:wrap">
           <button class="btn-detail btn btn--sm" data-key="${s._key}">\u2139 Chi ti\u1ebft</button>
           <button class="btn-print btn btn--sm" data-key="${s._key}" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac">\uD83D\uDDB8 In</button>
+          <button class="btn-warranty btn btn--sm" data-key="${s._key}" style="background:#fef9c3;color:#854d0e;border:1px solid #fde047">\uD83D\uDCCB BH</button>
           <button class="btn-edit btn btn--sm btn--primary" data-key="${s._key}">S\u1eeda</button>
           <button class="btn-del btn btn--sm btn--danger" data-key="${s._key}">X\u00f3a</button>
         </div>
@@ -425,6 +426,11 @@ export async function mount(container) {
     listWrap.querySelectorAll('.btn-print').forEach(b => b.onclick = () => {
       const s = currentList.find(x => x._key === b.dataset.key);
       if (s) printSaleBill(s);
+    });
+
+    listWrap.querySelectorAll('.btn-warranty').forEach(b => b.onclick = () => {
+      const s = currentList.find(x => x._key === b.dataset.key);
+      if (s) printWarrantySlip(s);
     });
 
     listWrap.querySelectorAll('.btn-edit').forEach(b => b.onclick = () => {
@@ -557,9 +563,63 @@ export async function mount(container) {
       '<div class="sign"><div style="width:45%"><div class="line">Kh\u00e1ch h\u00e0ng</div></div><div style="width:45%"><div class="line">Ng\u01b0\u1eddi b\u00e1n</div></div></div>'+
       '<div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:6px 20px;cursor:pointer">\uD83D\uDDB8 In h\u00f3a \u0111\u01a1n</button></div>'+
       '</body></html>';
-    var w = window.open('','_blank','width=620,height=820');
-    w.document.write(html); w.document.close();
+    var _pif = document.createElement('iframe');
+    _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
+    document.body.appendChild(_pif);
+    var _pd = _pif.contentDocument || _pif.contentWindow.document;
+    _pd.open(); _pd.write(html); _pd.close();
+    _pif.contentWindow.focus();
+    _pif.contentWindow.print();
+    setTimeout(function(){ document.body.removeChild(_pif); }, 500);
   }
+
+
+function printWarrantySlip(d) {
+  var fmt = n => Number(n||0).toLocaleString('vi-VN');
+  var itemRows = (d.items||[]).map((it,i) =>
+    '<tr><td style="padding:4px 6px;text-align:center">'+(i+1)+'</td>'+
+    '<td style="padding:4px 6px">'+(it.name||it.sku||'')+'</td>'+
+    '<td style="padding:4px 6px;text-align:center">'+(it.qty||1)+'</td>'+
+    '<td style="padding:4px 6px;text-align:right">'+fmt(it.price)+'\u0111</td></tr>'
+  ).join('');
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'+
+    '<title>Phi\u1ebfu B\u1ea3o H\u00e0nh</title>'+
+    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;padding:16px;max-width:400px;margin:auto}'+
+    'h2{text-align:center;font-size:18px;margin-bottom:2px}'+
+    '.sub{text-align:center;font-size:11px;color:#555;margin-bottom:12px}'+
+    '.title{text-align:center;font-size:15px;font-weight:bold;margin:10px 0;text-transform:uppercase;border:2px solid #000;padding:6px}'+
+    '.info{margin:5px 0}.info b{font-weight:bold}'+
+    'table{width:100%;border-collapse:collapse;margin:8px 0}'+
+    'th{background:#333;color:#fff;padding:5px 6px;font-size:12px}'+
+    'td{border-bottom:1px solid #eee;font-size:12px}'+
+    '.bh{background:#fffbe6;border:2px solid #f59e0b;border-radius:6px;padding:8px;margin:10px 0;text-align:center;font-size:15px;font-weight:bold}'+
+    '.sign{display:flex;justify-content:space-between;margin-top:20px;font-size:12px}'+
+    '.line{border-top:1px solid #333;margin-top:28px;padding-top:3px;text-align:center;font-size:11px;color:#555}'+
+    '@media print{body{padding:4px}}</style></head><body>'+
+    '<h2>LAPTOP 24H</h2>'+
+    '<div class="sub">\u0110T: 0909 xxx xxx</div>'+
+    '<div class="title">PHI\u1EBCU B\u1EA2O H\u00c0NH</div>'+
+    '<div class="info">Kh\u00e1ch h\u00e0ng: <b>'+(d.customer||'')+'</b></div>'+
+    '<div class="info">S\u0110T: <b>'+(d.phone||'')+'</b></div>'+
+    '<div class="info">Ng\u00e0y mua: <b>'+(d.date||'')+'</b></div>'+
+    '<table><thead><tr><th>#</th><th>S\u1ea3n ph\u1ea9m</th><th>SL</th><th>\u0110\u01a1n gi\u00e1</th></tr></thead><tbody>'+itemRows+'</tbody></table>'+
+    '<div class="bh">B\u1ea2O H\u00c0NH: '+(d.warranty||'Kh\u00f4ng b\u1ea3o h\u00e0nh')+'</div>'+
+    '<p style="font-size:11px;color:#555;margin:4px 0">* B\u1ea3o h\u00e0nh t\u00ednh t\u1eeb ng\u00e0y mua. Mang phi\u1ebfu n\u00e0y khi c\u1ea7n b\u1ea3o h\u00e0nh.</p>'+
+    '<div class="sign">'+
+    '<div>Kh\u00e1ch h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean)</span></div>'+
+    '<div style="text-align:right">C\u1eeda h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean, \u0111\u00f3ng d\u1ea5u)</span></div>'+
+    '</div>'+
+    '<div class="line">C\u1ea3m \u01a1n qu\u00fd kh\u00e1ch \u0111\u00e3 tin t\u01b0\u1edfng Laptop 24H!</div>'+
+    '</body></html>';
+  var _pif = document.createElement('iframe');
+  _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
+  document.body.appendChild(_pif);
+  var _pd = _pif.contentDocument || _pif.contentWindow.document;
+  _pd.open(); _pd.write(html); _pd.close();
+  _pif.contentWindow.focus();
+  _pif.contentWindow.print();
+  setTimeout(function(){ document.body.removeChild(_pif); }, 500);
+}
 
   loadSales();
 }
