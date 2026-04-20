@@ -9,7 +9,7 @@ registerRoute('#sales', mount);
 
 const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
 function logToSheet(data, action) {
-  try { fetch(SALES_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+  try { fetch(SALES_SHEET_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
 }
 
 export async function mount(container) {
@@ -368,7 +368,7 @@ export async function mount(container) {
       return;
     }
     const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">📊 <b>${items.length}</b> đơn hàng &nbsp;|  💰 Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}đ</b></div>` + items.map(s => `
+    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">📊 <b>${items.length}</b> đơn h�ng &nbsp;|� 💰 Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}đ</b></div>` + items.map(s => `
       <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
