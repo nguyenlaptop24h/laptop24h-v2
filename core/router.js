@@ -36,7 +36,7 @@ export function initRouter() {
 
     // Import tÃÂÃÂ¡ÃÂÃÂºÃÂÃÂ¥t cÃÂÃÂ¡ÃÂÃÂºÃÂÃÂ£ modules ÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂ»ÃÂÃÂng thÃÂÃÂ¡ÃÂÃÂ»ÃÂÃÂi cÃÂÃÂÃÂÃÂ¹ng kÃÂÃÂÃÂÃÂ½ routes
     Promise.all([
-        import('../modules/repairs.js?v=40'),
+        import('../modules/repairs.js?v=41'),
         import('../modules/sales.js?v=24'),
         import('../modules/inventory.js?v=19'),
         import('../modules/customers.js?v=3'),
