@@ -164,7 +164,7 @@ function printWarrantyBill(record) {
     +'function showEdit(){'
     +'_fs.forEach(function(f){'
     +'var el=document.getElementById("f-"+f);'
-    +'var sp=document.querySelector('[data-s="'+f+'"]');'
+    +'var sp=document.querySelector(\'[data-s="\'+f+\'"]\');'
     +'if(el&&sp)el.value=sp.textContent;'
     +'});'
     +'document.getElementById("modal").style.display="block";'
@@ -179,7 +179,7 @@ function printWarrantyBill(record) {
     +'if(window.opener&&window.opener.repSaveFromBill){'
     +'window.opener.repSaveFromBill(_k,d).then(function(){'
     +'_fs.forEach(function(f){'
-    +'var sp=document.querySelector('[data-s="'+f+'"]');'
+    +'var sp=document.querySelector(\'[data-s="\'+f+\'"]\');'
     +'if(sp)sp.textContent=d[f]!==undefined?d[f]:"";'
     +'});'
     +'closeModal();'
@@ -196,7 +196,7 @@ function printWarrantyBill(record) {
 
 window.repSaveFromBill = async function(key, data) {
   await updateItem('repairs', key, data);
-};];
+};
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const trs = data.map(r =>
       '<tr class="rep-row" data-key="' + r._key + '">' +
