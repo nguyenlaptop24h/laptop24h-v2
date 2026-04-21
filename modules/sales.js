@@ -543,10 +543,10 @@ export async function mount(container) {
 
   function printSaleBill(d) {
   const key = d._key || '';
-  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const fmt = n => (parseFloat(n)||0).toLocaleString('vi-VN');
   const items = Array.isArray(d.items) ? d.items : [];
-  const itemRows = items.map((it,idx) =>
+  const itemRows = items.map(it =>
     '<tr>'
     +'<td style="font-size:11px">'+e(it.sku||'')+'</td>'
     +'<td>'+e(it.name||'')+'</td>'
@@ -559,47 +559,107 @@ export async function mount(container) {
   const total = parseFloat(d.total)||0;
   const paid = parseFloat(d.paid)||0;
   const debt = total - paid;
-  const w = window.open('', '_blank', 'width=820,height=750,scrollbars=yes');
+  const w = window.open('', '_blank', 'width=860,height=780,scrollbars=yes');
   if (!w) return;
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Hóa Đơn</title>'
-    +'<style>body{font-family:Arial,sans-serif;font-size:13px;margin:0;padding:16px}h2{text-align:center;margin:0 0 2px;font-size:17px}.sub{text-align:center;font-size:12px;margin-bottom:10px;color:#555}table{width:100%;border-collapse:collapse}th,td{padding:4px 5px;border:1px solid #ddd;font-size:12px}th{background:#f3f4f6;text-align:left}.nr{text-align:right}.info-table td{border:none;padding:3px 5px}.lb{width:35%;font-weight:bold}.vl{width:65%}.bi{width:100%;border:none;border-bottom:1px dashed #aaa;background:transparent;font:12px Arial;padding:1px 2px;outline:none;box-sizing:border-box}.bi:focus{border-bottom:1px solid #2563eb;background:#eff6ff}.bbar{text-align:center;margin-top:14px;padding:8px;border-top:1px solid #ddd}.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}.bs{background:#16a34a;color:#fff;border-color:#16a34a}.bp{background:#2563eb;color:#fff;border-color:#2563eb}#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}.tot-row{font-weight:bold;background:#f9fafb}@media print{.bbar{display:none!important}.bi{border:none!important;background:transparent!important;border-bottom:1px solid #999!important}}</style>'
-    +'</head><body>'
+    +'<style>'
+    +'body{font:13px Arial;margin:0;padding:16px}'
+    +'h2{text-align:center;font-size:17px;margin:0 0 2px}'
+    +'.sub{text-align:center;font-size:12px;color:#555;margin-bottom:10px}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'th,td{padding:4px 5px;border:1px solid #ddd;font-size:12px}'
+    +'th{background:#f3f4f6;text-align:left}'
+    +'.nr{text-align:right}'
+    +'.it{border:none;padding:3px 5px}'
+    +'.lb{width:28%;font-weight:bold}'
+    +'.bbar{text-align:center;margin-top:14px;padding:8px;border-top:1px solid #ddd}'
+    +'.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}'
+    +'.be{background:#f59e0b;color:#fff;border-color:#d97706}'
+    +'.bp{background:#2563eb;color:#fff;border-color:#2563eb}'
+    +'#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}'
+    +'#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto}'
+    +'.mbox{background:#fff;margin:20px auto;padding:20px;max-width:560px;border-radius:8px}'
+    +'.mbox h3{margin:0 0 14px;font-size:15px;border-bottom:1px solid #ddd;padding-bottom:8px}'
+    +'.fr{display:flex;margin-bottom:8px;align-items:flex-start}'
+    +'.fr label{width:40%;font-size:12px;font-weight:bold;padding-top:6px}'
+    +'.fr input,.fr textarea{flex:1;border:1px solid #ccc;border-radius:4px;padding:5px 8px;font:13px Arial;box-sizing:border-box}'
+    +'.fr textarea{height:52px;resize:vertical}'
+    +'.fsec{font-weight:bold;background:#f3f4f6;padding:4px 8px;margin:10px 0 6px;border-radius:4px;font-size:12px}'
+    +'.mbtns{text-align:right;margin-top:14px;border-top:1px solid #ddd;padding-top:12px}'
+    +'.mbtns button{padding:8px 20px;margin-left:8px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}'
+    +'.bsave{background:#16a34a;color:#fff;border-color:#16a34a}'
+    +'@media print{.bbar{display:none!important}#modal{display:none!important}}'
+    +'</style></head><body>'
     +'<h2>HÓA ĐƠN BÁN HÀNG</h2><div class="sub">Laptop 24h</div>'
-    +'<table class="info-table" style="margin-bottom:8px">'
-    +'<tr><td class="lb">Khách hàng</td><td class="vl"><input class="bi" data-f="customer" value="'+e(d.customer)+'"></td>'
-    +'<td class="lb">Điện thoại</td><td class="vl"><input class="bi" data-f="phone" value="'+e(d.phone)+'"></td></tr>'
-    +'<tr><td class="lb">Ngày</td><td class="vl">'+e(d.date||new Date().toLocaleDateString('vi-VN'))+'</td>'
-    +'<td class="lb">Thanh toán</td><td class="vl"><input class="bi" data-f="payMethod" value="'+e(d.payMethod)+'"></td></tr>'
-    +'<tr><td class="lb">Bảo hành</td><td class="vl"><input class="bi" data-f="warranty" value="'+e(d.warranty)+'"></td>'
-    +'<td class="lb">Ghi chú</td><td class="vl"><input class="bi" data-f="note" value="'+e(d.note)+'"></td></tr>'
+    +'<table style="border:none;margin-bottom:8px">'
+    +'<tr><td class="it lb">Khách hàng</td><td class="it"><span data-s="customer">'+e(d.customer)+'</span></td>'
+    +'<td class="it lb">Điện thoại</td><td class="it"><span data-s="phone">'+e(d.phone)+'</span></td></tr>'
+    +'<tr><td class="it lb">Hình thức TT</td><td class="it"><span data-s="payMethod">'+e(d.payMethod)+'</span></td>'
+    +'<td class="it lb">Bảo hành</td><td class="it"><span data-s="warranty">'+e(d.warranty)+'</span></td></tr>'
+    +'<tr><td class="it lb">Ghi chú</td><td class="it" colspan="3"><span data-s="note">'+e(d.note)+'</span></td></tr>'
     +'</table>'
     +'<table><thead><tr><th>SKU</th><th>Tên sản phẩm</th><th class="nr">SL</th><th class="nr">Đơn giá</th><th class="nr">CK</th><th class="nr">Thành tiền</th></tr></thead>'
     +'<tbody>'+itemRows+'</tbody></table>'
-    +'<table style="margin-top:6px;width:50%;margin-left:50%"><tr class="tot-row"><td>Tổng cộng</td><td class="nr">'+fmt(total)+'đ</td></tr>'
-    +'<tr><td>Đã trả</td><td class="nr"><input class="bi nr" data-f="paid" type="number" value="'+paid+'" style="text-align:right;width:100%"></td></tr>'
-    +'<tr class="tot-row"><td>Còn lại</td><td class="nr" id="debt">'+fmt(debt)+'đ</td></tr></table>'
+    +'<table style="margin-top:6px;width:44%;margin-left:56%;border:none">'
+    +'<tr><td class="it" style="font-weight:bold">Tổng cộng</td><td class="it nr" style="font-weight:bold">'+fmt(total)+'đ</td></tr>'
+    +'<tr><td class="it">Đã trả</td><td class="it nr"><span data-s="paid">'+fmt(paid)+'</span>đ</td></tr>'
+    +'<tr><td class="it" style="font-weight:bold">Còn lại</td><td class="it nr" style="font-weight:bold" id="debt-disp">'+fmt(debt)+'đ</td></tr>'
+    +'</table>'
     +'<div class="bbar">'
-    +(key ? '<button class="bs" onclick="saveBill()">&#128190; Lưu</button>' : '')
+    +(key ? '<button class="be" onclick="showEdit()">&#9998; Nội dung bill</button>' : '')
     +'<button class="bp" onclick="window.print()">&#128424; In hóa đơn</button>'
     +'<button onclick="window.close()">Đóng</button>'
     +'<div id="msg">&#10003; Đã lưu thành công!</div>'
     +'</div>'
-    +'<script>var _k="'+key+'",_tot='+total+';'
-    +'document.querySelector("[data-f=paid]").addEventListener("input",function(){'
-    +'var debt=_tot-(parseFloat(this.value)||0);'
-    +'document.getElementById("debt").textContent=debt.toLocaleString("vi-VN")+"đ";'
+    +'<div id="modal"><div class="mbox">'
+    +'<h3>&#9998; Sửa nội dung hóa đơn</h3>'
+    +'<div class="fsec">Thông tin khách hàng</div>'
+    +'<div class="fr"><label>Khách hàng</label><input id="f-customer"></div>'
+    +'<div class="fr"><label>Điện thoại</label><input id="f-phone"></div>'
+    +'<div class="fsec">Thanh toán</div>'
+    +'<div class="fr"><label>Hình thức TT</label><input id="f-payMethod"></div>'
+    +'<div class="fr"><label>Đã trả (VNĐ)</label><input id="f-paid" type="number"></div>'
+    +'<div class="fsec">Khác</div>'
+    +'<div class="fr"><label>Bảo hành</label><input id="f-warranty"></div>'
+    +'<div class="fr"><label>Ghi chú</label><textarea id="f-note"></textarea></div>'
+    +'<div class="mbtns">'
+    +'<button onclick="closeModal()">Hủy</button>'
+    +'<button class="bsave" onclick="saveEdit()">&#128190; Lưu thay đổi</button>'
+    +'</div></div></div>'
+    +'<script>'
+    +'var _k="'+key+'",_tot='+total+';'
+    +'function showEdit(){'
+    +'["customer","phone","payMethod","warranty","note"].forEach(function(f){'
+    +'var el=document.getElementById("f-"+f);'
+    +'var sp=document.querySelector('[data-s="'+f+'"]');'
+    +'if(el&&sp)el.value=sp.textContent;'
     +'});'
-    +'function saveBill(){'
+    +'var pEl=document.getElementById("f-paid");'
+    +'if(pEl)pEl.value='+paid+';'
+    +'document.getElementById("modal").style.display="block";'
+    +'}'
+    +'function closeModal(){document.getElementById("modal").style.display="none";}'
+    +'function saveEdit(){'
     +'var d={};'
-    +'document.querySelectorAll(".bi[data-f]").forEach(function(el){'
-    +'d[el.dataset.f]=el.type==="number"?(parseFloat(el.value)||0):el.value;'
+    +'["customer","phone","payMethod","warranty","note"].forEach(function(f){'
+    +'var el=document.getElementById("f-"+f);if(el)d[f]=el.value;'
     +'});'
+    +'var pEl=document.getElementById("f-paid");'
+    +'d.paid=pEl?(parseFloat(pEl.value)||0):'+paid+';'
     +'if(window.opener&&window.opener.saleSaveFromBill){'
     +'window.opener.saleSaveFromBill(_k,d).then(function(){'
-    +'document.getElementById("msg").style.display="block";'
-    +'setTimeout(function(){document.getElementById("msg").style.display="none";},3000);'
+    +'["customer","phone","payMethod","warranty","note"].forEach(function(f){'
+    +'var sp=document.querySelector('[data-s="'+f+'"]');if(sp)sp.textContent=d[f]||"";'
     +'});'
-    +'}else{alert("Không thể lưu. Mở lại phiếu từ trang chính.");}'
+    +'var ps=document.querySelector('[data-s="paid"]');'
+    +'if(ps)ps.textContent=(d.paid||0).toLocaleString("vi-VN");'
+    +'var dd=document.getElementById("debt-disp");'
+    +'if(dd)dd.textContent=(_tot-(d.paid||0)).toLocaleString("vi-VN")+"đ";'
+    +'closeModal();'
+    +'var m=document.getElementById("msg");'
+    +'m.style.display="block";setTimeout(function(){m.style.display="none";},3000);'
+    +'});'
+    +'}else{alert("Kh\u00F4ng th\u1EC3 l\u01B0u.");}'
     +'}'
     +'</scr'+'ipt>'
     +'</body></html>');
@@ -609,91 +669,3 @@ export async function mount(container) {
 window.saleSaveFromBill = async function(key, data) {
   await updateItem('sales', key, data);
 };
-
-
-function openEditBH(sale) {
-  const warranties = ['3 tháng','6 tháng','12 tháng','18 tháng','24 tháng'];
-  const wOpts = warranties.map(w => `<option value="${w}"${(sale.warranty||'3 tháng')===w?' selected':''}>${w}</option>`).join('');
-  const ov = document.createElement('div');
-  ov.id = 'bh-edit-overlay';
-  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(380px,92vw);box-shadow:0 4px 24px rgba(0,0,0,.2)">
-      <h3 style="margin:0 0 1rem;text-align:center;color:#92400e">&#x2712;&#xfe0f; Sửa Bill Bảo Hành</h3>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Khách hàng</label>
-        <input id="bh-customer" value="${(sale.customer||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Số điện thoại</label>
-        <input id="bh-phone" value="${(sale.phone||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Ngày mua</label>
-        <input id="bh-date" type="date" value="${sale.date||''}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:1rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Thời hạn bảo hành</label>
-        <select id="bh-warranty" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">${wOpts}</select></div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button id="bh-cancel" style="padding:.45rem 1rem;border:1px solid #ddd;border-radius:6px;background:#f9fafb;cursor:pointer">Hủy</button>
-        <button id="bh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer">Lưu &amp; In BH</button>
-      </div></div>`;
-  document.body.appendChild(ov);
-  document.getElementById('bh-cancel').onclick = () => document.body.removeChild(ov);
-  document.getElementById('bh-save').onclick = async () => {
-    const updated = { ...sale,
-      customer: document.getElementById('bh-customer').value.trim(),
-      phone: document.getElementById('bh-phone').value.trim(),
-      date: document.getElementById('bh-date').value,
-      warranty: document.getElementById('bh-warranty').value
-    };
-    await updateItem(COLLECTION, sale._key, updated);
-    logToSheet({...updated, key: sale._key}, 'update');
-    toast('Đã cập nhật bảo hành');
-    document.body.removeChild(ov);
-    printWarrantySlip(updated);
-  };
-}
-
-function printWarrantySlip(d) {
-  var fmt = n => Number(n||0).toLocaleString('vi-VN');
-  var itemRows = (d.items||[]).map((it,i) =>
-    '<tr><td style="padding:4px 6px;text-align:center">'+(i+1)+'</td>'+
-    '<td style="padding:4px 6px">'+(it.name||it.sku||'')+'</td>'+
-    '<td style="padding:4px 6px;text-align:center">'+(it.qty||1)+'</td>'+
-    '<td style="padding:4px 6px;text-align:right">'+fmt(it.price)+'\u0111</td></tr>'
-  ).join('');
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'+
-    '<title>Phi\u1ebfu B\u1ea3o H\u00e0nh</title>'+
-    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;padding:16px;max-width:400px;margin:auto}'+
-    'h2{text-align:center;font-size:18px;margin-bottom:2px}'+
-    '.sub{text-align:center;font-size:11px;color:#555;margin-bottom:12px}'+
-    '.title{text-align:center;font-size:15px;font-weight:bold;margin:10px 0;text-transform:uppercase;border:2px solid #000;padding:6px}'+
-    '.info{margin:5px 0}.info b{font-weight:bold}'+
-    'table{width:100%;border-collapse:collapse;margin:8px 0}'+
-    'th{background:#333;color:#fff;padding:5px 6px;font-size:12px}'+
-    'td{border-bottom:1px solid #eee;font-size:12px}'+
-    '.bh{background:#fffbe6;border:2px solid #f59e0b;border-radius:6px;padding:8px;margin:10px 0;text-align:center;font-size:15px;font-weight:bold}'+
-    '.sign{display:flex;justify-content:space-between;margin-top:20px;font-size:12px}'+
-    '.line{border-top:1px solid #333;margin-top:28px;padding-top:3px;text-align:center;font-size:11px;color:#555}'+
-    '@media print{body{padding:4px}}</style></head><body>'+
-    '<h2>LAPTOP 24H</h2>'+
-    '<div class="sub">\u0110T: 0909 xxx xxx</div>'+
-    '<div class="title">PHI\u1EBCU B\u1EA2O H\u00c0NH</div>'+
-    '<div class="info">Kh\u00e1ch h\u00e0ng: <b>'+(d.customer||'')+'</b></div>'+
-    '<div class="info">S\u0110T: <b>'+(d.phone||'')+'</b></div>'+
-    '<div class="info">Ng\u00e0y mua: <b>'+(d.date||'')+'</b></div>'+
-    '<table><thead><tr><th>#</th><th>S\u1ea3n ph\u1ea9m</th><th>SL</th><th>\u0110\u01a1n gi\u00e1</th></tr></thead><tbody>'+itemRows+'</tbody></table>'+
-    '<div class="bh">B\u1ea2O H\u00c0NH: '+(d.warranty||'Kh\u00f4ng b\u1ea3o h\u00e0nh')+'</div>'+
-    '<p style="font-size:11px;color:#555;margin:4px 0">* B\u1ea3o h\u00e0nh t\u00ednh t\u1eeb ng\u00e0y mua. Mang phi\u1ebfu n\u00e0y khi c\u1ea7n b\u1ea3o h\u00e0nh.</p>'+
-    '<div class="sign">'+
-    '<div>Kh\u00e1ch h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean)</span></div>'+
-    '<div style="text-align:right">C\u1eeda h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean, \u0111\u00f3ng d\u1ea5u)</span></div>'+
-    '</div>'+
-    '<div class="line">C\u1ea3m \u01a1n qu\u00fd kh\u00e1ch \u0111\u00e3 tin t\u01b0\u1edfng Laptop 24H!</div>'+
-    '</body></html>';
-  var _pif = document.createElement('iframe');
-  _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-  document.body.appendChild(_pif);
-  var _pd = _pif.contentDocument || _pif.contentWindow.document;
-  _pd.open(); _pd.write(html); _pd.close();
-  _pif.contentWindow.focus();
-  _pif.contentWindow.print();
-  setTimeout(function(){ document.body.removeChild(_pif); }, 500);
-}
-
-  loadSales();
-}
