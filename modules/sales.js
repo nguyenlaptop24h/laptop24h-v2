@@ -368,7 +368,16 @@ export async function mount(container) {
       return;
     }
     const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">ð <b>${items.length}</b> ÄÆ¡n hÃ ng &nbsp;|Â  ð° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}Ä</b></div>` + items.map(s => `
+    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">Ã°ÂÂÂ <b>${items.length}</b> ÃÂÃÂ¡n hÃÂ ng &nbsp;|ÃÂ  Ã°ÂÂÂ° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}ÃÂ</b></div>` +
+  `<div id="sale-shared-acts" style="display:none;margin-bottom:.8rem;padding:.5rem .8rem;background:#eef5ff;border-radius:8px;border:1px solid #c7defa;gap:.5rem;flex-wrap:wrap;align-items:center">` +
+  `<span style="flex:1;font-size:.85rem;color:#555">&#9432; Đã chọn: <b id="sale-sel-name">—</b></span>` +
+  `<button id="sale-act-detail" style="background:#e0f0ff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Chi tiết</button>` +
+  `<button id="sale-act-print" style="background:#dcfce7;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">In</button>` +
+  `<button id="sale-act-bh" style="background:#fef9c3;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">BH</button>` +
+  `<button id="sale-act-edit" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Sửa</button>` +
+  `<button id="sale-act-del" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Xóa</button>` +
+  `</div>`
+  + + items.map(s => `
       <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
@@ -383,22 +392,35 @@ export async function mount(container) {
             <div style="font-size:.72rem;color:#888">${s.date||''} \u00b7 ${s.payMethod||''}</div>
           </div>
         </div>
-        <div class="sale-acts" style="display:flex;margin-top:.6rem;padding-top:.6rem;border-top:1px solid #f0f0f0;gap:.4rem;flex-wrap:wrap">
-          <button class="btn-detail btn btn--sm" data-key="${s._key}">\u2139 Chi ti\u1ebft</button>
-          <button class="btn-print btn btn--sm" data-key="${s._key}" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac">\uD83D\uDDB8 In</button>
-          <button class="btn-warranty btn btn--sm" data-key="${s._key}" style="background:#fef9c3;color:#854d0e;border:1px solid #fde047">\uD83D\uDCCB BH</button>
-          <button class="btn-edit btn btn--sm btn--primary" data-key="${s._key}">S\u1eeda</button>
-          <button class="btn-del btn btn--sm btn--danger" data-key="${s._key}">X\u00f3a</button>
-        </div>
       </div>
     `).join('');
 
 
 
-    listWrap.querySelectorAll('.btn-detail').forEach(b => b.onclick = () => {
-      const s = currentList.find(x => x._key === b.dataset.key);
-      if (!s) return;
-      const rhtml = (s.items||[]).map(r =>
+        let _selKey = null;
+    listWrap.querySelectorAll('.sale-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          listWrap.querySelectorAll('.sale-cb').forEach(o => { if (o !== cb) o.checked = false; });
+          _selKey = cb.dataset.key;
+          const bar = document.getElementById('sale-shared-acts');
+          if (bar) {
+            bar.style.display = 'flex';
+            const _s = currentList.find(x => x._key === _selKey);
+            const nm = document.getElementById('sale-sel-name');
+            if (nm) nm.textContent = (_s && _s.customer) ? _s.customer : '—';
+          }
+        } else {
+          _selKey = null;
+          const bar = document.getElementById('sale-shared-acts');
+          if (bar) bar.style.display = 'none';
+        }
+      });
+    });
+    const _getS = () => currentList.find(x => x._key === _selKey);
+    document.getElementById('sale-act-detail').onclick = () => {
+      const s = _getS(); if (!s) return;
+            const rhtml = (s.items||[]).map(r =>
         `<tr style="border-bottom:1px solid #f0f0f0">
           <td style="padding:.3rem .4rem">${r.sku||''}</td><td style="padding:.3rem .4rem">${r.name||''}</td>
           <td style="padding:.3rem .4rem;text-align:center">${r.qty}</td>
@@ -416,35 +438,23 @@ export async function mount(container) {
             </tr></thead><tbody>${rhtml}</tbody></table>
           <p style="text-align:right;font-weight:700;margin-top:.5rem">T\u1ed5ng: ${formatVND(s.total||0)}</p>`
       });
-    });
 
-    listWrap.querySelectorAll('.btn-print').forEach(b => b.onclick = () => {
-      const s = currentList.find(x => x._key === b.dataset.key);
-      if (s) printSaleBill(s);
-    });
-
-    listWrap.querySelectorAll('.btn-warranty').forEach(b => b.onclick = () => {
-      const s = currentList.find(x => x._key === b.dataset.key);
-      if (s) printWarrantySlip(s);
-    });
-
-    listWrap.querySelectorAll('.btn-edit').forEach(b => b.onclick = () => {
-      const s = currentList.find(x => x._key === b.dataset.key);
-      if (s) { openForm(s); window.scrollTo(0, formWrap.offsetTop-60); }
-    });
-
-    listWrap.querySelectorAll('.btn-del').forEach(b => b.onclick = () => showModal({
-      title: 'X\u00f3a \u0111\u01a1n h\u00e0ng',
-      body: '\u0110\u01a1n s\u1ebd v\u00e0o th\u00f9ng r\u00e1c, t\u1ef1 x\u00f3a sau 7 ng\u00e0y.',
-      confirmText: 'X\u00f3a',
-      onConfirm: async () => {
-        const item = currentList.find(x => x._key === b.dataset.key);
-        if (!item) return;
-        await updateItem(COLLECTION, b.dataset.key, { ...item, deletedAt: Date.now() });
-        logToSheet({...item, deletedAt: Date.now()}, 'delete');
-        toast('\u0110\u00e3 chuy\u1ec3n v\u00e0o th\u00f9ng r\u00e1c');
-      }
-    }));
+    };
+    document.getElementById('sale-act-print').onclick = () => { const s = _getS(); if (s) printSaleBill(s); };
+    document.getElementById('sale-act-bh').onclick = () => { const s = _getS(); if (s) printWarrantySlip(s); };
+    document.getElementById('sale-act-edit').onclick = () => { const s = _getS(); if (s) { openForm(s); window.scrollTo(0,0); } };
+    document.getElementById('sale-act-del').onclick = () => {
+      const item = _getS(); if (!item) return;
+      showModal({
+        title: 'Xóa đơn hàng', body: 'Đơn sẻd vào thùng rác, tự xóa sau 7 ngày.',
+        confirmText: 'Xóa',
+        onConfirm: async () => {
+          await updateItem(COLLECTION, item._key, { ...item, deletedAt: Date.now() });
+          logToSheet({...item, deletedAt: Date.now()}, 'delete');
+          toast('Đã chuyển vào thùng rác');
+        }
+      });
+    };
   }
 
   // ===================== TRASH =====================
