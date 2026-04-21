@@ -3,39 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Laptop 24h - Quản lý</title>
+    <title>Laptop 24h - Quáº£n lÃ½</title>
     <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
 
-    <!-- Màn hình đăng nhập -->
+    <!-- MÃ n hÃ¬nh ÄÄng nháº­p -->
     <div id="auth-screen" class="screen">
         <div class="login-box">
             <h2>Laptop 24h</h2>
-            <input id="auth-email" type="text" placeholder="Tên đăng nhập" autocomplete="username" />
-            <input id="auth-pass" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
-            <button id="auth-btn">Đăng nhập</button>
+            <input id="auth-email" type="text" placeholder="TÃªn ÄÄng nháº­p" autocomplete="username" />
+            <input id="auth-pass" type="password" placeholder="Máº­t kháº©u" autocomplete="current-password" />
+            <button id="auth-btn">ÄÄng nháº­p</button>
             <p id="auth-err" class="error"></p>
         </div>
     </div>
 
-    <!-- Giao diện chính -->
+    <!-- Giao diá»n chÃ­nh -->
     <div id="app" class="screen hidden">
         <nav id="sidebar">
             <div class="logo">Laptop 24h</div>
             <ul id="nav-links">
-                <li><a href="#repairs">🔧 Phiếu sửa chữa</a></li>
-                <li><a href="#sales">🖥️ Bán hàng</a></li>
-                <li><a href="#inventory">📦 Kho hàng</a></li>
-                <li><a href="#customers">👥 Khách hàng</a></li>
-                <li><a href="#debts">💰 Công nợ</a></li>
-                <li><a href="#stats">📊 Thống kê</a></li>
-                <li class="admin-only"><a href="#users">👨‍💼 Nhân viên</a></li>
-                <li class="admin-only"><a href="#settings">⚙️ Cài đặt &amp; Ứng dụng</a></li>
+                <li><a href="#repairs">ð§ Phiáº¿u sá»­a chá»¯a</a></li>
+                <li><a href="#sales">ð¥ï¸ BÃ¡n hÃ ng</a></li>
+                <li><a href="#inventory">ð¦ Kho hÃ ng</a></li>
+                <li><a href="#customers">ð¥ KhÃ¡ch hÃ ng</a></li>
+                <li><a href="#debts">ð° CÃ´ng ná»£</a></li>
+                <li><a href="#stats">ð Thá»ng kÃª</a></li>
+                <li class="admin-only"><a href="#users">ð¨âð¼ NhÃ¢n viÃªn</a></li>
+                <li class="admin-only"><a href="#settings">âï¸ CÃ i Äáº·t &amp; á»¨ng dá»¥ng</a></li>
             </ul>
             <div class="sidebar-footer">
                 <span id="user-name"></span>
-                <button id="logout-btn">Đăng xuất</button>
+                <button id="logout-btn">ÄÄng xuáº¥t</button>
             </div>
         </nav>
         <main id="main-content"></main>
@@ -44,11 +44,11 @@
     <!-- Toast notifications -->
     <div id="toast-container"></div>
 
-    <!-- Firebase SDK (chứa cả app + database, không cần auth) -->
+    <!-- Firebase SDK (chá»©a cáº£ app + database, khÃ´ng cáº§n auth) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
     <!-- App bootstrap (ES module) -->
-    <script type="module" src="app.js?v=51"></script>
+    <script type="module" src="app.js?v=52"></script>
 </body>
 </html>
