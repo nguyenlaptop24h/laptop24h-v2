@@ -69,134 +69,212 @@ function openEditRepairBH(rec) {
 }
 
 function printWarrantyBill(record) {
-  const key = record._key || '';
-  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const s = (f) => '<span data-s="'+f+'">'+e(record[f])+'</span>';
-  const w = window.open('', '_blank', 'width=820,height=750,scrollbars=yes');
-  if (!w) return;
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu Bảo Hành</title>'
-    +'<style>'
-    +'body{font:13px Arial;margin:0;padding:16px}'
-    +'h2{text-align:center;font-size:17px;margin:0 0 4px}'
-    +'.sub{text-align:center;font-size:12px;color:#555;margin-bottom:10px}'
-    +'table{width:100%;border-collapse:collapse}'
-    +'td{padding:4px 6px;vertical-align:top;border-bottom:1px solid #eee}'
-    +'.lb{width:38%;font-weight:bold}'
-    +'.sec{font-weight:bold;background:#f3f4f6;padding:4px 6px;font-size:12px}'
-    +'.bbar{text-align:center;margin-top:14px;padding:8px;border-top:1px solid #ddd}'
-    +'.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}'
-    +'.be{background:#f59e0b;color:#fff;border-color:#d97706}'
-    +'.bp{background:#2563eb;color:#fff;border-color:#2563eb}'
-    +'#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}'
-    +'#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto}'
-    +'.mbox{background:#fff;margin:20px auto;padding:20px;max-width:560px;border-radius:8px}'
-    +'.mbox h3{margin:0 0 14px;font-size:15px;border-bottom:1px solid #ddd;padding-bottom:8px}'
-    +'.fr{display:flex;margin-bottom:8px;align-items:flex-start}'
-    +'.fr label{width:42%;font-size:12px;font-weight:bold;padding-top:6px}'
-    +'.fr input,.fr textarea{flex:1;border:1px solid #ccc;border-radius:4px;padding:5px 8px;font:13px Arial;box-sizing:border-box}'
-    +'.fr textarea{height:56px;resize:vertical}'
-    +'.fsec{font-weight:bold;background:#f3f4f6;padding:4px 8px;margin:10px 0 6px;border-radius:4px;font-size:12px}'
-    +'.mbtns{text-align:right;margin-top:14px;border-top:1px solid #ddd;padding-top:12px}'
-    +'.mbtns button{padding:8px 20px;margin-left:8px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}'
-    +'.bsave{background:#16a34a;color:#fff;border-color:#16a34a}'
-    +'@media print{.bbar{display:none!important}#modal{display:none!important}}'
-    +'</style></head><body>'
-    +'<h2>PHIếU BẢO HÀNH</h2><div class="sub">Laptop 24h</div>'
-    +'<table>'
-    +'<tr><td class="lb">Khách hàng</td><td>'+s('customerName')+'</td></tr>'
-    +'<tr><td class="lb">Điện thoại</td><td>'+s('phone')+'</td></tr>'
-    +'<tr><td class="lb">Địa chỉ</td><td>'+s('address')+'</td></tr>'
-    +'<tr><td colspan="2" class="sec">THÔNG TIN THIẾT BẸ</td></tr>'
-    +'<tr><td class="lb">Tên thiết bị</td><td>'+s('device')+'</td></tr>'
-    +'<tr><td class="lb">Số Serial</td><td>'+s('serial')+'</td></tr>'
-    +'<tr><td class="lb">Phụ kiện</td><td>'+s('accessories')+'</td></tr>'
-    +'<tr><td colspan="2" class="sec">THÔNG TIN SỪ CHỪ</td></tr>'
-    +'<tr><td class="lb">Tình trạng</td><td>'+s('issue')+'</td></tr>'
-    +'<tr><td class="lb">Kỹ thuật viên</td><td>'+s('techName')+'</td></tr>'
-    +'<tr><td class="lb">Ngày nhận</td><td>'+s('receivedDate')+'</td></tr>'
-    +'<tr><td class="lb">Ngày giao</td><td>'+s('deliveredDate')+'</td></tr>'
-    +'<tr><td colspan="2" class="sec">THANH TOÁN</td></tr>'
-    +'<tr><td class="lb">Chi phí</td><td>'+s('cost')+'</td></tr>'
-    +'<tr><td class="lb">Đặt cọc</td><td>'+s('deposit')+'</td></tr>'
-    +'<tr><td class="lb">Giảm giá</td><td>'+s('discount')+'</td></tr>'
-    +'<tr><td class="lb">Hình thức TT</td><td>'+s('paymentType')+'</td></tr>'
-    +'<tr><td class="lb">Bảo hành (tháng)</td><td>'+s('warrantyMonths')+'</td></tr>'
-    +'<tr><td colspan="2" class="sec">GHI CHÚ</td></tr>'
-    +'<tr><td class="lb">Ghi chú xử lý</td><td>'+s('processNote')+'</td></tr>'
-    +'</table>'
-    +'<div class="bbar">'
-    +(key ? '<button class="be" onclick="showEdit()">&#9998; Nội dung bill</button>' : '')
-    +'<button class="bp" onclick="window.print()">&#128424; In phiếu</button>'
-    +'<button onclick="window.close()">Đóng</button>'
-    +'<div id="msg">&#10003; Đã lưu thành công!</div>'
-    +'</div>'
-    +'<div id="modal"><div class="mbox">'
-    +'<h3>&#9998; Sửa nội dung phiếu bảo hành</h3>'
-    +'<div class="fsec">Thông tin khách hàng</div>'
-    +'<div class="fr"><label>Khách hàng</label><input id="f-customerName"></div>'
-    +'<div class="fr"><label>Điện thoại</label><input id="f-phone"></div>'
-    +'<div class="fr"><label>Địa chỉ</label><input id="f-address"></div>'
-    +'<div class="fsec">Thiết bị</div>'
-    +'<div class="fr"><label>Tên thiết bị</label><input id="f-device"></div>'
-    +'<div class="fr"><label>Số Serial</label><input id="f-serial"></div>'
-    +'<div class="fr"><label>Phụ kiện</label><input id="f-accessories"></div>'
-    +'<div class="fsec">Sửa chữa</div>'
-    +'<div class="fr"><label>Tình trạng</label><textarea id="f-issue"></textarea></div>'
-    +'<div class="fr"><label>Kỹ thuật viên</label><input id="f-techName"></div>'
-    +'<div class="fr"><label>Ngày nhận</label><input id="f-receivedDate"></div>'
-    +'<div class="fr"><label>Ngày giao</label><input id="f-deliveredDate"></div>'
-    +'<div class="fsec">Thanh toán</div>'
-    +'<div class="fr"><label>Chi phí</label><input id="f-cost" type="number"></div>'
-    +'<div class="fr"><label>Đặt cọc</label><input id="f-deposit" type="number"></div>'
-    +'<div class="fr"><label>Giảm giá</label><input id="f-discount" type="number"></div>'
-    +'<div class="fr"><label>Hình thức TT</label><input id="f-paymentType"></div>'
-    +'<div class="fr"><label>Bảo hành (tháng)</label><input id="f-warrantyMonths" type="number"></div>'
-    +'<div class="fsec">Ghi chú</div>'
-    +'<div class="fr"><label>Ghi chú xử lý</label><textarea id="f-processNote"></textarea></div>'
-    +'<div class="mbtns">'
-    +'<button onclick="closeModal()">Hủy</button>'
-    +'<button class="bsave" onclick="saveEdit()">&#128190; Lưu thay đổi</button>'
-    +'</div></div></div>'
-    +'<script>'
-    +'var _k="'+key+'",'
-    +'_fs=["customerName","phone","address","device","serial","accessories","issue","techName","receivedDate","deliveredDate","cost","deposit","discount","paymentType","warrantyMonths","processNote"],'
-    +'_nf=["cost","deposit","discount","warrantyMonths"];'
-    +'function showEdit(){'
-    +'_fs.forEach(function(f){'
-    +'var el=document.getElementById("f-"+f);'
-    +'var sp=document.querySelector(\'[data-s="\'+f+\'"]\');'
-    +'if(el&&sp)el.value=sp.textContent;'
-    +'});'
-    +'document.getElementById("modal").style.display="block";'
-    +'}'
-    +'function closeModal(){document.getElementById("modal").style.display="none";}'
-    +'function saveEdit(){'
-    +'var d={};'
-    +'_fs.forEach(function(f){'
-    +'var el=document.getElementById("f-"+f);'
-    +'if(el)d[f]=_nf.indexOf(f)>=0?(parseFloat(el.value)||0):el.value;'
-    +'});'
-    +'if(window.opener&&window.opener.repSaveFromBill){'
-    +'window.opener.repSaveFromBill(_k,d).then(function(){'
-    +'_fs.forEach(function(f){'
-    +'var sp=document.querySelector(\'[data-s="\'+f+\'"]\');'
-    +'if(sp)sp.textContent=d[f]!==undefined?d[f]:"";'
-    +'});'
-    +'closeModal();'
-    +'var m=document.getElementById("msg");'
-    +'m.style.display="block";'
-    +'setTimeout(function(){m.style.display="none";},3000);'
-    +'});'
-    +'}else{alert("Kh\u00F4ng th\u1EC3 l\u01B0u. M\u1EDF l\u1EA1i phi\u1EBFu t\u1EEB trang ch\u00EDnh.");}'
-    +'}'
-    +'</scr'+'ipt>'
-    +'</body></html>');
-  w.document.close();
+  const giao = record.deliveredDate || record.receivedDate || '';
+  let warrantyEnd = 'Không bảo hành';
+  if (record.warrantyMonths > 0 && giao) {
+    const d = new Date(giao);
+    d.setMonth(d.getMonth() + (record.warrantyMonths || 0));
+    warrantyEnd = d.toLocaleDateString('vi-VN');
+  }
+  const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
+  const win = window.open('', '_blank', 'width=420,height=650');
+  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>' +
+    '* { margin:0; padding:0; box-sizing:border-box; }' +
+    'body { font-family: Arial, sans-serif; font-size: 13px; padding: 16px; max-width: 380px; margin: 0 auto; }' +
+    '.header { text-align: center; margin-bottom: 10px; }' +
+    '.header h2 { font-size: 20px; font-weight: bold; letter-spacing: 1px; }' +
+    '.header p { font-size: 12px; color: #555; }' +
+    '.divider { border-top: 1px dashed #999; margin: 8px 0; }' +
+    '.title { text-align: center; font-size: 15px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
+    'table { width: 100%; border-collapse: collapse; }' +
+    'td { padding: 4px 2px; vertical-align: top; }' +
+    'td:first-child { width: 38%; font-weight: 600; color: #333; white-space: nowrap; }' +
+    '.total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #333; padding-top: 6px; }' +
+    '.wbox { border: 2px solid #2563eb; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center; }' +
+    '.wbox .wlabel { font-size: 11px; color: #666; }' +
+    '.wbox .wvalue { font-size: 16px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
+    '.footer { text-align: center; font-size: 11px; color: #888; margin-top: 12px; }' +
+    '.sig { display: flex; justify-content: space-between; margin-top: 24px; font-size: 12px; }' +
+    '.sig div { text-align: center; width: 45%; }' +
+    '.sig .line { border-top: 1px solid #333; margin-top: 32px; padding-top: 4px; }' +
+    '.btn-bar { text-align: center; margin-top: 12px; }' +
+    '.btn-bar button { padding: 6px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 0 4px; }' +
+    '.btn-print { background: #2563eb; color: white; }' +
+    '.btn-close { background: #6b7280; color: white; }' +
+    '@media print { .btn-bar { display: none; } }' +
+  '#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}' +
+  '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
+  '.rep-modal .form-card{margin:0 auto}' +
+  '</style></head><body>' +
+  '<div class="header"><h2>LAPTOP 24H</h2><p>Địa chỉ cửa hàng của bạn | SĐT: 0xxx xxx xxx</p></div>' +
+  '<div class="divider"></div>' +
+  '<div class="title">Phiếu Bảo Hành</div>' +
+  '<table>' +
+  '<tr><td>Khách hàng:</td><td>' + (record.customerName || '') + '</td></tr>' +
+  '<tr><td>SĐT:</td><td>' + (record.phone || '') + '</td></tr>' +
+  (record.address ? '<tr><td>Địa chỉ:</td><td>' + record.address + '</td></tr>' : '') +
+  '<tr><td>Thiết bị:</td><td>' + (record.device || '') + '</td></tr>' +
+  (record.serial ? '<tr><td>Serial:</td><td>' + record.serial + '</td></tr>' : '') +
+  (record.accessories ? '<tr><td>Phụ kiện:</td><td>' + record.accessories + '</td></tr>' : '') +
+  '<tr><td>Ngày nhận:</td><td>' + formatDate(record.receivedDate || record.ts) + '</td></tr>' +
+  '<tr><td>Ngày giao:</td><td>' + (record.deliveredDate ? formatDate(record.deliveredDate) : '--') + '</td></tr>' +
+  (record.issue ? '<tr><td>Vấn đề:</td><td>' + record.issue + '</td></tr>' : '') +
+  (record.techName ? '<tr><td>KTV:</td><td>' + record.techName + '</td></tr>' : '') +
+  '</table>' +
+  '<div class="divider"></div>' +
+  '<table>' +
+  '<tr><td>Chi phí sửa:</td><td>' + formatVND(record.cost || 0) + '</td></tr>' +
+  (record.deposit > 0 ? '<tr><td>Đặt cọc:</td><td>' + formatVND(record.deposit) + '</td></tr>' : '') +
+  (record.discount > 0 ? '<tr><td>Giảm giá:</td><td>- ' + formatVND(record.discount) + '</td></tr>' : '') +
+  '<tr class="total-row"><td>Còn lại:</td><td>' + formatVND(remaining) + '</td></tr>' +
+  '<tr><td>Hình thức TT:</td><td>' + (record.paymentType || 'Tiền mặt') + '</td></tr>' +
+  '</table>' +
+  '<div class="wbox">' +
+  '<div class="wlabel">Bảo hành đến</div>' +
+  '<div class="wvalue">' + warrantyEnd + '</div>' +
+  (record.warrantyMonths > 0 ? '<div class="wlabel">(' + record.warrantyMonths + ' tháng kể từ ngày giao)</div>' : '') +
+  '</div>' +
+  (record.processNote ? '<div style="font-size:11px;color:#555;margin-bottom:6px"><em>Ghi chú: ' + record.processNote + '</em></div>' : '') +
+  '<div class="sig">' +
+  '<div><div class="line">Khách hàng</div></div>' +
+  '<div><div class="line">Kỹ thuật viên</div></div>' +
+  '</div>' +
+  '<div class="footer"><p>Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
+  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' +
+  '</body></html>');
+  win.document.close();
 }
 
-window.repSaveFromBill = async function(key, data) {
-  await updateItem('repairs', key, data);
-};
+const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
+function logRepairToSheet(data, action) {
+    try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+}
+
+export async function mount(container) {
+  const today = todayStr();
+
+  container.innerHTML = `
+    <div class="module-header" style="display:flex;align-items:center">
+      <h2>Phiếu sửa chữa</h2>
+      <button id="rep-trash-btn" style="margin-left:auto;padding:4px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">🗑 Thùng rác</button>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem">
+      <input id="rep-search" type="text" placeholder="🔍 Tìm kiếm..." class="search-input" style="flex:1;min-width:160px"/>
+      <select id="rep-status-filter" class="search-input" style="width:145px">
+        <option value="">Tất cả trạng thái</option>
+        ${STATUS_LIST.map(s => '<option>' + s + '</option>').join('')}
+      </select>
+      <label style="font-size:.85rem;color:#555">Từ:</label>
+      <input id="rep-date-from" type="date" class="search-input" style="width:145px" value="${today}"/>
+      <label style="font-size:.85rem;color:#555">Đến:</label>
+      <input id="rep-date-to"   type="date" class="search-input" style="width:145px" value="${today}"/>
+      <button id="rep-clear-date" class="btn btn--secondary" style="font-size:.83rem;padding:.35rem .8rem">Tất cả ngày</button>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
+      <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
+      <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
+      <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎</button>
+      <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕</button>
+      <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">🖨 In bill BH</button>
+      <button id="rep-edit-bh-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border-color:#f59e0b">&#x270f;&#xfe0f; Sửa BH</button>
+      <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
+      <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
+    </div>
+    <div id="rep-table-wrap"></div>
+    <div id="rep-form-wrap"></div>
+  `;
+
+  let allData = [];
+  let selectedKey = null;
+let showTrash = false;
+
+  const searchEl   = container.querySelector('#rep-search');
+  const statusEl   = container.querySelector('#rep-status-filter');
+  const dateFromEl = container.querySelector('#rep-date-from');
+  const dateToEl   = container.querySelector('#rep-date-to');
+  const unsub = onSnapshot(COLLECTION, items => {
+    allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    filterData();
+  });
+  container.addEventListener('unmount', () => unsub && unsub());
+
+  const editBtn    = container.querySelector('#rep-edit-btn');
+  const statusBtn = container.querySelector('#rep-status-btn');
+  const delBtn     = container.querySelector('#rep-del-btn');
+  const printBtn   = container.querySelector('#rep-print-btn');
+  const editBhBtn   = container.querySelector('#rep-edit-bh-btn');
+  const trashBtn      = container.querySelector('#rep-trash-btn');
+  const selHint    = container.querySelector('#rep-sel-hint');
+
+  searchEl.addEventListener('input', filterData);
+  statusEl.addEventListener('change', filterData);
+  dateFromEl.addEventListener('change', filterData);
+  dateToEl.addEventListener('change', filterData);
+  trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; filterData(); });
+
+  container.querySelector('#rep-clear-date').addEventListener('click', () => {
+    dateFromEl.value = ''; dateToEl.value = ''; filterData();
+  });
+  container.querySelector('#rep-add').addEventListener('click', () => openForm(null));
+
+  editBtn.addEventListener('click', () => {
+    const rec = allData.find(r => r._key === selectedKey);
+    if (rec) openForm(rec);
+  });
+  delBtn.addEventListener('click', () => { if (selectedKey) confirmDelete(selectedKey); });
+  printBtn.addEventListener('click', () => {
+    const rec = allData.find(r => r._key === selectedKey);
+    if (rec) printWarrantyBill(rec);
+  });
+  statusBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); });
+  editBhBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
+
+  function setSelected(key) {
+    selectedKey = key;
+    const on = !!key;
+    [editBtn, delBtn, printBtn, statusBtn, editBhBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
+    selHint.style.display = on ? 'none' : '';
+    container.querySelectorAll('.rep-row').forEach(tr => {
+      tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
+    });
+    container.querySelectorAll('.rep-radio').forEach(rb => { rb.checked = rb.dataset.key === key; });
+  }
+
+  function filterData() {
+    const q    = searchEl.value.toLowerCase();
+    const st   = statusEl.value;
+    const from = dateFromEl.value;
+    const to   = dateToEl.value;
+    const filtered = allData.filter(r => {
+      if (showTrash) return !!r.deletedAt;
+      if (r.deletedAt) return false;
+      const matchQ = !q || (r.customerName||'').toLowerCase().includes(q) ||
+        (r.phone||'').toLowerCase().includes(q) || (r.device||'').toLowerCase().includes(q) ||
+        (r.serial||'').toLowerCase().includes(q);
+      const matchSt   = !st || r.status === st;
+      const rDate     = r.receivedDate || (r.ts ? new Date(r.ts).toISOString().slice(0,10) : '');
+      const matchFrom = !from || rDate >= from;
+      const matchTo   = !to   || rDate <= to;
+      return matchQ && matchSt && matchFrom && matchTo;
+    });
+    renderTable(filtered);
+  }
+
+  function renderTable(data) {
+    const wrap = container.querySelector('#rep-table-wrap');
+    if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>'; return; }
+    const cols = [
+      { label: '', key: r => '<input type="radio" class="rep-radio" data-key="' + r._key + '" name="rep-sel" style="cursor:pointer;accent-color:#2563eb">' },
+      { label: 'Ngày nhận',  key: r => formatDate(r.receivedDate || r.ts) },
+      { label: 'Khách hàng', key: r => r.customerName || '' },
+      { label: 'SĐT',        key: r => r.phone || '' },
+      { label: 'Thiết bị',   key: r => r.device || formatDeliveryItems(r.deliveryItems) || '' },
+      { label: 'Serial',     key: r => r.serial || '' },
+      { label: 'KTV',        key: r => r.techName || '' },
+      { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
+      { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
+    ,
+      { label: 'Thao tác', key: r => showTrash ? '<button onclick="window.__restoreRepair(\''+r.key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>' : '' }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const trs = data.map(r =>
       '<tr class="rep-row" data-key="' + r._key + '">' +
