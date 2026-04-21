@@ -1,699 +1,867 @@
-// modules/sales.js - Ban hang v6
+// modules/sales.js - Ban hang v37 (redesign theo mockup)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
-import { toast, showModal, formatVND } from '../core/ui.js';
-import { isAdmin } from '../core/auth.js';
+import { toast, formatVND } from '../core/ui.js';
 
 const COLLECTION = 'sales';
+const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
 registerRoute('#sales', mount);
 
-const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
 function logToSheet(data, action) {
-  try { fetch(SALES_SHEET_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+  try {
+    fetch(SALES_SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...data })
+    }).catch(() => {});
+  } catch(e) {}
 }
 
 export async function mount(container) {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  let unsub = null;
+  let allItems = [];
   let invItems = [];
-  let currentList = [];
-  let editKey = null;
   let filterMode = 'day';
+  let searchQ = '';
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+  let editKey = null;
+  let unsub = null;
+  let globalDrop = null;
+  const todayStr = new Date().toISOString().slice(0, 10);
 
+  // Load products from Firebase for autocomplete
   try {
     const snap = await firebase.database().ref('products').once('value');
-    snap.forEach(c => { invItems.push({ _key: c.key, ...c.val() }); });
+    snap.forEach(c => invItems.push({ _key: c.key, ...c.val() }));
   } catch(e) {}
 
+  // ══════════════════════════════════════════════
+  //  SHELL HTML
+  // ══════════════════════════════════════════════
   container.innerHTML = `
-    <div style="text-align:center;padding:1.25rem 1rem 0.5rem">
-      <h2>B\u00e1n h\u00e0ng</h2>
-      <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:.5rem 0">
-        <button id="sale-add" class="btn btn--primary" style="margin:0">+ B\u00e1n h\u00e0ng</button>
-        <button id="sale-trash-btn" style="padding:.45rem .9rem;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:.85rem;color:#64748b">\uD83D\uDDD1 Th\u00f9ng r\u00e1c</button>
-      </div>
-      <div style="display:flex;gap:.4rem;justify-content:center;align-items:center;flex-wrap:wrap;margin:.35rem 0">
-        <div style="display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #cbd5e1">
-          <button id="sale-mode-day" style="padding:.35rem .85rem;border:none;cursor:pointer;font-size:.82rem;font-weight:600;background:#1d4ed8;color:#fff">Ng\u00e0y</button>
-          <button id="sale-mode-week" style="padding:.35rem .85rem;border:none;cursor:pointer;font-size:.82rem;font-weight:600;background:transparent;color:#475569">Tu\u1ea7n</button>
-          <button id="sale-mode-month" style="padding:.35rem .85rem;border:none;cursor:pointer;font-size:.82rem;font-weight:600;background:transparent;color:#475569">Th\u00e1ng</button>
-        </div>
-        <input id="sale-date-filter" type="date" value="${todayStr}" style="padding:.35rem .6rem;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem">
-      </div>
-      <span id="sale-count" style="color:#888;font-size:.9rem"></span>
+<style>
+.sl-wrap { display:flex; flex-direction:column; height:100%; background:#f0f2f5; font-family:'Segoe UI',sans-serif; }
+
+/* TOOLBAR */
+.sl-toolbar {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 14px; background:#fff;
+  border-bottom:1px solid #e0e0e0; flex-shrink:0; flex-wrap:wrap;
+}
+.sl-btn {
+  padding:6px 13px; border-radius:6px; border:1px solid #ddd;
+  background:#fff; cursor:pointer; font-size:12px; font-weight:500;
+  display:flex; align-items:center; gap:4px; white-space:nowrap;
+}
+.sl-btn-primary { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.sl-btn-primary:hover { background:#1558b0; }
+.sl-btn-trash { color:#e74c3c; border-color:#e74c3c; }
+.sl-btn-trash:hover { background:#fdecea; }
+.sl-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+.sl-search {
+  display:flex; align-items:center; gap:6px;
+  border:1px solid #ddd; border-radius:6px; padding:5px 10px;
+  background:#fafafa; width:220px;
+}
+.sl-search input { border:none; outline:none; background:transparent; font-size:12px; width:100%; }
+
+.sl-filters { display:flex; gap:3px; }
+.sl-f {
+  padding:5px 11px; border-radius:20px; font-size:11px;
+  cursor:pointer; border:1px solid #ddd; color:#555; user-select:none;
+}
+.sl-f:hover { background:#f0f0f0; }
+.sl-f.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+
+.sl-quickstats { font-size:12px; color:#555; margin-left:4px; white-space:nowrap; }
+.sl-quickstats b { color:#1a73e8; }
+.sl-spacer { flex:1; }
+
+/* MAIN AREA */
+.sl-main { display:flex; flex:1; overflow:hidden; }
+
+/* CONTENT (TABLE + PAGINATION) */
+.sl-content { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:12px 14px; gap:10px; }
+
+.sl-table-wrap {
+  background:#fff; border-radius:8px;
+  box-shadow:0 1px 4px rgba(0,0,0,.07); overflow:auto; flex:1;
+}
+.sl-table { width:100%; border-collapse:collapse; min-width:700px; }
+.sl-table thead th {
+  background:#f8f9fa; padding:9px 11px;
+  text-align:left; font-size:11px; color:#666; font-weight:600;
+  border-bottom:1px solid #e8e8e8; white-space:nowrap; position:sticky; top:0;
+}
+.sl-table tbody td { padding:9px 11px; border-bottom:1px solid #f2f2f2; font-size:12px; vertical-align:middle; }
+.sl-table tbody tr:hover { background:#f8f9ff; }
+.sl-table tbody tr:last-child td { border-bottom:none; }
+
+.sl-customer { font-weight:600; }
+.sl-phone { font-size:11px; color:#888; }
+.sl-money { font-weight:600; color:#1a3a6b; }
+
+.sl-badge {
+  display:inline-block; padding:2px 8px; border-radius:10px;
+  font-size:10px; font-weight:600; white-space:nowrap;
+}
+.badge-done { background:#e8f5e9; color:#2e7d32; }
+.badge-pending { background:#fff3e0; color:#e65100; }
+.badge-cancel { background:#fce4ec; color:#c62828; }
+.badge-trash { background:#f5f5f5; color:#757575; }
+
+.sl-actions { display:flex; gap:5px; }
+.sl-action-btn {
+  padding:3px 9px; border-radius:4px; border:1px solid #ddd;
+  background:#fff; font-size:11px; cursor:pointer; white-space:nowrap;
+}
+.sl-action-btn:hover { background:#f5f5f5; }
+.sl-edit-btn { color:#1a73e8; border-color:#1a73e8; }
+.sl-edit-btn:hover { background:#e8f0fe; }
+.sl-del { color:#e74c3c; border-color:#e74c3c; }
+.sl-del:hover { background:#fdecea; }
+.sl-restore-btn { color:#2e7d32; border-color:#2e7d32; }
+.sl-restore-btn:hover { background:#e8f5e9; }
+
+.sl-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:60px 20px; color:#aaa; gap:10px; font-size:14px;
+}
+
+/* PAGINATION */
+.sl-pagination {
+  display:flex; align-items:center; justify-content:flex-end;
+  gap:5px; padding:6px 4px; font-size:11px; color:#555; flex-shrink:0;
+}
+.sl-pg-btn {
+  padding:3px 9px; border-radius:4px; border:1px solid #ddd;
+  background:#fff; cursor:pointer; font-size:11px;
+}
+.sl-pg-btn:hover:not([disabled]) { background:#f0f0f0; }
+.sl-pg-btn.active { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.sl-pg-btn[disabled] { opacity:.4; cursor:not-allowed; }
+
+/* SIDEBAR */
+.sl-sidebar {
+  width:250px; background:#fff; border-left:1px solid #e0e0e0;
+  padding:12px; display:flex; flex-direction:column; gap:12px;
+  overflow-y:auto; flex-shrink:0;
+}
+.sl-sb-title { font-size:10px; font-weight:700; color:#999; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.sl-sb-section { display:flex; flex-direction:column; }
+.sl-stat-row { display:flex; gap:8px; }
+.sl-stat-card {
+  flex:1; background:#f8f9fa; border-radius:8px; padding:9px 11px;
+}
+.sl-stat-val { font-size:1.25rem; font-weight:700; color:#1a73e8; line-height:1.2; }
+.sl-stat-lbl { font-size:10px; color:#888; margin-top:2px; }
+
+/* BAR CHART */
+.sl-chart {
+  display:flex; align-items:flex-end; justify-content:space-around;
+  background:#f8f9fa; border-radius:8px; padding:10px 8px 0; height:100px; gap:2px;
+}
+.sl-chart-col { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
+.sl-bar { background:#93c5fd; border-radius:3px 3px 0 0; width:100%; min-height:4px; transition:height .3s; }
+.sl-bar.today { background:#1a73e8; }
+.sl-bar-lbl { font-size:9px; color:#999; padding-bottom:4px; }
+
+.sl-pay-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; color:#555; }
+.sl-pay-row b { color:#333; }
+
+/* MODAL OVERLAY */
+.sl-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.sl-modal {
+  background:#fff; border-radius:10px; width:500px; max-width:95vw;
+  max-height:92vh; display:flex; flex-direction:column;
+  box-shadow:0 8px 32px rgba(0,0,0,.18); overflow:hidden;
+}
+.sl-modal-header {
+  background:#1a73e8; color:#fff; padding:12px 16px;
+  display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
+}
+.sl-modal-header h3 { font-size:14px; font-weight:600; }
+.sl-close-btn { background:none; border:none; color:#fff; font-size:18px; cursor:pointer; opacity:.8; line-height:1; }
+.sl-close-btn:hover { opacity:1; }
+.sl-modal-body { padding:14px 16px; overflow-y:auto; flex:1; }
+.sl-modal-footer {
+  padding:10px 16px; border-top:1px solid #eee;
+  display:flex; justify-content:flex-end; gap:8px; flex-shrink:0;
+}
+
+.sl-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.sl-field { display:flex; flex-direction:column; gap:3px; }
+.sl-field label { font-size:11px; color:#666; font-weight:600; }
+.sl-field input, .sl-field select, .sl-field textarea {
+  padding:7px 9px; border:1px solid #ddd; border-radius:6px;
+  font-size:12px; outline:none; font-family:inherit;
+}
+.sl-field input:focus, .sl-field select:focus, .sl-field textarea:focus { border-color:#1a73e8; }
+.sl-field.full { grid-column:1/-1; }
+
+.sl-items-label { font-size:11px; font-weight:700; color:#555; margin-bottom:6px; }
+.sf-item-row {
+  display:flex; align-items:center; gap:5px; margin-bottom:6px;
+  background:#f9f9f9; border-radius:6px; padding:6px 8px;
+}
+.sf-item-row input { padding:5px 7px; border:1px solid #ddd; border-radius:5px; font-size:12px; outline:none; }
+.sf-item-row input:focus { border-color:#1a73e8; }
+.sf-name { flex:1; min-width:0; }
+.sf-qty { width:50px !important; text-align:center; }
+.sf-price { width:100px !important; text-align:right; }
+.sf-disc { width:75px !important; text-align:right; }
+.sf-line-total { width:80px; text-align:right; font-size:11px; font-weight:600; color:#1a3a6b; flex-shrink:0; }
+.sf-remove-btn {
+  background:none; border:none; color:#ccc; cursor:pointer; font-size:14px;
+  padding:0 3px; flex-shrink:0;
+}
+.sf-remove-btn:hover { color:#e74c3c; }
+.sl-add-row-btn {
+  width:100%; padding:6px; border:1px dashed #ddd; border-radius:6px;
+  background:#fafafa; color:#888; cursor:pointer; font-size:12px; margin-top:2px;
+}
+.sl-add-row-btn:hover { border-color:#1a73e8; color:#1a73e8; background:#f0f4ff; }
+
+.sl-totals {
+  margin-top:10px; padding:10px 12px; background:#f8f9fa;
+  border-radius:8px; display:flex; flex-direction:column; gap:6px;
+}
+.sl-total-row {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:12px; color:#555;
+}
+.sl-total-row input {
+  padding:3px 6px; border:1px solid #ddd; border-radius:4px;
+  font-size:12px; outline:none; text-align:right;
+}
+.sl-total-final { border-top:1px solid #e0e0e0; padding-top:6px; margin-top:2px; }
+
+/* AUTOCOMPLETE */
+.sl-autocomplete {
+  position:fixed; z-index:9999; background:#fff;
+  border:1px solid #ddd; border-radius:6px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);
+  max-height:220px; overflow-y:auto; display:none;
+}
+.sl-ac-opt { padding:.4rem .7rem; cursor:pointer; border-bottom:1px solid #f5f5f5; }
+.sl-ac-opt:hover { background:#f0f4ff; }
+.sl-ac-opt:last-child { border-bottom:none; }
+</style>
+
+<div class="sl-wrap">
+  <div class="sl-toolbar">
+    <button class="sl-btn sl-btn-primary" id="sl-add-btn">＋ Bán hàng</button>
+    <button class="sl-btn sl-btn-trash" id="sl-trash-btn">🗑 Thùng rác</button>
+    <div class="sl-search">
+      <span style="font-size:13px;color:#aaa">🔍</span>
+      <input id="sl-search-inp" placeholder="Tìm khách hàng, sản phẩm...">
     </div>
-    <div id="sale-form-wrap"></div>
-    <div id="sale-list-wrap" style="padding:0 1rem 2rem"></div>
-    <div id="sale-trash-wrap" style="display:none;padding:0 1rem 2rem"></div>
-  `;
+    <div class="sl-filters" id="sl-filters">
+      <span class="sl-f active" data-mode="day">Hôm nay</span>
+      <span class="sl-f" data-mode="week">Tuần</span>
+      <span class="sl-f" data-mode="month">Tháng</span>
+      <span class="sl-f" data-mode="all">Tất cả</span>
+    </div>
+    <div class="sl-spacer"></div>
+    <div class="sl-quickstats">
+      Đơn: <b id="sl-qs-count">0</b> &nbsp;·&nbsp; Doanh thu: <b id="sl-qs-rev">0đ</b>
+    </div>
+  </div>
 
-  const addBtn     = container.querySelector('#sale-add');
-  const dateFilter = container.querySelector('#sale-date-filter');
-  const formWrap   = container.querySelector('#sale-form-wrap');
-  const listWrap   = container.querySelector('#sale-list-wrap');
-  const countEl    = container.querySelector('#sale-count');
-  const trashWrap  = container.querySelector('#sale-trash-wrap');
-  const trashBtn   = container.querySelector('#sale-trash-btn');
-  const modeDay    = container.querySelector('#sale-mode-day');
-  const modeWeek   = container.querySelector('#sale-mode-week');
-  const modeMonth  = container.querySelector('#sale-mode-month');
+  <div class="sl-main">
+    <div class="sl-content">
+      <div class="sl-table-wrap" id="sl-table-wrap"></div>
+      <div class="sl-pagination" id="sl-pagination"></div>
+    </div>
+    <div class="sl-sidebar" id="sl-sidebar"></div>
+  </div>
 
-  function getWeekValue(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr + 'T12:00:00');
-    const thu = new Date(d);
-    thu.setDate(d.getDate() - ((d.getDay()+6)%7) + 3);
-    const firstThu = new Date(thu.getFullYear(), 0, 4);
-    const wk = 1 + Math.round(((thu - firstThu) / 864e5 - 3 + (firstThu.getDay()+6)%7) / 7);
-    return thu.getFullYear() + '-W' + String(wk).padStart(2, '0');
+  <div class="sl-overlay" id="sl-overlay" style="display:none">
+    <div class="sl-modal" id="sl-modal"></div>
+  </div>
+</div>`;
+
+  // ══════════════════════════════════════════════
+  //  WIRE UP TOOLBAR
+  // ══════════════════════════════════════════════
+  container.querySelector('#sl-add-btn').onclick = () => openForm(null);
+  container.querySelector('#sl-trash-btn').onclick = () => {
+    filterMode = 'trash';
+    updateFilterUI();
+    currentPage = 1;
+    render();
+  };
+  container.querySelector('#sl-search-inp').oninput = e => {
+    searchQ = e.target.value.toLowerCase().trim();
+    currentPage = 1;
+    render();
+  };
+  container.querySelectorAll('.sl-f').forEach(f => {
+    f.onclick = () => {
+      filterMode = f.dataset.mode;
+      updateFilterUI();
+      currentPage = 1;
+      render();
+    };
+  });
+
+  function updateFilterUI() {
+    container.querySelectorAll('.sl-f').forEach(f =>
+      f.classList.toggle('active', f.dataset.mode === filterMode)
+    );
   }
 
-  function daysAgo(ts) {
-    const d = Math.floor((Date.now() - ts) / 86400000);
-    return d === 0 ? 'h\u00f4m nay' : d + ' ng\u00e0y tr\u01b0\u1edbc';
+  // ══════════════════════════════════════════════
+  //  FILTER / DATA HELPERS
+  // ══════════════════════════════════════════════
+  function getWeekBounds(ds) {
+    const d = new Date(ds + 'T12:00:00');
+    const day = d.getDay() || 7;
+    const mon = new Date(d); mon.setDate(d.getDate() - (day - 1));
+    const sun = new Date(d); sun.setDate(d.getDate() + (7 - day));
+    return { start: mon.toISOString().slice(0, 10), end: sun.toISOString().slice(0, 10) };
   }
 
-  function setMode(mode) {
-    filterMode = mode;
-    modeDay.style.background   = mode==='day'   ? '#1d4ed8' : 'transparent';
-    modeDay.style.color        = mode==='day'   ? '#fff'    : '#475569';
-    modeWeek.style.background  = mode==='week'  ? '#1d4ed8' : 'transparent';
-    modeWeek.style.color       = mode==='week'  ? '#fff'    : '#475569';
-    modeMonth.style.background = mode==='month' ? '#1d4ed8' : 'transparent';
-    modeMonth.style.color      = mode==='month' ? '#fff'    : '#475569';
-    listWrap.style.display  = mode === 'trash' ? 'none' : '';
-    trashWrap.style.display = mode === 'trash' ? ''     : 'none';
-    if (mode === 'day') {
-      dateFilter.style.display = '';
-      dateFilter.type = 'date';
-      if (!dateFilter.value) dateFilter.value = todayStr;
-    } else if (mode === 'week') {
-      dateFilter.style.display = '';
-      dateFilter.type = 'week';
-      dateFilter.value = getWeekValue(todayStr);
-    } else if (mode === 'month') {
-      dateFilter.style.display = '';
-      dateFilter.type = 'month';
-      dateFilter.value = todayStr.slice(0, 7);
-    } else {
-      dateFilter.style.display = 'none';
+  function getFiltered() {
+    if (filterMode === 'trash') return allItems.filter(s => s.deletedAt);
+
+    let list = allItems.filter(s => !s.deletedAt);
+
+    if (filterMode === 'day') {
+      list = list.filter(s => (s.date || '').startsWith(todayStr));
+    } else if (filterMode === 'week') {
+      const { start, end } = getWeekBounds(todayStr);
+      list = list.filter(s => s.date >= start && s.date <= end);
+    } else if (filterMode === 'month') {
+      list = list.filter(s => (s.date || '').startsWith(todayStr.slice(0, 7)));
     }
-    loadSales();
+
+    if (searchQ) {
+      list = list.filter(s =>
+        (s.customer || '').toLowerCase().includes(searchQ) ||
+        (s.phone || '').includes(searchQ) ||
+        (s.items || []).some(it => (it.name || '').toLowerCase().includes(searchQ))
+      );
+    }
+
+    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }
 
-  // ===================== GLOBAL PRODUCT DROPDOWN =====================
-  let globalDrop = null;
-  let dropTarget = null;
-
-  function ensureGlobalDrop() {
-    if (globalDrop && document.body.contains(globalDrop)) return;
-    globalDrop = document.createElement('div');
-    globalDrop.id = 'sf-prod-drop';
-    globalDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #1a73e8;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:99999;max-height:220px;overflow-y:auto;min-width:220px';
-    document.body.appendChild(globalDrop);
+  // ══════════════════════════════════════════════
+  //  RENDER ORCHESTRATOR
+  // ══════════════════════════════════════════════
+  function render() {
+    const filtered = getFiltered();
+    renderQuickStats(filtered);
+    renderTable(filtered);
+    renderSidebar();
   }
 
-  function positionDrop(inputEl) {
-    const r = inputEl.getBoundingClientRect();
-    globalDrop.style.top   = (r.bottom + 2) + 'px';
-    globalDrop.style.left  = r.left + 'px';
-    globalDrop.style.width = Math.max(r.width, 260) + 'px';
+  // ══════════════════════════════════════════════
+  //  QUICK STATS
+  // ══════════════════════════════════════════════
+  function renderQuickStats(filtered) {
+    const rev = filtered.reduce((s, x) => s + (x.total || 0), 0);
+    container.querySelector('#sl-qs-count').textContent = filtered.length;
+    container.querySelector('#sl-qs-rev').textContent = formatVND(rev);
+  }
+
+  // ══════════════════════════════════════════════
+  //  TABLE
+  // ══════════════════════════════════════════════
+  function renderTable(filtered) {
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    const wrap = container.querySelector('#sl-table-wrap');
+
+    if (!total) {
+      const msg = filterMode === 'trash' ? 'Thùng rác trống' : 'Chưa có đơn nào';
+      const icon = filterMode === 'trash' ? '🗑' : '🛒';
+      wrap.innerHTML = `<div class="sl-empty"><div style="font-size:2.5rem">${icon}</div><div>${msg}</div></div>`;
+      renderPagination(0, 0);
+      return;
+    }
+
+    const STATUS = {
+      done:    { label: 'Hoàn thành', cls: 'badge-done' },
+      pending: { label: 'Chờ TT',     cls: 'badge-pending' },
+      cancel:  { label: 'Đã huỷ',     cls: 'badge-cancel' },
+    };
+
+    const rows = page.map((s, i) => {
+      const idx = (currentPage - 1) * PAGE_SIZE + i;
+      const code = '#BH' + String(idx + 1).padStart(4, '0');
+      const items = s.items || [];
+      const itemStr = items.length === 0 ? '—'
+        : items.length === 1 ? (items[0].name || '—')
+        : `${items[0].name || ''} +${items.length - 1}`;
+      const st = STATUS[s.status || 'done'] || STATUS['done'];
+      const pay = s.payMethod === 'transfer' ? '🏦 CK' : '💵 TM';
+
+      if (filterMode === 'trash') {
+        return `<tr>
+          <td><input type="checkbox"></td>
+          <td style="color:#aaa">${code}</td>
+          <td>${s.customer || '—'}</td>
+          <td title="${items.map(it => it.name).join(', ')}">${itemStr}</td>
+          <td class="sl-money">${formatVND(s.total || 0)}</td>
+          <td>${pay}</td>
+          <td><span class="sl-badge badge-trash">Đã xoá</span></td>
+          <td>${s.date || ''}</td>
+          <td><button class="sl-action-btn sl-restore-btn" data-key="${s._key}">↩ Khôi phục</button></td>
+        </tr>`;
+      }
+
+      return `<tr>
+        <td><input type="checkbox"></td>
+        <td>${code}</td>
+        <td>
+          <div class="sl-customer">${s.customer || '—'}</div>
+          ${s.phone ? `<div class="sl-phone">${s.phone}</div>` : ''}
+        </td>
+        <td title="${items.map(it => it.name).join(', ')}">${itemStr}</td>
+        <td class="sl-money">${formatVND(s.total || 0)}</td>
+        <td>${pay}</td>
+        <td><span class="sl-badge ${st.cls}">${st.label}</span></td>
+        <td>${s.date || ''}</td>
+        <td>
+          <div class="sl-actions">
+            <button class="sl-action-btn sl-edit-btn" data-key="${s._key}">✏</button>
+            <button class="sl-action-btn sl-del sl-del-btn" data-key="${s._key}">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    wrap.innerHTML = `
+    <table class="sl-table">
+      <thead>
+        <tr>
+          <th style="width:32px"><input type="checkbox" id="sl-chk-all"></th>
+          <th>Mã đơn</th>
+          <th>Khách hàng</th>
+          <th>Sản phẩm</th>
+          <th>Tổng tiền</th>
+          <th>Thanh toán</th>
+          <th>Trạng thái</th>
+          <th>Ngày bán</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>`;
+
+    wrap.querySelectorAll('.sl-edit-btn').forEach(btn =>
+      btn.onclick = () => openForm(btn.dataset.key)
+    );
+    wrap.querySelectorAll('.sl-del-btn').forEach(btn =>
+      btn.onclick = () => softDelete(btn.dataset.key)
+    );
+    wrap.querySelectorAll('.sl-restore-btn').forEach(btn =>
+      btn.onclick = () => restoreItem(btn.dataset.key)
+    );
+
+    renderPagination(total, totalPages);
+  }
+
+  function renderPagination(total, totalPages) {
+    const pg = container.querySelector('#sl-pagination');
+    if (!pg || total <= PAGE_SIZE) { if (pg) pg.innerHTML = ''; return; }
+
+    const from = (currentPage - 1) * PAGE_SIZE + 1;
+    const to = Math.min(currentPage * PAGE_SIZE, total);
+    let html = `<span style="margin-right:6px">Hiển thị ${from}–${to} / ${total} đơn</span>`;
+    html += `<button class="sl-pg-btn" ${currentPage === 1 ? 'disabled' : ''} data-pg="${currentPage - 1}">‹</button>`;
+    const maxP = Math.min(totalPages, 7);
+    for (let p = 1; p <= maxP; p++) {
+      html += `<button class="sl-pg-btn ${p === currentPage ? 'active' : ''}" data-pg="${p}">${p}</button>`;
+    }
+    if (totalPages > maxP) html += `<span style="padding:0 4px">…${totalPages}</span>`;
+    html += `<button class="sl-pg-btn" ${currentPage === totalPages ? 'disabled' : ''} data-pg="${currentPage + 1}">›</button>`;
+    pg.innerHTML = html;
+
+    pg.querySelectorAll('.sl-pg-btn:not([disabled])').forEach(btn =>
+      btn.onclick = () => { currentPage = parseInt(btn.dataset.pg); render(); }
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  SIDEBAR
+  // ══════════════════════════════════════════════
+  function renderSidebar() {
+    const active = allItems.filter(s => !s.deletedAt);
+    const todayList  = active.filter(s => (s.date || '').startsWith(todayStr));
+    const monthList  = active.filter(s => (s.date || '').startsWith(todayStr.slice(0, 7)));
+    const todayRev   = todayList.reduce((s, x) => s + (x.total || 0), 0);
+    const monthRev   = monthList.reduce((s, x) => s + (x.total || 0), 0);
+
+    // 7-day bar chart
+    const days7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const rev = active.filter(s => (s.date || '').startsWith(ds))
+                        .reduce((s, x) => s + (x.total || 0), 0);
+      const lbl = ['CN','T2','T3','T4','T5','T6','T7'][d.getDay()];
+      days7.push({ ds, rev, lbl });
+    }
+    const maxRev = Math.max(...days7.map(d => d.rev), 1);
+
+    // Payment split
+    const cash     = active.filter(s => !s.payMethod || s.payMethod === 'cash').length;
+    const transfer = active.filter(s => s.payMethod === 'transfer').length;
+    const total    = (cash + transfer) || 1;
+    const cashPct  = Math.round(cash / total * 100);
+    const tranPct  = 100 - cashPct;
+
+    container.querySelector('#sl-sidebar').innerHTML = `
+    <div class="sl-sb-section">
+      <div class="sl-sb-title">Hôm nay</div>
+      <div class="sl-stat-row">
+        <div class="sl-stat-card">
+          <div class="sl-stat-val">${todayList.length}</div>
+          <div class="sl-stat-lbl">Đơn bán</div>
+        </div>
+        <div class="sl-stat-card">
+          <div class="sl-stat-val" style="font-size:.95rem">${formatVND(todayRev)}</div>
+          <div class="sl-stat-lbl">Doanh thu</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sl-sb-section">
+      <div class="sl-sb-title">Tháng ${todayStr.slice(5, 7)}</div>
+      <div class="sl-stat-card">
+        <div class="sl-stat-val" style="font-size:1.05rem">${formatVND(monthRev)}</div>
+        <div class="sl-stat-lbl">${monthList.length} đơn</div>
+      </div>
+    </div>
+
+    <div class="sl-sb-section">
+      <div class="sl-sb-title">7 ngày gần đây</div>
+      <div class="sl-chart">
+        ${days7.map(d => {
+          const h = Math.max(5, Math.round((d.rev / maxRev) * 70));
+          return `<div class="sl-chart-col" title="${d.ds}\n${formatVND(d.rev)}">
+            <div class="sl-bar ${d.ds === todayStr ? 'today' : ''}" style="height:${h}px"></div>
+            <div class="sl-bar-lbl">${d.lbl}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="sl-sb-section">
+      <div class="sl-sb-title">Thanh toán</div>
+      <div class="sl-pay-row"><span>💵 Tiền mặt</span><b>${cashPct}%</b></div>
+      <div style="height:5px;background:#e0e0e0;border-radius:3px;overflow:hidden;margin:3px 0">
+        <div style="height:100%;width:${cashPct}%;background:#1a73e8;border-radius:3px"></div>
+      </div>
+      <div class="sl-pay-row"><span>🏦 Chuyển khoản</span><b>${tranPct}%</b></div>
+    </div>`;
+  }
+
+  // ══════════════════════════════════════════════
+  //  MODAL FORM
+  // ══════════════════════════════════════════════
+  function openForm(key) {
+    editKey = key;
+    const ex = key ? allItems.find(s => s._key === key) : null;
+    const overlay = container.querySelector('#sl-overlay');
+    const modal   = container.querySelector('#sl-modal');
+
+    modal.innerHTML = `
+    <div class="sl-modal-header">
+      <h3>${ex ? '✏️ Sửa đơn bán hàng' : '➕ Thêm đơn bán hàng'}</h3>
+      <button class="sl-close-btn" id="sl-close">✕</button>
+    </div>
+    <div class="sl-modal-body">
+      <div class="sl-form-grid">
+        <div class="sl-field">
+          <label>Khách hàng</label>
+          <input id="sf-customer" value="$x(ex?.customer || '').replace(/"/g, '&quot;')}" placeholder="Tên khách hàng...">
+        </div>
+        <div class="sl-field">
+          <label>Số điện thoại</label>
+          <input id="sf-phone" value="${(ex?.phone || '').replace(/"/g, '&quot;')}" placeholder="0901...">
+        </div>
+        <div class="sl-field">
+          <label>Ngày bán</label>
+          <input id="sf-date" type="date" value="${ex?.date || todayStr}">
+        </div>
+        <div class="sl-field">
+          <label>Thanh toán</label>
+          <select id="sf-pay">
+            <option value="cash" ${(!ex?.payMethod || ex?.payMethod === 'cash') ? 'selected' : ''}>💵 Tiền mặt</option>
+            <option value="transfer" ${ex?.payMethod === 'transfer' ? 'selected' : ''}>🏦 Chuyển khoản</option>
+          </select>
+        </div>
+        <div class="sl-field">
+          <label>Trạng thái</label>
+          <select id="sf-status">
+            <option value="done"    ${(ex?.status || 'done') === 'done'    ? 'selected' : ''}>✅ Hoàn thành</option>
+            <option value="pending" ${ex?.status === 'pending' ? 'selected' : ''}>⏳ Chờ thanh toán</option>
+            <option value="cancel"  ${ex?.status === 'cancel'  ? 'selected' : ''}>❌ Đã huỷ</option>
+          </select>
+        </div>
+        <div class="sl-field">
+          <label>Ghi chú</label>
+          <input id="sf-note" value="${(ex?.note || '').replace(/"/g, '&quot;')}" placeholder="Ghi chú...">
+        </div>
+      </div>
+
+      <div class="sl-items-label">Sản phẩm</div>
+      <div id="sf-rows"></div>
+      <button id="sf-add-row" class="sl-add-row-btn">＋ Thêm sản phẩm</button>
+
+      <div class="sl-totals">
+        <div class="sl-total-row"><span>Tạm tính:</span><b id="sf-subtotal">0đ</b></div>
+        <div class="sl-total-row">
+          <span>Giảm thêm:</span>
+          <input id="sf-extra-disc" type="number" min="0" value="${ex?.extraDiscount || 0}" style="width:100px">
+        </div>
+        <div class="sl-total-row sl-total-final">
+          <span style="font-weight:700">Tổng cộng:</span>
+          <b id="sf-total" style="color:#1d4ed8;font-size:1.05rem">0đ</b>
+        </div>
+        <div class="sl-total-row">
+          <span>Đã trả:</span>
+          <input id="sf-paid" type="number" min="0" value="${ex?.paid || 0}" style="width:100px">
+        </div>
+      </div>
+    </div>
+    <div class="sl-modal-footer">
+      <button class="sl-btn" id="sf-cancel">Huỷ</button>
+      ${ex ? `<button class="sl-btn sl-btn-trash" id="sf-del-modal">🗑 Xoá</button>` : ''}
+      <button class="sl-btn sl-btn-primary" id="sf-save">💾 Lưu đơn</button>
+    </div>`;
+
+    overlay.style.display = 'flex';
+
+    // Add existing product rows (or one blank row)
+    const rowsWrap = modal.querySelector('#sf-rows');
+    const initRows = ex?.items?.length ? ex.items : [{}];
+    initRows.forEach(r => addItemRow(rowsWrap, r));
+    recalc();
+
+    modal.querySelector('#sl-close').onclick  = () => { overlay.style.display = 'none'; };
+    modal.querySelector('#sf-cancel').onclick  = () => { overlay.style.display = 'none'; };
+    modal.querySelector('#sf-add-row').onclick = () => { addItemRow(rowsWrap, {}); };
+    modal.querySelector('#sf-extra-disc').oninput = recalc;
+    modal.querySelector('#sf-paid').oninput = recalc;
+    modal.querySelector('#sf-save').onclick = saveForm;
+    if (ex) modal.querySelector('#sf-del-modal').onclick = () => {
+      softDelete(key);
+      overlay.style.display = 'none';
+    };
+    overlay.onclick = e => { if (e.target === overlay) overlay.style.display = 'none'; };
+  }
+
+  // ══════════════════════════════════════════════
+  //  AUTOCOMPLETE DROPDOWN
+  // ══════════════════════════════════════════════
+  function getOrCreateDrop() {
+    if (!globalDrop) {
+      globalDrop = document.createElement('div');
+      globalDrop.className = 'sl-autocomplete';
+      document.body.appendChild(globalDrop);
+    }
+    return globalDrop;
   }
 
   function hideDrop() {
     if (globalDrop) globalDrop.style.display = 'none';
-    dropTarget = null;
   }
 
-  function showDrop(q, inputEl, selectCb) {
-    ensureGlobalDrop();
-    if (!q) { hideDrop(); return; }
-    const ql = q.toLowerCase();
-    const hits = invItems.filter(p =>
-      (p.name||'').toLowerCase().includes(ql) ||
-      String(p.id||'').toLowerCase().includes(ql)
-    ).slice(0, 10);
-    if (!hits.length) { hideDrop(); return; }
-    globalDrop.innerHTML = hits.map(p => `
-      <div class="sp-opt" data-key="${p._key}"
-        style="padding:.45rem .7rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;gap:.5rem">
-        <div style="min-width:0">
-          <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name||''}</div>
-          <div style="font-size:.72rem;color:#888">${p.id||''} ${p.unit ? '\u00b7 '+p.unit : ''}</div>
-        </div>
-        <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap;flex-shrink:0">${formatVND(p.price||0)}</div>
-      </div>`).join('');
-    globalDrop.querySelectorAll('.sp-opt').forEach(opt => {
-      opt.addEventListener('mousedown', e => {
-        e.preventDefault();
-        const p = invItems.find(x => x._key === opt.dataset.key);
-        if (p) selectCb(p);
-        hideDrop();
-      });
-      opt.addEventListener('mouseover', () => { opt.style.background = '#f0f6ff'; });
-      opt.addEventListener('mouseout',  () => { opt.style.background = ''; });
-    });
-    dropTarget = inputEl;
-    positionDrop(inputEl);
-    globalDrop.style.display = 'block';
-  }
+  // ══════════════════════════════════════════════
+  //  ITEM ROW
+  // ══════════════════════════════════════════════
+  function addItemRow(wrap, data) {
+    const row = document.createElement('div');
+    row.className = 'sf-item-row';
+    row.innerHTML = `
+      <input class="sf-name" value="${(data.name || '').replace(/"/g, '&quot;')}" placeholder="Tên sản phẩm..." autocomplete="off" style="flex:1;min-width:0">
+      <input class="sf-qty"   type="number" min="1"  value="${data.qty   || 1}"   title="Số lượng">
+      <input class="sf-price" type="number" min="0"  value="${data.price || 0}"   title="Đơn giá" style="width:100px">
+      <input class="sf-disc"  type="number" min="0"  value="${data.discount || 0}" title="Giảm giá" style="width:75px">
+      <span class="sf-line-total">0đ</span>
+      <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>`;
+    wrap.appendChild(row);
 
-  // ===================== FORM =====================
-  function openForm(existing) {
-    editKey = existing ? existing._key : null;
-    const d = existing || {};
-    const rows = (d.items && d.items.length) ? d.items : [{ sku:'', name:'', qty:1, price:0, disc:0 }];
+    const nameInput = row.querySelector('.sf-name');
+    const drop = getOrCreateDrop();
 
-    const warranties = ['Kh\u00f4ng b\u1ea3o h\u00e0nh','1 th\u00e1ng','3 th\u00e1ng','6 th\u00e1ng','12 th\u00e1ng','18 th\u00e1ng','24 th\u00e1ng'];
-    const wOpts = warranties.map(w => `<option value="${w}"${(d.warranty||'3 th\u00e1ng')===w?' selected':''}>${w}</option>`).join('');
-    const pays = ['Ti\u1ec1n m\u1eb7t','Chuy\u1ec3n kho\u1ea3n','Qu\u1eb9t th\u1ebb'];
-    const pOpts = pays.map(p => `<option value="${p}"${(d.payMethod||'Ti\u1ec1n m\u1eb7t')===p?' selected':''}>${p}</option>`).join('');
+    nameInput.oninput = () => {
+      recalc();
+      const q = nameInput.value.trim().toLowerCase();
+      if (!q) { hideDrop(); return; }
+      const hits = invItems.filter(p =>
+        (p.name || '').toLowerCase().includes(q) ||
+        String(p.id || '').toLowerCase().includes(q)
+      ).slice(0, 8);
+      if (!hits.length) { hideDrop(); return; }
 
-    formWrap.innerHTML = `
-<div style="padding:0 0 80px">
-  <style>
-    #sale-form-wrap .fcard{background:#fff;border-radius:12px;box-shadow:0 2px 14px rgba(0,0,0,.09);padding:1rem 1.25rem;margin-bottom:1rem}
-    #sale-form-wrap .fcard h3{margin:0 0 .85rem;font-size:.97rem;display:flex;align-items:center;gap:.4rem;color:#1e293b;font-weight:700}
-    #sale-form-wrap label.flbl{font-size:.72rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
-    #sale-form-wrap .finput,#sale-form-wrap .form-control{width:100%;box-sizing:border-box;padding:5px 8px;height:32px;font-size:.85rem;border:1px solid #cbd5e1;border-radius:6px;outline:none}
-    #sale-form-wrap .finput:focus,#sale-form-wrap .form-control:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
-    #sale-form-wrap table{width:100%;border-collapse:collapse}
-    #sale-form-wrap thead th{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;padding:6px 6px;text-align:left;background:#f8fafc;border-bottom:2px solid #e2e8f0}
-    #sale-form-wrap tbody td{padding:3px 3px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-    #sale-form-wrap tbody td .finput,#sale-form-wrap tbody td .form-control{height:28px;font-size:.82rem;padding:3px 5px}
-    #sale-form-wrap .rtotal{font-weight:600;font-size:.85rem;color:#1e293b;text-align:right;padding-right:6px;white-space:nowrap;min-width:90px}
-    #sale-form-wrap .rdel{background:#fee2e2;color:#dc2626;border:none;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:.9rem}
-    #sale-form-wrap .rdel:hover{background:#fecaca}
-  </style>
-  <div class="fcard">
-    <h3>\uD83D\uDC64 Th\u00f4ng tin kh\u00e1ch h\u00e0ng</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.6rem">
-      <div><label class="flbl">Kh\u00e1ch h\u00e0ng</label><input id="sf-customer" class="finput" placeholder="T\u00ean..." value="${d.customer||''}"></div>
-      <div><label class="flbl">S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</label><input id="sf-phone" class="finput" placeholder="0xxx..." value="${d.phone||''}"></div>
-      <div><label class="flbl">Ghi ch\u00fa</label><input id="sf-note" class="finput" placeholder="Ghi ch\u00fa..." value="${d.note||''}"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
-      <div><label class="flbl">B\u1ea3o h\u00e0nh</label><select id="sf-warranty" class="finput">${wOpts}</select></div>
-      <div><label class="flbl">Thanh to\u00e1n</label><select id="sf-paymethod" class="finput">${pOpts}</select></div>
-    </div>
-  </div>
-  <div class="fcard">
-    <h3>\uD83D\uDED2 Danh s\u00e1ch s\u1ea3n ph\u1ea9m</h3>
-    <table>
-      <thead><tr>
-        <th style="width:90px">M\u00e3 SP</th><th>T\u00ean SP</th>
-        <th style="width:52px;text-align:center">SL</th>
-        <th style="width:110px;text-align:right">\u0110\u01a1n gi\u00e1</th>
-        <th style="width:68px;text-align:center">G.Gi\u00e1%</th>
-        <th style="width:110px;text-align:right">Th\u00e0nh ti\u1ec1n</th>
-        <th style="width:36px"></th>
-      </tr></thead>
-      <tbody id="sf-rows"></tbody>
-    </table>
-    <button id="sf-add-row" style="margin-top:.5rem;padding:5px 14px;font-size:.85rem;background:#f8fafc;border:1px dashed #94a3b8;border-radius:6px;cursor:pointer;color:#475569;font-weight:600">+ Th\u00eam d\u00f2ng</button>
-  </div>
-  <div class="fcard">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
-      <span style="color:#475569">T\u1ed5ng ti\u1ec1n h\u00e0ng</span>
-      <span id="sf-subtotal" style="font-weight:600;font-size:.95rem">0 \u0111</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
-      <span style="color:#475569">Gi\u1ea3m gi\u00e1 th\u00eam (\u0111)</span>
-      <input id="sf-extra-disc" type="number" class="finput" value="${d.extraDiscount||0}" style="width:120px;text-align:right;font-weight:600">
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#1a3a6b;border-radius:8px;padding:.7rem 1rem;margin:.5rem 0">
-      <span style="color:#fff;font-weight:700;text-transform:uppercase">T\u1ed5ng thanh to\u00e1n</span>
-      <span id="sf-total" style="color:#fff;font-weight:700;font-size:1.1rem">0 \u0111</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0">
-      <span style="color:#475569">Kh\u00e1ch tr\u1ea3 (\u0111)</span>
-      <input id="sf-paid" type="number" class="finput" value="${d.paid||0}" style="width:120px;text-align:right;font-weight:600">
-    </div>
-  </div>
-</div>
-<div style="position:sticky;bottom:0;left:0;right:0;display:flex;gap:.5rem;padding:.65rem 1rem;background:#fff;border-top:2px solid #e2e8f0;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
-  <button id="sf-print" style="flex:1;padding:.6rem;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">\uD83D\uDDB8 In Bill + BH</button>
-  <button id="sf-save" style="flex:1.5;padding:.6rem;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">\uD83D\uDCBE L\u01b0u \u0110\u01a1n H\u00e0ng</button>
-  ${existing ? `<button id="sf-del" style="padding:.6rem .75rem;background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:8px;font-size:1rem;cursor:pointer">\uD83D\uDDD1</button>` : ''}
-</div>
-`;
-
-    rows.forEach(r => addRow(r));
-    recalc();
-
-    formWrap.querySelector('#sf-add-row').onclick = () => { addRow({}); recalc(); };
-    formWrap.querySelector('#sf-extra-disc').oninput = recalc;
-    formWrap.querySelector('#sf-save').onclick = saveForm;
-    formWrap.querySelector('#sf-print').onclick = () => {
-      const rr = Array.from(formWrap.querySelectorAll('#sf-rows tr')).map(tr => ({
-        sku: tr.querySelector('.rsku')?.value||'', name: tr.querySelector('.rname')?.value||'',
-        qty: parseFloat(tr.querySelector('.rqty')?.value)||1,
-        price: parseFloat(tr.querySelector('.rprice')?.value)||0,
-        disc: parseFloat(tr.querySelector('.rdisc')?.value)||0
-      }));
-      const sub = rr.reduce((s,r) => s + r.qty*r.price*(1-r.disc/100), 0);
-      const ex = parseFloat(formWrap.querySelector('#sf-extra-disc')?.value)||0;
-      printSaleBill({
-        customer: formWrap.querySelector('#sf-customer')?.value||'',
-        phone: formWrap.querySelector('#sf-phone')?.value||'',
-        note: formWrap.querySelector('#sf-note')?.value||'',
-        warranty: formWrap.querySelector('#sf-warranty')?.value||'',
-        payMethod: formWrap.querySelector('#sf-paymethod')?.value||'',
-        date: dateFilter.value||'', items: rr, subtotal: sub, extraDiscount: ex,
-        total: Math.max(0, sub-ex),
-        paid: parseFloat(formWrap.querySelector('#sf-paid')?.value)||0
-      });
-    };
-    if (existing) {
-      formWrap.querySelector('#sf-del').onclick = () => showModal({
-        title: 'X\u00f3a \u0111\u01a1n h\u00e0ng',
-        body: '\u0110\u01a1n s\u1ebd v\u00e0o th\u00f9ng r\u00e1c, t\u1ef1 x\u00f3a sau 7 ng\u00e0y.',
-        confirmText: 'X\u00f3a',
-        onConfirm: async () => {
-          await updateItem(COLLECTION, existing._key, { ...existing, deletedAt: Date.now() });
-          formWrap.innerHTML = ''; editKey = null;
-          toast('\u0110\u00e3 chuy\u1ec3n v\u00e0o th\u00f9ng r\u00e1c');
-        }
-      });
-    }
-  }
-
-  // ===================== ADD ROW =====================
-  function addRow(item) {
-    item = item || {};
-    const tbody = formWrap.querySelector('#sf-rows');
-    if (!tbody) return;
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid #f5f5f5';
-    const nm = String(item.name||'').replace(/"/g,'&quot;');
-    tr.innerHTML = `
-      <td style="padding:.32rem .4rem"><input class="rsku form-control" style="font-size:.8rem;width:70px" placeholder="M\u00e3" value="${item.sku||''}"></td>
-      <td style="padding:.32rem .4rem"><input class="rname form-control" style="font-size:.8rem;width:100%" placeholder="G\u00f5 t\u00ean SP..." value="${nm}" autocomplete="off"></td>
-      <td style="padding:.32rem .4rem"><input class="rqty form-control" type="number" min="1" value="${item.qty||1}" style="text-align:center;font-size:.8rem;width:48px"></td>
-      <td style="padding:.32rem .4rem"><input class="rprice form-control" type="number" min="0" value="${item.price||0}" style="text-align:right;font-size:.8rem;width:100px"></td>
-      <td style="padding:.32rem .4rem"><input class="rdisc form-control" type="number" min="0" max="100" value="${item.disc||0}" style="text-align:center;font-size:.8rem;width:55px"></td>
-      <td class="rtotal" style="padding:.32rem .4rem;text-align:right;font-weight:600;font-size:.85rem;white-space:nowrap;color:#1a3a6b">0 \u0111</td>
-      <td style="padding:.32rem .4rem"><button class="rdel" style="background:#ff4d4f;color:#fff;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:.85rem;line-height:1">\u00d7</button></td>
-    `;
-    const rname = tr.querySelector('.rname');
-    const rsku  = tr.querySelector('.rsku');
-    const rprice = tr.querySelector('.rprice');
-    function selectProduct(p) { rname.value=p.name||''; rsku.value=p.id||''; rprice.value=p.price||0; recalc(); }
-    rname.addEventListener('input',  () => showDrop(rname.value.trim(), rname, selectProduct));
-    rname.addEventListener('focus',  () => { if (rname.value.trim()) showDrop(rname.value.trim(), rname, selectProduct); });
-    rname.addEventListener('blur',   () => setTimeout(() => { if (dropTarget===rname) hideDrop(); }, 200));
-    rname.addEventListener('keydown', e => {
-      if (e.key==='Escape') hideDrop();
-      if (e.key==='Enter' && globalDrop && globalDrop.style.display!=='none') {
-        const first = globalDrop.querySelector('.sp-opt');
-        if (first) { e.preventDefault(); const p=invItems.find(x=>x._key===first.dataset.key); if(p) selectProduct(p); hideDrop(); }
-      }
-    });
-    tr.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
-    tr.querySelector('.rdel').onclick = () => { tr.remove(); recalc(); };
-    tbody.appendChild(tr);
-    const q=parseFloat(item.qty)||1, p=parseFloat(item.price)||0, dc=parseFloat(item.disc)||0;
-    tr.querySelector('.rtotal').textContent = formatVND(q*p*(1-dc/100));
-  }
-
-  // ===================== RECALC =====================
-  function recalc() {
-    let sub = 0;
-    formWrap.querySelectorAll('#sf-rows tr').forEach(tr => {
-      const q=parseFloat(tr.querySelector('.rqty')?.value)||0;
-      const p=parseFloat(tr.querySelector('.rprice')?.value)||0;
-      const d=parseFloat(tr.querySelector('.rdisc')?.value)||0;
-      const t=q*p*(1-d/100);
-      const cell=tr.querySelector('.rtotal');
-      if (cell) cell.textContent=formatVND(t);
-      sub+=t;
-    });
-    const ex=parseFloat(formWrap.querySelector('#sf-extra-disc')?.value)||0;
-    const sel=s=>formWrap.querySelector(s);
-    if (sel('#sf-subtotal')) sel('#sf-subtotal').textContent=formatVND(sub);
-    if (sel('#sf-total')) sel('#sf-total').textContent=formatVND(Math.max(0,sub-ex));
-  }
-
-  // ===================== SAVE =====================
-  async function saveForm() {
-    const rows = Array.from(formWrap.querySelectorAll('#sf-rows tr')).map(tr => {
-      const q=parseFloat(tr.querySelector('.rqty')?.value)||1;
-      const p=parseFloat(tr.querySelector('.rprice')?.value)||0;
-      const d=parseFloat(tr.querySelector('.rdisc')?.value)||0;
-      return { sku:tr.querySelector('.rsku')?.value||'', name:tr.querySelector('.rname')?.value||'', qty:q, price:p, disc:d, total:q*p*(1-d/100) };
-    });
-    const sub=rows.reduce((s,r)=>s+r.total,0);
-    const ex=parseFloat(formWrap.querySelector('#sf-extra-disc')?.value)||0;
-    const g=id=>formWrap.querySelector(id)?.value||'';
-    const data = {
-      customer:g('#sf-customer'), phone:g('#sf-phone'), note:g('#sf-note'),
-      warranty:g('#sf-warranty'), payMethod:g('#sf-paymethod'),
-      date:dateFilter.value, items:rows, subtotal:sub, extraDiscount:ex,
-      total:Math.max(0,sub-ex), paid:parseFloat(formWrap.querySelector('#sf-paid')?.value)||0,
-      createdAt:Date.now()
-    };
-    try {
-      if (editKey) { await updateItem(COLLECTION, editKey, data); toast('C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng'); await logToSheet({...data, key:editKey}, 'update'); }
-      else { const _r = await addItem(COLLECTION, data); toast('L\u01b0u \u0111\u01a1n th\u00e0nh c\u00f4ng'); await logToSheet({...data, key:_r?.key||''}, 'add'); }
-      formWrap.innerHTML=''; editKey=null;
-    } catch(e) { toast('L\u1ed7i: '+e.message); }
-  }
-
-  // ===================== LIST =====================
-  function renderList(items) {
-    currentList = items;
-    countEl.textContent = '(' + items.length + ')';
-    if (!items.length) {
-      listWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">Ch\u01b0a c\u00f3 \u0111\u01a1n n\u00e0o</p>';
-      return;
-    }
-    const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">📊 <b>${items.length}</b> đơn hàng &nbsp;|  💰 Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}đ</b></div>` +
-  `<div id="sale-shared-acts" style="display:none;margin-bottom:.8rem;padding:.5rem .8rem;background:#eef5ff;border-radius:8px;border:1px solid #c7defa;gap:.5rem;flex-wrap:wrap;align-items:center">` +
-  `<span style="flex:1;font-size:.85rem;color:#555">&#9432; � ch�n: <b id="sale-sel-name"></b></span>` +
-  `<button id="sale-act-detail" style="background:#e0f0ff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Chi ti�t</button>` +
-  `<button id="sale-act-print" style="background:#dcfce7;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">In</button>` +
-  `<button id="sale-act-bh" style="background:#fef9c3;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">BH</button>` +
-  `<button id="sale-act-edit-bh" style="background:#fb923c;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Sửa BH</button>` +
-  `<button id="sale-act-edit" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">S�a</button>` +
-  `<button id="sale-act-del" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">X�a</button>` +
-  `</div>`
-  + items.map(s => `
-      <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
-            <input type="checkbox" class="sale-cb" data-key="${s._key}" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
+      const rect = nameInput.getBoundingClientRect();
+      drop.style.cssText = `position:fixed;top:${rect.bottom + 2}px;left:${rect.left}px;` +
+        `width:${rect.width + 130}px;display:block`;
+      drop.innerHTML = hits.map(p => `
+        <div class="sl-ac-opt" data-key="${p._key}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
             <div>
-              <div style="font-weight:600">${s.customer||'Kh\u00e1ch l\u1ebb'}</div>
-              <div style="font-size:.78rem;color:#888;margin-top:.15rem">${[s.phone,s.note].filter(Boolean).join(' \u00b7 ')}</div>
+              <div style="font-size:.82rem;font-weight:600">${p.name || ''}</div>
+              <div style="font-size:.72rem;color:#888">${p.id || ''}</div>
             </div>
-          </label>
-          <div style="text-align:right;flex-shrink:0;margin-left:.5rem">
-            <div style="font-weight:700;color:#1a3a6b">${formatVND(s.total||0)}</div>
-            <div style="font-size:.72rem;color:#888">${s.date||''} \u00b7 ${s.payMethod||''}</div>
+            <div style="font-size:.8rem;font-weight:700;color:#1a3a6b;white-space:nowrap">${formatVND(p.price || 0)}</div>
           </div>
-        </div>
-      </div>
-    `).join('');
+        </div>`).join('');
 
-
-
-        let _selKey = null;
-    listWrap.querySelectorAll('.sale-cb').forEach(cb => {
-      cb.addEventListener('change', () => {
-        if (cb.checked) {
-          listWrap.querySelectorAll('.sale-cb').forEach(o => { if (o !== cb) o.checked = false; });
-          _selKey = cb.dataset.key;
-          const bar = document.getElementById('sale-shared-acts');
-          if (bar) {
-            bar.style.display = 'flex';
-            const _s = currentList.find(x => x._key === _selKey);
-            const nm = document.getElementById('sale-sel-name');
-            if (nm) nm.textContent = (_s && _s.customer) ? _s.customer : '';
+      drop.querySelectorAll('.sl-ac-opt').forEach(opt => {
+        opt.onmousedown = e => {
+          e.preventDefault();
+          const p = invItems.find(x => x._key === opt.dataset.key);
+          if (p) {
+            nameInput.value = p.name || '';
+            row.querySelector('.sf-price').value = p.price || 0;
           }
-        } else {
-          _selKey = null;
-          const bar = document.getElementById('sale-shared-acts');
-          if (bar) bar.style.display = 'none';
-        }
-      });
-    });
-    const _getS = () => currentList.find(x => x._key === _selKey);
-    document.getElementById('sale-act-detail').onclick = () => {
-      const s = _getS(); if (!s) return;
-            const rhtml = (s.items||[]).map(r =>
-        `<tr style="border-bottom:1px solid #f0f0f0">
-          <td style="padding:.3rem .4rem">${r.sku||''}</td><td style="padding:.3rem .4rem">${r.name||''}</td>
-          <td style="padding:.3rem .4rem;text-align:center">${r.qty}</td>
-          <td style="padding:.3rem .4rem;text-align:right">${formatVND(r.price)}</td>
-          <td style="padding:.3rem .4rem;text-align:center">${r.disc||0}%</td>
-          <td style="padding:.3rem .4rem;text-align:right;font-weight:600">${formatVND(r.total||0)}</td>
-        </tr>`).join('');
-      showModal({ title: 'Chi ti\u1ebft: '+(s.customer||'Kh\u00e1ch l\u1ebb'),
-        body: `<p style="font-size:.85rem;color:#666;margin-bottom:.5rem">\uD83D\uDCC5 ${s.date} | ${s.payMethod||''} | BH: ${s.warranty||''}</p>
-          <table style="width:100%;font-size:.82rem;border-collapse:collapse">
-            <thead><tr style="background:#f8f9fa;font-size:.7rem;text-transform:uppercase">
-              <th style="padding:.3rem .4rem;text-align:left">M\u00e3</th><th style="padding:.3rem .4rem;text-align:left">T\u00ean</th>
-              <th style="padding:.3rem .4rem;text-align:center">SL</th><th style="padding:.3rem .4rem;text-align:right">\u0110G</th>
-              <th style="padding:.3rem .4rem;text-align:center">Gi\u1ea3m</th><th style="padding:.3rem .4rem;text-align:right">TT</th>
-            </tr></thead><tbody>${rhtml}</tbody></table>
-          <p style="text-align:right;font-weight:700;margin-top:.5rem">T\u1ed5ng: ${formatVND(s.total||0)}</p>`
-      });
-
-    };
-    document.getElementById('sale-act-print').onclick = () => { const s = _getS(); if (s) printSaleBill(s); };
-    document.getElementById('sale-act-bh').onclick = () => { const s = _getS(); if (s) printWarrantySlip(s); };
-    document.getElementById('sale-act-edit-bh').onclick = () => { const s = _getS(); if (s) openEditBH(s); };
-    document.getElementById('sale-act-edit').onclick = () => { const s = _getS(); if (s) { openForm(s); window.scrollTo(0,0); } };
-    document.getElementById('sale-act-del').onclick = () => {
-      const item = _getS(); if (!item) return;
-      showModal({
-        title: 'X�a �n h�ng', body: '�n s�d v�o th�ng r�c, t� x�a sau 7 ng�y.',
-        confirmText: 'X�a',
-        onConfirm: async () => {
-          await updateItem(COLLECTION, item._key, { ...item, deletedAt: Date.now() });
-          logToSheet({...item, deletedAt: Date.now()}, 'delete');
-          toast('� chuy�n v�o th�ng r�c');
-        }
+          hideDrop();
+          recalc();
+        };
       });
     };
+
+    nameInput.onfocus = () => { if (nameInput.value.trim()) nameInput.dispatchEvent(new Event('input')); };
+    nameInput.onblur  = () => setTimeout(hideDrop, 200);
+
+    row.querySelector('.sf-remove-btn').onclick = () => { row.remove(); recalc(); };
+    row.querySelectorAll('.sf-qty, .sf-price, .sf-disc').forEach(inp => inp.oninput = recalc);
+
+    recalc();
   }
 
-  // ===================== TRASH =====================
-  function renderTrash(items) {
-    const now = Date.now();
-    const WEEK = 7*24*60*60*1000;
-    const trashItems = items.filter(s => s.deletedAt && (now-s.deletedAt) < WEEK);
-    countEl.textContent = '(' + trashItems.length + ')';
-    if (!trashItems.length) {
-      trashWrap.innerHTML = '<p style="text-align:center;color:#aaa;padding:2rem 0">\uD83D\uDDD1 Th\u00f9ng r\u00e1c tr\u1ed1ng</p>';
-      return;
-    }
-    trashWrap.innerHTML = `<p style="font-size:.82rem;color:#dc2626;padding:.3rem 0 .6rem;font-weight:600">\uD83D\uDDD1 Th\u00f9ng r\u00e1c \u00b7 T\u1ef1 x\u00f3a sau 7 ng\u00e0y</p>` +
-      trashItems.map(s => `
-        <div style="background:#fff7f7;border:1px solid #fecaca;border-radius:10px;margin-bottom:.65rem;padding:.8rem 1rem">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.45rem">
-            <div>
-              <div style="font-weight:600;color:#374151">${s.customer||'Kh\u00e1ch l\u1ebb'}</div>
-              <div style="font-size:.75rem;color:#9ca3af;margin-top:2px">${s.date||''} \u00b7 ${s.payMethod||''} \u00b7 X\u00f3a ${daysAgo(s.deletedAt)}</div>
-            </div>
-            <div style="font-weight:700;color:#1a3a6b;margin-left:.5rem">${formatVND(s.total||0)}</div>
-          </div>
-          <div style="display:flex;gap:.4rem">
-            <button class="btn-restore" data-key="${s._key}" style="padding:4px 12px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600">\u21a9 Kh\u00f4i ph\u1ee5c</button>
-            <button class="btn-print" data-key="${s._key}" style="padding:4px 10px;background:#f0f9ff;color:#0284c7;border:1px solid #7dd3fc;border-radius:6px;cursor:pointer;font-size:.8rem">\uD83D\uDDB8 In</button>
-          </div>
-        </div>
-      `).join('');
-
-    trashWrap.querySelectorAll('.btn-restore').forEach(b => b.onclick = async () => {
-      const item = trashItems.find(x => x._key === b.dataset.key);
-      if (!item) return;
-      const { deletedAt, ...rest } = item;
-      await updateItem(COLLECTION, b.dataset.key, rest);
-      logToSheet(rest, 'restore');
-      toast('\u0110\u00e3 kh\u00f4i ph\u1ee5c \u0111\u01a1n h\u00e0ng');
+  // ══════════════════════════════════════════════
+  //  RECALC TOTALS
+  // ══════════════════════════════════════════════
+  function recalc() {
+    const modal = container.querySelector('#sl-modal');
+    if (!modal) return;
+    let sub = 0;
+    modal.querySelectorAll('.sf-item-row').forEach(row => {
+      const qty   = parseFloat(row.querySelector('.sf-qty').value)   || 0;
+      const price = parseFloat(row.querySelector('.sf-price').value) || 0;
+      const disc  = parseFloat(row.querySelector('.sf-disc').value)  || 0;
+      const line  = Math.max(0, qty * price - disc);
+      row.querySelector('.sf-line-total').textContent = formatVND(line);
+      sub += line;
     });
-
-    trashWrap.querySelectorAll('.btn-print').forEach(b => b.onclick = () => {
-      const s = trashItems.find(x => x._key === b.dataset.key);
-      if (s) printSaleBill(s);
-    });
+    const extra = parseFloat(modal.querySelector('#sf-extra-disc')?.value) || 0;
+    const total = Math.max(0, sub - extra);
+    if (modal.querySelector('#sf-subtotal')) modal.querySelector('#sf-subtotal').textContent = formatVND(sub);
+    if (modal.querySelector('#sf-total'))    modal.querySelector('#sf-total').textContent    = formatVND(total);
   }
 
-  // ===================== LOAD =====================
-  function loadSales() {
-    if (unsub) { unsub(); unsub = null; }
-    const val = dateFilter.value;
-    unsub = onSnapshot(COLLECTION, all => {
-      const now = Date.now();
-      const WEEK = 7*24*60*60*1000;
-      all.filter(s => s.deletedAt && (now-s.deletedAt) > WEEK)
-        .forEach(s => deleteItem(COLLECTION, s._key).catch(()=>{}));
-      if (filterMode === 'trash') { renderTrash(all.filter(s => s.deletedAt)); return; }
-      const active = all.filter(s => !s.deletedAt);
-      let filtered;
-      if (filterMode === 'day') {
-        filtered = active.filter(s => (s.date||'').startsWith(val));
-      } else if (filterMode === 'week') {
-        filtered = active.filter(s => getWeekValue(s.date||'') === val);
-      } else if (filterMode === 'month') {
-        filtered = active.filter(s => (s.date||'').startsWith(val));
+  // ══════════════════════════════════════════════
+  //  SAVE FORM
+  // ══════════════════════════════════════════════
+  async function saveForm() {
+    const modal = container.querySelector('#sl-modal');
+    const customer      = modal.querySelector('#sf-customer').value.trim();
+    const phone         = modal.querySelector('#sf-phone').value.trim();
+    const date          = modal.querySelector('#sf-date').value;
+    const payMethod     = modal.querySelector('#sf-pay').value;
+    const status        = modal.querySelector('#sf-status').value;
+    const note          = modal.querySelector('#sf-note').value.trim();
+    const extraDiscount = parseFloat(modal.querySelector('#sf-extra-disc').value) || 0;
+    const paid          = parseFloat(modal.querySelector('#sf-paid').value) || 0;
+
+    const items = [];
+    modal.querySelectorAll('.sf-item-row').forEach(row => {
+      const name = row.querySelector('.sf-name').value.trim();
+      if (!name) return;
+      items.push({
+        name,
+        qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
+        price:    parseFloat(row.querySelector('.sf-price').value) || 0,
+        discount: parseFloat(row.querySelector('.sf-disc').value)  || 0,
+      });
+    });
+
+    if (!items.length) { toast('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
+
+    const subtotal = items.reduce((s, it) => s + Math.max(0, it.qty * it.price - it.discount), 0);
+    const total    = Math.max(0, subtotal - extraDiscount);
+
+    const data = {
+      customer, phone, date, payMethod, status, note,
+      items, subtotal, extraDiscount, total, paid,
+      createdAt: editKey
+        ? (allItems.find(s => s._key === editKey)?.createdAt || Date.now())
+        : Date.now()
+    };
+
+    const saveBtn = modal.querySelector('#sf-save');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Đang lưu...';
+
+    try {
+      if (editKey) {
+        await updateItem(COLLECTION, editKey, data);
+        toast('Ca��p nhật thành công ✓');
+        logToSheet({ ...data, key: editKey }, 'update');
       } else {
-        filtered = active;
+        const ref = await addItem(COLLECTION, data);
+        toast('Lưu đơn thành công ✓');
+        logToSheet({ ...data, key: ref?.key || '' }, 'add');
       }
-      renderList(filtered);
-    });
+      container.querySelector('#sl-overlay').style.display = 'none';
+      editKey = null;
+    } catch(e) {
+      toast('Lỗi: ' + e.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Lưu đơn';
+    }
   }
 
-  modeDay.onclick   = () => setMode('day');
-  modeWeek.onclick  = () => setMode('week');
-  modeMonth.onclick = () => setMode('month');
-  trashBtn.onclick  = () => {
-    filterMode = 'trash';
-    listWrap.style.display = 'none'; trashWrap.style.display = '';
-    dateFilter.style.display = 'none';
-    modeDay.style.background = 'transparent'; modeDay.style.color = '#475569';
-    modeWeek.style.background = 'transparent'; modeWeek.style.color = '#475569';
-    modeMonth.style.background = 'transparent'; modeMonth.style.color = '#475569';
-    loadSales();
+  // ══════════════════════════════════════════════
+  //  SOFT DELETE / RESTORE
+  // ══════════════════════════════════════════════
+  async function softDelete(key) {
+    if (!confirm('Chuyển đơn này vào thùng rác?')) return;
+    try {
+      await updateItem(COLLECTION, key, { deletedAt: Date.now() });
+      toast('Đã chuyển vào thùng rác');
+    } catch(e) { toast('Lỗi: ' + e.message); }
+  }
+
+  async function restoreItem(key) {
+    try {
+      await updateItem(COLLECTION, key, { deletedAt: null });
+      toast('Đã khôi phục ✓');
+    } catch(e) { toast('Lỗi: ' + e.message); }
+  }
+
+  // ══════════════════════════════════════════════
+  //  REALTIME LISTENER
+  // ══════════════════════════════════════════════
+  unsub = onSnapshot(COLLECTION, all => {
+    const now = Date.now();
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    // Auto-purge items deleted > 7 days
+    all.filter(s => s.deletedAt && (now - s.deletedAt) > WEEK_MS)
+       .forEach(s => deleteItem(COLLECTION, s._key).catch(() => {}));
+    allItems = all;
+    render();
+  });
+
+  // Cleanup when leaving this route
+  container._cleanup = () => {
+    if (unsub) { unsub(); unsub = null; }
+    hideDrop();
+    if (globalDrop) { globalDrop.remove(); globalDrop = null; }
   };
-  addBtn.onclick = () => { editKey=null; openForm(null); window.scrollTo(0, formWrap.offsetTop-60); };
-  dateFilter.addEventListener('change', loadSales);
-
-  function printSaleBill(d) {
-  const key = d._key || '';
-  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  const fmt = n => (parseFloat(n)||0).toLocaleString('vi-VN');
-  const items = Array.isArray(d.items) ? d.items : [];
-  const itemRows = items.map((it,idx) =>
-    '<tr>'
-    +'<td style="font-size:11px">'+e(it.sku||'')+'</td>'
-    +'<td>'+e(it.name||'')+'</td>'
-    +'<td style="text-align:right">'+e(it.qty||0)+'</td>'
-    +'<td style="text-align:right">'+fmt(it.price)+'</td>'
-    +'<td style="text-align:right">'+fmt(it.disc||0)+'</td>'
-    +'<td style="text-align:right">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.price)||0)-(parseFloat(it.disc)||0))+'</td>'
-    +'</tr>'
-  ).join('');
-  const total = parseFloat(d.total)||0;
-  const paid = parseFloat(d.paid)||0;
-  const debt = total - paid;
-  const w = window.open('', '_blank', 'width=820,height=750,scrollbars=yes');
-  if (!w) return;
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Hóa Đơn</title>'
-    +'<style>body{font-family:Arial,sans-serif;font-size:13px;margin:0;padding:16px}h2{text-align:center;margin:0 0 2px;font-size:17px}.sub{text-align:center;font-size:12px;margin-bottom:10px;color:#555}table{width:100%;border-collapse:collapse}th,td{padding:4px 5px;border:1px solid #ddd;font-size:12px}th{background:#f3f4f6;text-align:left}.nr{text-align:right}.info-table td{border:none;padding:3px 5px}.lb{width:35%;font-weight:bold}.vl{width:65%}.bi{width:100%;border:none;border-bottom:1px dashed #aaa;background:transparent;font:12px Arial;padding:1px 2px;outline:none;box-sizing:border-box}.bi:focus{border-bottom:1px solid #2563eb;background:#eff6ff}.bbar{text-align:center;margin-top:14px;padding:8px;border-top:1px solid #ddd}.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}.bs{background:#16a34a;color:#fff;border-color:#16a34a}.bp{background:#2563eb;color:#fff;border-color:#2563eb}#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}.tot-row{font-weight:bold;background:#f9fafb}@media print{.bbar{display:none!important}.bi{border:none!important;background:transparent!important;border-bottom:1px solid #999!important}}</style>'
-    +'</head><body>'
-    +'<h2>HÓA ĐƠN BÁN HÀNG</h2><div class="sub">Laptop 24h</div>'
-    +'<table class="info-table" style="margin-bottom:8px">'
-    +'<tr><td class="lb">Khách hàng</td><td class="vl"><input class="bi" data-f="customer" value="'+e(d.customer)+'"></td>'
-    +'<td class="lb">Điện thoại</td><td class="vl"><input class="bi" data-f="phone" value="'+e(d.phone)+'"></td></tr>'
-    +'<tr><td class="lb">Ngày</td><td class="vl">'+e(d.date||new Date().toLocaleDateString('vi-VN'))+'</td>'
-    +'<td class="lb">Thanh toán</td><td class="vl"><input class="bi" data-f="payMethod" value="'+e(d.payMethod)+'"></td></tr>'
-    +'<tr><td class="lb">Bảo hành</td><td class="vl"><input class="bi" data-f="warranty" value="'+e(d.warranty)+'"></td>'
-    +'<td class="lb">Ghi chú</td><td class="vl"><input class="bi" data-f="note" value="'+e(d.note)+'"></td></tr>'
-    +'</table>'
-    +'<table><thead><tr><th>SKU</th><th>Tên sản phẩm</th><th class="nr">SL</th><th class="nr">Đơn giá</th><th class="nr">CK</th><th class="nr">Thành tiền</th></tr></thead>'
-    +'<tbody>'+itemRows+'</tbody></table>'
-    +'<table style="margin-top:6px;width:50%;margin-left:50%"><tr class="tot-row"><td>Tổng cộng</td><td class="nr">'+fmt(total)+'đ</td></tr>'
-    +'<tr><td>Đã trả</td><td class="nr"><input class="bi nr" data-f="paid" type="number" value="'+paid+'" style="text-align:right;width:100%"></td></tr>'
-    +'<tr class="tot-row"><td>Còn lại</td><td class="nr" id="debt">'+fmt(debt)+'đ</td></tr></table>'
-    +'<div class="bbar">'
-    +(key ? '<button class="bs" onclick="saveBill()">&#128190; Lưu</button>' : '')
-    +'<button class="bp" onclick="window.print()">&#128424; In hóa đơn</button>'
-    +'<button onclick="window.close()">Đóng</button>'
-    +'<div id="msg">&#10003; Đã lưu thành công!</div>'
-    +'</div>'
-    +'<script>var _k="'+key+'",_tot='+total+';'
-    +'document.querySelector("[data-f=paid]").addEventListener("input",function(){'
-    +'var debt=_tot-(parseFloat(this.value)||0);'
-    +'document.getElementById("debt").textContent=debt.toLocaleString("vi-VN")+"đ";'
-    +'});'
-    +'function saveBill(){'
-    +'var d={};'
-    +'document.querySelectorAll(".bi[data-f]").forEach(function(el){'
-    +'d[el.dataset.f]=el.type==="number"?(parseFloat(el.value)||0):el.value;'
-    +'});'
-    +'if(window.opener&&window.opener.saleSaveFromBill){'
-    +'window.opener.saleSaveFromBill(_k,d).then(function(){'
-    +'document.getElementById("msg").style.display="block";'
-    +'setTimeout(function(){document.getElementById("msg").style.display="none";},3000);'
-    +'});'
-    +'}else{alert("Không thể lưu. Mở lại phiếu từ trang chính.");}'
-    +'}'
-    +'</scr'+'ipt>'
-    +'</body></html>');
-  w.document.close();
-}
-
-window.saleSaveFromBill = async function(key, data) {
-  await updateItem('sales', key, data);
-};
-
-
-function openEditBH(sale) {
-  const warranties = ['3 tháng','6 tháng','12 tháng','18 tháng','24 tháng'];
-  const wOpts = warranties.map(w => `<option value="${w}"${(sale.warranty||'3 tháng')===w?' selected':''}>${w}</option>`).join('');
-  const ov = document.createElement('div');
-  ov.id = 'bh-edit-overlay';
-  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(380px,92vw);box-shadow:0 4px 24px rgba(0,0,0,.2)">
-      <h3 style="margin:0 0 1rem;text-align:center;color:#92400e">&#x2712;&#xfe0f; Sửa Bill Bảo Hành</h3>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Khách hàng</label>
-        <input id="bh-customer" value="${(sale.customer||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Số điện thoại</label>
-        <input id="bh-phone" value="${(sale.phone||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Ngày mua</label>
-        <input id="bh-date" type="date" value="${sale.date||''}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:1rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Thời hạn bảo hành</label>
-        <select id="bh-warranty" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">${wOpts}</select></div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button id="bh-cancel" style="padding:.45rem 1rem;border:1px solid #ddd;border-radius:6px;background:#f9fafb;cursor:pointer">Hủy</button>
-        <button id="bh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer">Lưu &amp; In BH</button>
-      </div></div>`;
-  document.body.appendChild(ov);
-  document.getElementById('bh-cancel').onclick = () => document.body.removeChild(ov);
-  document.getElementById('bh-save').onclick = async () => {
-    const updated = { ...sale,
-      customer: document.getElementById('bh-customer').value.trim(),
-      phone: document.getElementById('bh-phone').value.trim(),
-      date: document.getElementById('bh-date').value,
-      warranty: document.getElementById('bh-warranty').value
-    };
-    await updateItem(COLLECTION, sale._key, updated);
-    logToSheet({...updated, key: sale._key}, 'update');
-    toast('Đã cập nhật bảo hành');
-    document.body.removeChild(ov);
-    printWarrantySlip(updated);
-  };
-}
-
-function printWarrantySlip(d) {
-  var fmt = n => Number(n||0).toLocaleString('vi-VN');
-  var itemRows = (d.items||[]).map((it,i) =>
-    '<tr><td style="padding:4px 6px;text-align:center">'+(i+1)+'</td>'+
-    '<td style="padding:4px 6px">'+(it.name||it.sku||'')+'</td>'+
-    '<td style="padding:4px 6px;text-align:center">'+(it.qty||1)+'</td>'+
-    '<td style="padding:4px 6px;text-align:right">'+fmt(it.price)+'\u0111</td></tr>'
-  ).join('');
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'+
-    '<title>Phi\u1ebfu B\u1ea3o H\u00e0nh</title>'+
-    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;padding:16px;max-width:400px;margin:auto}'+
-    'h2{text-align:center;font-size:18px;margin-bottom:2px}'+
-    '.sub{text-align:center;font-size:11px;color:#555;margin-bottom:12px}'+
-    '.title{text-align:center;font-size:15px;font-weight:bold;margin:10px 0;text-transform:uppercase;border:2px solid #000;padding:6px}'+
-    '.info{margin:5px 0}.info b{font-weight:bold}'+
-    'table{width:100%;border-collapse:collapse;margin:8px 0}'+
-    'th{background:#333;color:#fff;padding:5px 6px;font-size:12px}'+
-    'td{border-bottom:1px solid #eee;font-size:12px}'+
-    '.bh{background:#fffbe6;border:2px solid #f59e0b;border-radius:6px;padding:8px;margin:10px 0;text-align:center;font-size:15px;font-weight:bold}'+
-    '.sign{display:flex;justify-content:space-between;margin-top:20px;font-size:12px}'+
-    '.line{border-top:1px solid #333;margin-top:28px;padding-top:3px;text-align:center;font-size:11px;color:#555}'+
-    '@media print{body{padding:4px}}</style></head><body>'+
-    '<h2>LAPTOP 24H</h2>'+
-    '<div class="sub">\u0110T: 0909 xxx xxx</div>'+
-    '<div class="title">PHI\u1EBCU B\u1EA2O H\u00c0NH</div>'+
-    '<div class="info">Kh\u00e1ch h\u00e0ng: <b>'+(d.customer||'')+'</b></div>'+
-    '<div class="info">S\u0110T: <b>'+(d.phone||'')+'</b></div>'+
-    '<div class="info">Ng\u00e0y mua: <b>'+(d.date||'')+'</b></div>'+
-    '<table><thead><tr><th>#</th><th>S\u1ea3n ph\u1ea9m</th><th>SL</th><th>\u0110\u01a1n gi\u00e1</th></tr></thead><tbody>'+itemRows+'</tbody></table>'+
-    '<div class="bh">B\u1ea2O H\u00c0NH: '+(d.warranty||'Kh\u00f4ng b\u1ea3o h\u00e0nh')+'</div>'+
-    '<p style="font-size:11px;color:#555;margin:4px 0">* B\u1ea3o h\u00e0nh t\u00ednh t\u1eeb ng\u00e0y mua. Mang phi\u1ebfu n\u00e0y khi c\u1ea7n b\u1ea3o h\u00e0nh.</p>'+
-    '<div class="sign">'+
-    '<div>Kh\u00e1ch h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean)</span></div>'+
-    '<div style="text-align:right">C\u1eeda h\u00e0ng<br><br><br><span style="font-size:11px;color:#777">(K\u00fd t\u00ean, \u0111\u00f3ng d\u1ea5u)</span></div>'+
-    '</div>'+
-    '<div class="line">C\u1ea3m \u01a1n qu\u00fd kh\u00e1ch \u0111\u00e3 tin t\u01b0\u1edfng Laptop 24H!</div>'+
-    '</body></html>';
-  var _pif = document.createElement('iframe');
-  _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-  document.body.appendChild(_pif);
-  var _pd = _pif.contentDocument || _pif.contentWindow.document;
-  _pd.open(); _pd.write(html); _pd.close();
-  _pif.contentWindow.focus();
-  _pif.contentWindow.print();
-  setTimeout(function(){ document.body.removeChild(_pif); }, 500);
-}
-
-  loadSales();
 }
