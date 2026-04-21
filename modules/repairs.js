@@ -69,81 +69,57 @@ function openEditRepairBH(rec) {
 }
 
 function printWarrantyBill(record) {
-  const giao = record.deliveredDate || record.receivedDate || '';
-  let warrantyEnd = 'Không bảo hành';
-  if (record.warrantyMonths > 0 && giao) {
-    const d = new Date(giao);
-    d.setMonth(d.getMonth() + (record.warrantyMonths || 0));
-    warrantyEnd = d.toLocaleDateString('vi-VN');
-  }
-  const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
-  const win = window.open('', '_blank', 'width=420,height=650');
-  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>' +
-    '* { margin:0; padding:0; box-sizing:border-box; }' +
-    'body { font-family: Arial, sans-serif; font-size: 13px; padding: 16px; max-width: 380px; margin: 0 auto; }' +
-    '.header { text-align: center; margin-bottom: 10px; }' +
-    '.header h2 { font-size: 20px; font-weight: bold; letter-spacing: 1px; }' +
-    '.header p { font-size: 12px; color: #555; }' +
-    '.divider { border-top: 1px dashed #999; margin: 8px 0; }' +
-    '.title { text-align: center; font-size: 15px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
-    'table { width: 100%; border-collapse: collapse; }' +
-    'td { padding: 4px 2px; vertical-align: top; }' +
-    'td:first-child { width: 38%; font-weight: 600; color: #333; white-space: nowrap; }' +
-    '.total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #333; padding-top: 6px; }' +
-    '.wbox { border: 2px solid #2563eb; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center; }' +
-    '.wbox .wlabel { font-size: 11px; color: #666; }' +
-    '.wbox .wvalue { font-size: 16px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
-    '.footer { text-align: center; font-size: 11px; color: #888; margin-top: 12px; }' +
-    '.sig { display: flex; justify-content: space-between; margin-top: 24px; font-size: 12px; }' +
-    '.sig div { text-align: center; width: 45%; }' +
-    '.sig .line { border-top: 1px solid #333; margin-top: 32px; padding-top: 4px; }' +
-    '.btn-bar { text-align: center; margin-top: 12px; }' +
-    '.btn-bar button { padding: 6px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 0 4px; }' +
-    '.btn-print { background: #2563eb; color: white; }' +
-    '.btn-close { background: #6b7280; color: white; }' +
-    '@media print { .btn-bar { display: none; } }' +
-  '#rep-edit-btn,#rep-del-btn,#rep-print-btn{display:none}' +
-  '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
-  '.rep-modal .form-card{margin:0 auto}' +
-  '</style></head><body>' +
-  '<div class="header"><h2>LAPTOP 24H</h2><p>Địa chỉ cửa hàng của bạn | SĐT: 0xxx xxx xxx</p></div>' +
-  '<div class="divider"></div>' +
-  '<div class="title">Phiếu Bảo Hành</div>' +
-  '<table>' +
-  '<tr><td>Khách hàng:</td><td>' + (record.customerName || '') + '</td></tr>' +
-  '<tr><td>SĐT:</td><td>' + (record.phone || '') + '</td></tr>' +
-  (record.address ? '<tr><td>Địa chỉ:</td><td>' + record.address + '</td></tr>' : '') +
-  '<tr><td>Thiết bị:</td><td>' + (record.device || '') + '</td></tr>' +
-  (record.serial ? '<tr><td>Serial:</td><td>' + record.serial + '</td></tr>' : '') +
-  (record.accessories ? '<tr><td>Phụ kiện:</td><td>' + record.accessories + '</td></tr>' : '') +
-  '<tr><td>Ngày nhận:</td><td>' + formatDate(record.receivedDate || record.ts) + '</td></tr>' +
-  '<tr><td>Ngày giao:</td><td>' + (record.deliveredDate ? formatDate(record.deliveredDate) : '--') + '</td></tr>' +
-  (record.issue ? '<tr><td>Vấn đề:</td><td>' + record.issue + '</td></tr>' : '') +
-  (record.techName ? '<tr><td>KTV:</td><td>' + record.techName + '</td></tr>' : '') +
-  '</table>' +
-  '<div class="divider"></div>' +
-  '<table>' +
-  '<tr><td>Chi phí sửa:</td><td>' + formatVND(record.cost || 0) + '</td></tr>' +
-  (record.deposit > 0 ? '<tr><td>Đặt cọc:</td><td>' + formatVND(record.deposit) + '</td></tr>' : '') +
-  (record.discount > 0 ? '<tr><td>Giảm giá:</td><td>- ' + formatVND(record.discount) + '</td></tr>' : '') +
-  '<tr class="total-row"><td>Còn lại:</td><td>' + formatVND(remaining) + '</td></tr>' +
-  '<tr><td>Hình thức TT:</td><td>' + (record.paymentType || 'Tiền mặt') + '</td></tr>' +
-  '</table>' +
-  '<div class="wbox">' +
-  '<div class="wlabel">Bảo hành đến</div>' +
-  '<div class="wvalue">' + warrantyEnd + '</div>' +
-  (record.warrantyMonths > 0 ? '<div class="wlabel">(' + record.warrantyMonths + ' tháng kể từ ngày giao)</div>' : '') +
-  '</div>' +
-  (record.processNote ? '<div style="font-size:11px;color:#555;margin-bottom:6px"><em>Ghi chú: ' + record.processNote + '</em></div>' : '') +
-  '<div class="sig">' +
-  '<div><div class="line">Khách hàng</div></div>' +
-  '<div><div class="line">Kỹ thuật viên</div></div>' +
-  '</div>' +
-  '<div class="footer"><p>Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
-  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' +
-  '</body></html>');
-  win.document.close();
+  const key = record._key || '';
+  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const rows = [
+    ['Khách hàng','customerName',false],['Điện thoại','phone',false],['Địa chỉ','address',false],
+    ['||THÔNG TIN THIẾT BỊ'],
+    ['Tên thiết bị','device',false],['Số Serial','serial',false],['Phụ kiện','accessories',false],
+    ['||THÔNG TIN SỬA CHỮA'],
+    ['Tình trạng','issue',false],['Kỹ thuật viên','techName',false],
+    ['Ngày nhận','receivedDate',false],['Ngày giao','deliveredDate',false],
+    ['||THANH TOÁN'],
+    ['Chi phí','cost',true],['Đặt cọc','deposit',true],['Giảm giá','discount',true],
+    ['Hình thức TT','paymentType',false],['Bảo hành (tháng)','warrantyMonths',true],
+    ['||GHI CHÚ'],['Ghi chú xử lý','processNote',false]
+  ].map(r => r[0].startsWith('||')
+    ? '<tr><td colspan="2" class="sec">'+r[0].slice(2)+'</td></tr>'
+    : '<tr><td class="lb">'+r[0]+'</td><td class="vl"><input class="bi" data-f="'+r[1]+'"'+(r[2]?' type="number"':'')+' value="'+e(record[r[1]])+'"></td></tr>'
+  ).join('');
+  const w = window.open('', '_blank', 'width=820,height=750,scrollbars=yes');
+  if (!w) return;
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu BH</title>'
+    +'<style>body{font-family:Arial,sans-serif;font-size:13px;margin:0;padding:16px}h2{text-align:center;margin:0 0 4px;font-size:17px}.sub{text-align:center;font-size:12px;margin-bottom:10px;color:#555}table{width:100%;border-collapse:collapse}td{padding:4px 6px;vertical-align:top}.lb{width:38%;font-weight:bold;border-bottom:1px solid #ddd}.vl{width:62%;border-bottom:1px solid #ddd}.bi{width:100%;border:none;border-bottom:1px dashed #aaa;background:transparent;font:13px Arial;padding:1px 2px;outline:none;box-sizing:border-box}.bi:focus{border-bottom:1px solid #2563eb;background:#eff6ff}.bbar{text-align:center;margin-top:16px;padding:8px;border-top:1px solid #ddd}.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}.bs{background:#16a34a;color:#fff;border-color:#16a34a}.bp{background:#2563eb;color:#fff;border-color:#2563eb}#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}.sec{font-weight:bold;background:#f3f4f6;padding:4px 6px;font-size:12px}@media print{.bbar{display:none!important}.bi{border:none!important;background:transparent!important;border-bottom:1px solid #999!important}}</style>'
+    +'</head><body>'
+    +'<h2>PHIẾU BẢO HÀNH</h2><div class="sub">Laptop 24h</div>'
+    +'<table>'+rows+'</table>'
+    +'<div class="bbar">'
+    +'<button class="bp" onclick="window.print()">&#128424; In phiếu</button>'
+    +'<button class="bs" onclick="saveBH()">&#128190; Lưu</button>'
+    +'<button onclick="window.close()">Đóng</button>'
+    +'<div id="msg">&#10003; Đã lưu thành công!</div>'
+    +'</div>'
+    +'<script>var _k="'+key+'";'
+    +'function saveBH(){'
+    +'var d={};'
+    +'document.querySelectorAll(".bi[data-f]").forEach(function(el){'
+    +'d[el.dataset.f]=el.type==="number"?(parseFloat(el.value)||0):el.value;'
+    +'});'
+    +'if(window.opener&&window.opener.repSaveFromBill){'
+    +'window.opener.repSaveFromBill(_k,d).then(function(){'
+    +'document.getElementById("msg").style.display="block";'
+    +'setTimeout(function(){document.getElementById("msg").style.display="none";},3000);'
+    +'});'
+    +'}else{alert("Không thể lưu. Mở lại phiếu từ trang chính.");}'
+    +'}'
+    +'</scr'+'ipt>'
+    +'</body></html>');
+  w.document.close();
 }
+
+window.repSaveFromBill = async function(key, data) {
+  await updateItem('repairs', key, data);
+};
 
 const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
 function logRepairToSheet(data, action) {
