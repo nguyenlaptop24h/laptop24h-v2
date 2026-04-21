@@ -26,26 +26,45 @@ function openEditRepairBH(rec) {
   const ov = document.createElement('div');
   ov.id = 'rep-bh-overlay';
   ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(380px,92vw);box-shadow:0 4px 24px rgba(0,0,0,.2)">
-      <h3 style="margin:0 0 1rem;text-align:center;color:#0369a1">&#x270f;&#xfe0f; Sửa Bill Bảo Hành</h3>
-      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Tháng bảo hành</label>
-        <input id="rep-bh-months" type="number" min="0" max="60" value="${rec.warrantyMonths||0}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="margin-bottom:1rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Ngày giao máy</label>
-        <input id="rep-bh-date" type="date" value="${rec.deliveredDate||''}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button id="rep-bh-cancel" style="padding:.45rem 1rem;border:1px solid #ddd;border-radius:6px;background:#f9fafb;cursor:pointer">Hủy</button>
-        <button id="rep-bh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer">Lưu &amp; In BH</button>
-      </div></div>`;
+  const v = s => (s||'').toString().replace(/"/g,'&quot;');
+  ov.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(500px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.2)">' +
+    '<h3 style="margin:0 0 1rem;font-size:1.1rem;color:#1e293b">&#x270f;&#xfe0f; Sửa Bill Bảo Hành</h3>' +
+    '<label style="display:block;margin-bottom:.65rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Tên khách hàng</span>' +
+    '<input id="rbh-name" value="' + v(rec.customerName) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '<label style="display:block;margin-bottom:.65rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Số điện thoại</span>' +
+    '<input id="rbh-phone" value="' + v(rec.phone) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '<label style="display:block;margin-bottom:.65rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Thiết bị</span>' +
+    '<input id="rbh-device" value="' + v(rec.device) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '<label style="display:block;margin-bottom:.65rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Serial</span>' +
+    '<input id="rbh-serial" value="' + v(rec.serial) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '<label style="display:block;margin-bottom:.65rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Công việc sửa chữa</span>' +
+    '<textarea id="rbh-note" rows="3" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem;resize:vertical">' + v(rec.processNote) + '</textarea></label>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem">' +
+    '<label><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Ngày giao máy</span>' +
+    '<input id="rbh-date" type="date" value="' + v(rec.deliveredDate) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '<label><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.2rem">Bảo hành (tháng)</span>' +
+    '<input id="rbh-months" type="number" min="0" max="60" value="' + (rec.warrantyMonths||0) + '" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:.45rem .7rem"></label>' +
+    '</div>' +
+    '<div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">' +
+    '<button id="rbh-cancel" style="padding:.45rem 1rem;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer">Hủy</button>' +
+    '<button id="rbh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#f59e0b;color:#fff;cursor:pointer;font-weight:600">&#x1f4be; Lưu &amp; In BH</button>' +
+    '</div></div>';
   document.body.appendChild(ov);
-  document.getElementById('rep-bh-cancel').onclick = () => document.body.removeChild(ov);
-  document.getElementById('rep-bh-save').onclick = async () => {
-    const months = parseInt(document.getElementById('rep-bh-months').value)||0;
-    const dDate = document.getElementById('rep-bh-date').value;
-    const updated = { ...rec, warrantyMonths: months, deliveredDate: dDate };
+  document.getElementById('rbh-cancel').onclick = () => ov.remove();
+  document.getElementById('rbh-save').onclick = async () => {
+    const updated = {
+      customerName:   document.getElementById('rbh-name').value.trim(),
+      phone:          document.getElementById('rbh-phone').value.trim(),
+      device:         document.getElementById('rbh-device').value.trim(),
+      serial:         document.getElementById('rbh-serial').value.trim(),
+      processNote:    document.getElementById('rbh-note').value.trim(),
+      deliveredDate:  document.getElementById('rbh-date').value,
+      warrantyMonths: parseInt(document.getElementById('rbh-months').value) || 0
+    };
     await updateItem(COLLECTION, rec._key, updated);
-    toast('Đã cập nhật bảo hành');
-    document.body.removeChild(ov);
-    printWarrantyBill(updated);
+    ov.remove();
+    printWarrantyBill({ ...rec, ...updated });
   };
 }
 
