@@ -4,6 +4,7 @@ import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.
 import { isAdmin } from '../core/auth.js';
 
 const COLLECTION = 'repairs';
+const RPL_BILL_KEY = 'rp_bill_tpl';
 
 const STATUS_LIST = ['Tiếp nhận','Đang sửa','Hoàn thành','Đã giao','Huỷ'];
 const STATUS_CLASS = {
@@ -69,6 +70,7 @@ function openEditRepairBH(rec) {
 }
 
 function printWarrantyBill(record) {
+  const tpl = getRepBillTpl();
   const giao = record.deliveredDate || record.receivedDate || '';
   let warrantyEnd = 'Không bảo hành';
   if (record.warrantyMonths > 0 && giao) {
@@ -106,9 +108,9 @@ function printWarrantyBill(record) {
   '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
   '.rep-modal .form-card{margin:0 auto}' +
   '</style></head><body>' +
-  '<div class="header"><h2>LAPTOP 24H</h2><p>Địa chỉ cửa hàng của bạn | SĐT: 0xxx xxx xxx</p></div>' +
+  '<div class="header"><h2>' + (tpl.shopName || 'LAPTOP 24H') + '</h2>' + (tpl.address ? '<p>' + tpl.address + '</p>' : '') + (tpl.phone ? '<p>SĐT: ' + tpl.phone + '</p>' : '') + '</div>' +
   '<div class="divider"></div>' +
-  '<div class="title">Phiếu Bảo Hành</div>' +
+  '<div class="title">' + (tpl.title || 'Phiếu Bảo Hành') + '</div>' +
   '<table>' +
   '<tr><td>Khách hàng:</td><td>' + (record.customerName || '') + '</td></tr>' +
   '<tr><td>SĐT:</td><td>' + (record.phone || '') + '</td></tr>' +
@@ -139,13 +141,48 @@ function printWarrantyBill(record) {
   '<div><div class="line">Khách hàng</div></div>' +
   '<div><div class="line">Kỹ thuật viên</div></div>' +
   '</div>' +
-  '<div class="footer"><p>Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
+  '<div class="footer"><p>' + (tpl.footer || 'Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!') + '</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
   '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' +
   '</body></html>');
   win.document.close();
 }
 
 const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
+function getRepBillTpl() { try { return JSON.parse(localStorage.getItem(RPL_BILL_KEY) || '{}'); } catch(e) { return {}; } }
+function saveRepBillTpl(obj) { localStorage.setItem(RPL_BILL_KEY, JSON.stringify(obj)); }
+function openRepBillTplModal() {
+  const t = getRepBillTpl();
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(480px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.2)">
+    <h3 style="margin:0 0 1rem;font-size:1.1rem">🖨 Cài đặt nội dung Bill Bảo Hành</h3>
+    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Tên cửa hàng</span><input id="rbt-shop" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
+    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Địa chỉ</span><input id="rbt-addr" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
+    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Số điện thoại</span><input id="rbt-phone" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
+    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Tiêu đề bill</span><input id="rbt-title" placeholder="Bill Bảo Hành" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
+    <label style="display:block;margin-bottom:1rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Lời cảm ơn / Footer</span><textarea id="rbt-footer" rows="3" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea></label>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end"><button id="rbt-cancel" class="btn btn--secondary">Hủy</button><button id="rbt-save" class="btn btn--primary">💾 Lưu mẫu</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('rbt-shop').value = t.shopName || '';
+  document.getElementById('rbt-addr').value = t.address || '';
+  document.getElementById('rbt-phone').value = t.phone || '';
+  document.getElementById('rbt-title').value = t.title || '';
+  document.getElementById('rbt-footer').value = t.footer || '';
+  document.getElementById('rbt-cancel').onclick = () => ov.remove();
+  document.getElementById('rbt-save').onclick = () => {
+    saveRepBillTpl({
+      shopName: document.getElementById('rbt-shop').value.trim(),
+      address:  document.getElementById('rbt-addr').value.trim(),
+      phone:    document.getElementById('rbt-phone').value.trim(),
+      title:    document.getElementById('rbt-title').value.trim(),
+      footer:   document.getElementById('rbt-footer').value.trim(),
+    });
+    toast('Đã lưu mẫu bill ✓');
+    ov.remove();
+  };
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
 function logRepairToSheet(data, action) {
     try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
 }
@@ -177,6 +214,7 @@ export async function mount(container) {
       <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕</button>
       <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">🖨 In bill BH</button>
       <button id="rep-edit-bh-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border-color:#f59e0b">&#x270f;&#xfe0f; Sửa BH</button>
+        <button id="rep-bill-tpl-btn" class="btn" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6;font-size:.85rem">🖨 Mẫu bill</button>
       <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
@@ -205,12 +243,14 @@ let showTrash = false;
   const editBhBtn   = container.querySelector('#rep-edit-bh-btn');
   const trashBtn      = container.querySelector('#rep-trash-btn');
   const selHint    = container.querySelector('#rep-sel-hint');
+  const billTplBtn = container.querySelector('#rep-bill-tpl-btn');
 
   searchEl.addEventListener('input', filterData);
   statusEl.addEventListener('change', filterData);
   dateFromEl.addEventListener('change', filterData);
   dateToEl.addEventListener('change', filterData);
   trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; filterData(); });
+  billTplBtn?.addEventListener('click', () => openRepBillTplModal());
 
   container.querySelector('#rep-clear-date').addEventListener('click', () => {
     dateFromEl.value = ''; dateToEl.value = ''; filterData();
