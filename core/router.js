@@ -9,7 +9,8 @@ export function registerRoute(hash, mountFn) {
 }
 
 export function initRouter() {
-repairs.js?v=43    function updateNav(hash) {
+    // Highlight active nav link
+    function updateNav(hash) {
         document.querySelectorAll('#nav-links a').forEach(a => {
             a.classList.toggle('active', a.getAttribute('href') === hash);
         });
