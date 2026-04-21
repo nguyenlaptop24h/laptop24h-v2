@@ -368,7 +368,7 @@ export async function mount(container) {
       return;
     }
     const _doanhthu = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
-    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">📊 <b>${items.length}</b> đơn hàng &nbsp;|  💰 Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}đ</b></div>` + items.map(s => `
+    listWrap.innerHTML = `<div style="background:#1a3a6b;color:#fff;padding:8px 14px;border-radius:8px;margin-bottom:10px;display:flex;gap:20px;font-size:13px">ð <b>${items.length}</b> ÄÆ¡n hÃ ng &nbsp;|Â  ð° Doanh thu: <b>${_doanhthu.toLocaleString('vi-VN')}Ä</b></div>` + items.map(s => `
       <div class="card" style="background:#fff; ;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-botconst _r = await addItem(COLLECTION, data); >
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
@@ -383,7 +383,7 @@ export async function mount(container) {
             <div style="font-size:.72rem;color:#888">${s.date||''} \u00b7 ${s.payMethod||''}</div>
           </div>
         </div>
-        <div class="sale-acts" style="display:none;margin-top:.6rem;padding-top:.6rem;border-top:1px solid #f0f0f0;gap:.4rem;flex-wrap:wrap">
+        <div class="sale-acts" style="display:flex;margin-top:.6rem;padding-top:.6rem;border-top:1px solid #f0f0f0;gap:.4rem;flex-wrap:wrap">
           <button class="btn-detail btn btn--sm" data-key="${s._key}">\u2139 Chi ti\u1ebft</button>
           <button class="btn-print btn btn--sm" data-key="${s._key}" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac">\uD83D\uDDB8 In</button>
           <button class="btn-warranty btn btn--sm" data-key="${s._key}" style="background:#fef9c3;color:#854d0e;border:1px solid #fde047">\uD83D\uDCCB BH</button>
@@ -393,12 +393,7 @@ export async function mount(container) {
       </div>
     `).join('');
 
-    listWrap.querySelectorAll('.sale-cb').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const acts = cb.closest('.card').querySelector('.sale-acts');
-        if (acts) acts.style.display = cb.checked ? 'flex' : 'none';
-      });
-    });
+
 
     listWrap.querySelectorAll('.btn-detail').forEach(b => b.onclick = () => {
       const s = currentList.find(x => x._key === b.dataset.key);
