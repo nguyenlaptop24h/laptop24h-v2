@@ -205,10 +205,10 @@ let showTrash = false;
   delBtn.addEventListener('click', () => { if (selectedKey) confirmDelete(selectedKey); });
   printBtn.addEventListener('click', () => {
     const rec = allData.find(r => r._key === selectedKey);
-  statusBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); });
     if (rec) printWarrantyBill(rec);
-    document.getElementById('rep-edit-bh-btn').addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
   });
+  statusBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); });
+  editBhBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
 
   function setSelected(key) {
     selectedKey = key;
