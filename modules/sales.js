@@ -374,6 +374,7 @@ export async function mount(container) {
   `<button id="sale-act-detail" style="background:#e0f0ff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Chi ti�t</button>` +
   `<button id="sale-act-print" style="background:#dcfce7;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">In</button>` +
   `<button id="sale-act-bh" style="background:#fef9c3;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">BH</button>` +
+  `<button id="sale-act-edit-bh" style="background:#fb923c;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">Sửa BH</button>` +
   `<button id="sale-act-edit" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">S�a</button>` +
   `<button id="sale-act-del" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:.35rem .8rem;cursor:pointer">X�a</button>` +
   `</div>`
@@ -442,6 +443,7 @@ export async function mount(container) {
     };
     document.getElementById('sale-act-print').onclick = () => { const s = _getS(); if (s) printSaleBill(s); };
     document.getElementById('sale-act-bh').onclick = () => { const s = _getS(); if (s) printWarrantySlip(s); };
+    document.getElementById('sale-act-edit-bh').onclick = () => { const s = _getS(); if (s) openEditBH(s); };
     document.getElementById('sale-act-edit').onclick = () => { const s = _getS(); if (s) { openForm(s); window.scrollTo(0,0); } };
     document.getElementById('sale-act-del').onclick = () => {
       const item = _getS(); if (!item) return;
@@ -578,6 +580,43 @@ export async function mount(container) {
     setTimeout(function(){ document.body.removeChild(_pif); }, 500);
   }
 
+
+function openEditBH(sale) {
+  const warranties = ['3 tháng','6 tháng','12 tháng','18 tháng','24 tháng'];
+  const wOpts = warranties.map(w => `<option value="${w}"${(sale.warranty||'3 tháng')===w?' selected':''}>${w}</option>`).join('');
+  const ov = document.createElement('div');
+  ov.id = 'bh-edit-overlay';
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(380px,92vw);box-shadow:0 4px 24px rgba(0,0,0,.2)">
+      <h3 style="margin:0 0 1rem;text-align:center;color:#92400e">&#x2712;&#xfe0f; Sửa Bill Bảo Hành</h3>
+      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Khách hàng</label>
+        <input id="bh-customer" value="${(sale.customer||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Số điện thoại</label>
+        <input id="bh-phone" value="${(sale.phone||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Ngày mua</label>
+        <input id="bh-date" type="date" value="${sale.date||''}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+      <div style="margin-bottom:1rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Thời hạn bảo hành</label>
+        <select id="bh-warranty" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">${wOpts}</select></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button id="bh-cancel" style="padding:.45rem 1rem;border:1px solid #ddd;border-radius:6px;background:#f9fafb;cursor:pointer">Hủy</button>
+        <button id="bh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer">Lưu &amp; In BH</button>
+      </div></div>`;
+  document.body.appendChild(ov);
+  document.getElementById('bh-cancel').onclick = () => document.body.removeChild(ov);
+  document.getElementById('bh-save').onclick = async () => {
+    const updated = { ...sale,
+      customer: document.getElementById('bh-customer').value.trim(),
+      phone: document.getElementById('bh-phone').value.trim(),
+      date: document.getElementById('bh-date').value,
+      warranty: document.getElementById('bh-warranty').value
+    };
+    await updateItem(COLLECTION, sale._key, updated);
+    logToSheet({...updated, key: sale._key}, 'update');
+    toast('Đã cập nhật bảo hành');
+    document.body.removeChild(ov);
+    printWarrantySlip(updated);
+  };
+}
 
 function printWarrantySlip(d) {
   var fmt = n => Number(n||0).toLocaleString('vi-VN');
