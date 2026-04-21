@@ -22,6 +22,33 @@ function formatDeliveryItems(items) {
   return items.map(i => (i.desc || '') + (i.qty > 1 ? ' x' + i.qty : '')).filter(Boolean).join(', ');
 }
 
+function openEditRepairBH(rec) {
+  const ov = document.createElement('div');
+  ov.id = 'rep-bh-overlay';
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(380px,92vw);box-shadow:0 4px 24px rgba(0,0,0,.2)">
+      <h3 style="margin:0 0 1rem;text-align:center;color:#0369a1">&#x270f;&#xfe0f; Sửa Bill Bảo Hành</h3>
+      <div style="margin-bottom:.75rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Tháng bảo hành</label>
+        <input id="rep-bh-months" type="number" min="0" max="60" value="${rec.warrantyMonths||0}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+      <div style="margin-bottom:1rem"><label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.25rem">Ngày giao máy</label>
+        <input id="rep-bh-date" type="date" value="${rec.deliveredDate||''}" style="width:100%;padding:.4rem .6rem;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button id="rep-bh-cancel" style="padding:.45rem 1rem;border:1px solid #ddd;border-radius:6px;background:#f9fafb;cursor:pointer">Hủy</button>
+        <button id="rep-bh-save" style="padding:.45rem 1rem;border:none;border-radius:6px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer">Lưu &amp; In BH</button>
+      </div></div>`;
+  document.body.appendChild(ov);
+  document.getElementById('rep-bh-cancel').onclick = () => document.body.removeChild(ov);
+  document.getElementById('rep-bh-save').onclick = async () => {
+    const months = parseInt(document.getElementById('rep-bh-months').value)||0;
+    const dDate = document.getElementById('rep-bh-date').value;
+    const updated = { ...rec, warrantyMonths: months, deliveredDate: dDate };
+    await updateItem(COLLECTION, rec._key, updated);
+    toast('Đã cập nhật bảo hành');
+    document.body.removeChild(ov);
+    printWarrantyBill(updated);
+  };
+}
+
 function printWarrantyBill(record) {
   const giao = record.deliveredDate || record.receivedDate || '';
   let warrantyEnd = 'Không bảo hành';
@@ -130,6 +157,7 @@ export async function mount(container) {
       <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎</button>
       <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕</button>
       <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">🖨 In bill BH</button>
+      <button id="rep-edit-bh-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border-color:#f59e0b">&#x270f;&#xfe0f; Sửa BH</button>
       <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
@@ -155,6 +183,7 @@ let showTrash = false;
   const statusBtn = container.querySelector('#rep-status-btn');
   const delBtn     = container.querySelector('#rep-del-btn');
   const printBtn   = container.querySelector('#rep-print-btn');
+  const editBhBtn   = container.querySelector('#rep-edit-bh-btn');
   const trashBtn      = container.querySelector('#rep-trash-btn');
   const selHint    = container.querySelector('#rep-sel-hint');
 
@@ -178,12 +207,13 @@ let showTrash = false;
     const rec = allData.find(r => r._key === selectedKey);
   statusBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); });
     if (rec) printWarrantyBill(rec);
+    document.getElementById('rep-edit-bh-btn').addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
   });
 
   function setSelected(key) {
     selectedKey = key;
     const on = !!key;
-    [editBtn, delBtn, printBtn, statusBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
+    [editBtn, delBtn, printBtn, statusBtn, editBhBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
     selHint.style.display = on ? 'none' : '';
     container.querySelectorAll('.rep-row').forEach(tr => {
       tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
