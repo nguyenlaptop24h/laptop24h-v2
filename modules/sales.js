@@ -542,43 +542,73 @@ export async function mount(container) {
   dateFilter.addEventListener('change', loadSales);
 
   function printSaleBill(d) {
-    var fmt = n => Number(n||0).toLocaleString('vi-VN');
-    var rows = (d.items||[]).map(it =>
-      '<tr><td style="padding:3px 6px">'+(it.sku||'')+'</td>'+
-      '<td style="padding:3px 6px">'+(it.name||'')+'</td>'+
-      '<td style="padding:3px 6px;text-align:center">'+(it.qty||1)+'</td>'+
-      '<td style="padding:3px 6px;text-align:right">'+fmt(it.price)+'</td>'+
-      '<td style="padding:3px 6px;text-align:center">'+(it.disc||0)+'%</td>'+
-      '<td style="padding:3px 6px;text-align:right;font-weight:bold">'+fmt(it.qty*it.price*(1-(it.disc||0)/100))+'</td></tr>'
-    ).join('');
-    var change = Math.max(0,(d.paid||0)-(d.total||0));
-    var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>H\u00f3a \u0111\u01a1n b\u00e1n h\u00e0ng</title>'+
-      '<style>body{font-family:Arial,sans-serif;font-size:13px;padding:16px;color:#222}h2{text-align:center;font-size:17px;margin:0 0 2px}.sub{text-align:center;font-size:13px;font-weight:bold;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#f0f0f0;padding:4px 6px;text-align:left;font-size:12px}td{border-bottom:1px solid #eee}.tot{font-weight:bold;font-size:14px}.sign{display:flex;justify-content:space-between;margin-top:24px}.line{border-top:1px solid #333;margin-top:32px;text-align:center;padding-top:4px;font-size:12px;color:#555}</style></head><body>'+
-      '<h2>LAPTOP24H</h2><p class="sub">H\u00d3A \u0110\u01a0N B\u00c1N H\u00c0NG</p>'+
-      '<table><tr><td style="width:50%;padding:2px 0"><strong>KH:</strong> '+(d.customer||'')+'</td>'+
-      '<td style="padding:2px 0"><strong>S\u0110T:</strong> '+(d.phone||'')+'</td></tr>'+
-      '<tr><td><strong>Ng\u00e0y:</strong> '+(d.date||'')+'</td>'+
-      '<td><strong>TT:</strong> '+(d.payMethod||'')+'</td></tr></table>'+
-      '<table><thead><tr><th>M\u00e3</th><th>T\u00ean SP</th><th style="text-align:center">SL</th><th style="text-align:right">\u0110\u01a1n gi\u00e1</th><th style="text-align:center">CK%</th><th style="text-align:right">Th\u00e0nh ti\u1ec1n</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<table><tr><td>T\u1ea1m t\u00ednh</td><td style="text-align:right">'+fmt(d.subtotal)+' \u0111</td></tr>'+
-      (d.extraDiscount>0?'<tr><td>Gi\u1ea3m th\u00eam</td><td style="text-align:right">-'+fmt(d.extraDiscount)+' \u0111</td></tr>':'')+
-      '<tr class="tot"><td>T\u1ed4NG THANH TO\u00c1N</td><td style="text-align:right">'+fmt(d.total)+' \u0111</td></tr>'+
-      '<tr><td>Kh\u00e1ch tr\u1ea3</td><td style="text-align:right">'+fmt(d.paid)+' \u0111</td></tr>'+
-      '<tr><td>Ti\u1ec1n th\u1eeba</td><td style="text-align:right">'+fmt(change)+' \u0111</td></tr></table>'+
-      (d.warranty?'<p style="font-size:12px;color:#555">B\u1ea3o h\u00e0nh: '+d.warranty+'</p>':'')+
-      (d.note?'<p style="font-size:12px;color:#555">Ghi ch\u00fa: '+d.note+'</p>':'')+
-      '<div class="sign"><div style="width:45%"><div class="line">Kh\u00e1ch h\u00e0ng</div></div><div style="width:45%"><div class="line">Ng\u01b0\u1eddi b\u00e1n</div></div></div>'+
-      '<div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:6px 20px;cursor:pointer">\uD83D\uDDB8 In h\u00f3a \u0111\u01a1n</button><button onclick="if(window.opener){window.opener.document.getElementById(\'sale-act-edit-bh\').click();window.close();}" style="padding:6px 20px;cursor:pointer;margin-left:8px">✏️ Sửa nội dung</button></div>'+
-      '</body></html>';
-    var _pif = document.createElement('iframe');
-    _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
-    document.body.appendChild(_pif);
-    var _pd = _pif.contentDocument || _pif.contentWindow.document;
-    _pd.open(); _pd.write(html); _pd.close();
-    _pif.contentWindow.focus();
-    _pif.contentWindow.print();
-    setTimeout(function(){ document.body.removeChild(_pif); }, 500);
-  }
+  const key = d._key || '';
+  const e = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const fmt = n => (parseFloat(n)||0).toLocaleString('vi-VN');
+  const items = Array.isArray(d.items) ? d.items : [];
+  const itemRows = items.map((it,idx) =>
+    '<tr>'
+    +'<td style="font-size:11px">'+e(it.sku||'')+'</td>'
+    +'<td>'+e(it.name||'')+'</td>'
+    +'<td style="text-align:right">'+e(it.qty||0)+'</td>'
+    +'<td style="text-align:right">'+fmt(it.price)+'</td>'
+    +'<td style="text-align:right">'+fmt(it.disc||0)+'</td>'
+    +'<td style="text-align:right">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.price)||0)-(parseFloat(it.disc)||0))+'</td>'
+    +'</tr>'
+  ).join('');
+  const total = parseFloat(d.total)||0;
+  const paid = parseFloat(d.paid)||0;
+  const debt = total - paid;
+  const w = window.open('', '_blank', 'width=820,height=750,scrollbars=yes');
+  if (!w) return;
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Hóa Đơn</title>'
+    +'<style>body{font-family:Arial,sans-serif;font-size:13px;margin:0;padding:16px}h2{text-align:center;margin:0 0 2px;font-size:17px}.sub{text-align:center;font-size:12px;margin-bottom:10px;color:#555}table{width:100%;border-collapse:collapse}th,td{padding:4px 5px;border:1px solid #ddd;font-size:12px}th{background:#f3f4f6;text-align:left}.nr{text-align:right}.info-table td{border:none;padding:3px 5px}.lb{width:35%;font-weight:bold}.vl{width:65%}.bi{width:100%;border:none;border-bottom:1px dashed #aaa;background:transparent;font:12px Arial;padding:1px 2px;outline:none;box-sizing:border-box}.bi:focus{border-bottom:1px solid #2563eb;background:#eff6ff}.bbar{text-align:center;margin-top:14px;padding:8px;border-top:1px solid #ddd}.bbar button{padding:7px 18px;margin:0 4px;cursor:pointer;border:1px solid #ccc;border-radius:4px;font-size:13px}.bs{background:#16a34a;color:#fff;border-color:#16a34a}.bp{background:#2563eb;color:#fff;border-color:#2563eb}#msg{display:none;color:#16a34a;font-weight:bold;margin-top:8px}.tot-row{font-weight:bold;background:#f9fafb}@media print{.bbar{display:none!important}.bi{border:none!important;background:transparent!important;border-bottom:1px solid #999!important}}</style>'
+    +'</head><body>'
+    +'<h2>HÓA ĐƠN BÁN HÀNG</h2><div class="sub">Laptop 24h</div>'
+    +'<table class="info-table" style="margin-bottom:8px">'
+    +'<tr><td class="lb">Khách hàng</td><td class="vl"><input class="bi" data-f="customer" value="'+e(d.customer)+'"></td>'
+    +'<td class="lb">Điện thoại</td><td class="vl"><input class="bi" data-f="phone" value="'+e(d.phone)+'"></td></tr>'
+    +'<tr><td class="lb">Ngày</td><td class="vl">'+e(d.date||new Date().toLocaleDateString('vi-VN'))+'</td>'
+    +'<td class="lb">Thanh toán</td><td class="vl"><input class="bi" data-f="payMethod" value="'+e(d.payMethod)+'"></td></tr>'
+    +'<tr><td class="lb">Bảo hành</td><td class="vl"><input class="bi" data-f="warranty" value="'+e(d.warranty)+'"></td>'
+    +'<td class="lb">Ghi chú</td><td class="vl"><input class="bi" data-f="note" value="'+e(d.note)+'"></td></tr>'
+    +'</table>'
+    +'<table><thead><tr><th>SKU</th><th>Tên sản phẩm</th><th class="nr">SL</th><th class="nr">Đơn giá</th><th class="nr">CK</th><th class="nr">Thành tiền</th></tr></thead>'
+    +'<tbody>'+itemRows+'</tbody></table>'
+    +'<table style="margin-top:6px;width:50%;margin-left:50%"><tr class="tot-row"><td>Tổng cộng</td><td class="nr">'+fmt(total)+'đ</td></tr>'
+    +'<tr><td>Đã trả</td><td class="nr"><input class="bi nr" data-f="paid" type="number" value="'+paid+'" style="text-align:right;width:100%"></td></tr>'
+    +'<tr class="tot-row"><td>Còn lại</td><td class="nr" id="debt">'+fmt(debt)+'đ</td></tr></table>'
+    +'<div class="bbar">'
+    +(key ? '<button class="bs" onclick="saveBill()">&#128190; Lưu</button>' : '')
+    +'<button class="bp" onclick="window.print()">&#128424; In hóa đơn</button>'
+    +'<button onclick="window.close()">Đóng</button>'
+    +'<div id="msg">&#10003; Đã lưu thành công!</div>'
+    +'</div>'
+    +'<script>var _k="'+key+'",_tot='+total+';'
+    +'document.querySelector("[data-f=paid]").addEventListener("input",function(){'
+    +'var debt=_tot-(parseFloat(this.value)||0);'
+    +'document.getElementById("debt").textContent=debt.toLocaleString("vi-VN")+"đ";'
+    +'});'
+    +'function saveBill(){'
+    +'var d={};'
+    +'document.querySelectorAll(".bi[data-f]").forEach(function(el){'
+    +'d[el.dataset.f]=el.type==="number"?(parseFloat(el.value)||0):el.value;'
+    +'});'
+    +'if(window.opener&&window.opener.saleSaveFromBill){'
+    +'window.opener.saleSaveFromBill(_k,d).then(function(){'
+    +'document.getElementById("msg").style.display="block";'
+    +'setTimeout(function(){document.getElementById("msg").style.display="none";},3000);'
+    +'});'
+    +'}else{alert("Không thể lưu. Mở lại phiếu từ trang chính.");}'
+    +'}'
+    +'</scr'+'ipt>'
+    +'</body></html>');
+  w.document.close();
+}
+
+window.saleSaveFromBill = async function(key, data) {
+  await updateItem('sales', key, data);
+};
 
 
 function openEditBH(sale) {
