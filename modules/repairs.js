@@ -169,16 +169,16 @@ export async function mount(container) {
   let selectedKey = null;
 let showTrash = false;
 
+  const searchEl   = container.querySelector('#rep-search');
+  const statusEl   = container.querySelector('#rep-status-filter');
+  const dateFromEl = container.querySelector('#rep-date-from');
+  const dateToEl   = container.querySelector('#rep-date-to');
   const unsub = onSnapshot(COLLECTION, items => {
     allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     filterData();
   });
   container.addEventListener('unmount', () => unsub && unsub());
 
-  const searchEl   = container.querySelector('#rep-search');
-  const statusEl   = container.querySelector('#rep-status-filter');
-  const dateFromEl = container.querySelector('#rep-date-from');
-  const dateToEl   = container.querySelector('#rep-date-to');
   const editBtn    = container.querySelector('#rep-edit-btn');
   const statusBtn = container.querySelector('#rep-status-btn');
   const delBtn     = container.querySelector('#rep-del-btn');
