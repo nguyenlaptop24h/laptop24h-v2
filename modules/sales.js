@@ -568,7 +568,7 @@ export async function mount(container) {
       (d.warranty?'<p style="font-size:12px;color:#555">B\u1ea3o h\u00e0nh: '+d.warranty+'</p>':'')+
       (d.note?'<p style="font-size:12px;color:#555">Ghi ch\u00fa: '+d.note+'</p>':'')+
       '<div class="sign"><div style="width:45%"><div class="line">Kh\u00e1ch h\u00e0ng</div></div><div style="width:45%"><div class="line">Ng\u01b0\u1eddi b\u00e1n</div></div></div>'+
-      '<div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:6px 20px;cursor:pointer">\uD83D\uDDB8 In h\u00f3a \u0111\u01a1n</button></div>'+
+      '<div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:6px 20px;cursor:pointer">\uD83D\uDDB8 In h\u00f3a \u0111\u01a1n</button><button onclick="if(window.opener){window.opener.document.getElementById(\'sale-act-edit-bh\').click();window.close();}" style="padding:6px 20px;cursor:pointer;margin-left:8px">✏️ Sửa nội dung</button></div>'+
       '</body></html>';
     var _pif = document.createElement('iframe');
     _pif.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
