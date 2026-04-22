@@ -1,4 +1,4 @@
-// modules/sales.js - Ban hang v38 (form rộng + in hóa đơn)
+// modules/sales.js - Ban hang v39 (chọn SP kho + BH đến ngày)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, formatVND } from '../core/ui.js';
@@ -690,6 +690,7 @@ export async function mount(container) {
         <div style="width:110px;text-align:right">Đơn giá</div>
         <div style="width:80px;text-align:right">Giảm</div>
         <div style="width:90px;text-align:right">Thành tiền</div>
+          <div style="width:118px;text-align:center">BH đến</div>
         <div style="width:22px"></div>
       </div>
       <div id="sf-rows"></div>
@@ -775,6 +776,7 @@ export async function mount(container) {
       <input class="sf-qty"   type="number" min="1"  title="Số lượng">
       <input class="sf-price" type="number" min="0"  title="Đơn giá" style="width:110px">
       <input class="sf-disc"  type="number" min="0"  title="Giảm giá" style="width:80px">
+      <input class="sf-bh-date" type="date" title="BH đến ngày" style="width:118px">
       <span class="sf-line-total">0đ</span>
       <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>`;
     wrap.appendChild(row);
@@ -784,6 +786,7 @@ export async function mount(container) {
     row.querySelector('.sf-qty').value   = data.qty      || 1;
     row.querySelector('.sf-price').value = data.price    || 0;
     row.querySelector('.sf-disc').value  = data.discount || 0;
+        row.querySelector('.sf-bh-date').value = data.bhDate   || '';
 
     const nameInput = row.querySelector('.sf-name');
     const drop = getOrCreateDrop();
@@ -816,7 +819,7 @@ export async function mount(container) {
         opt.onmousedown = e => {
           e.preventDefault();
           const p = invItems.find(x => x._key === opt.dataset.key);
-          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = p.price || 0; }
+          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = p.price || 0; const _wm = parseInt(p.warranty)||0; if(_wm>0){const _modal=container.querySelector('#sl-modal');const _sd=(_modal&&_modal.querySelector('#sf-date')&&_modal.querySelector('#sf-date').value)||new Date().toISOString().slice(0,10);const _d=new Date(_sd+'T00:00:00');_d.setMonth(_d.getMonth()+_wm);row.querySelector('.sf-bh-date').value=_d.toISOString().slice(0,10);} }
           hideDrop(); recalc();
         };
       });
@@ -872,6 +875,7 @@ export async function mount(container) {
         qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
         price:    parseFloat(row.querySelector('.sf-price').value) || 0,
         discount: parseFloat(row.querySelector('.sf-disc').value)  || 0,
+        bhDate:   (row.querySelector('.sf-bh-date')||{}).value || '',
       });
     });
     if (!items.length) { toast('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
@@ -935,6 +939,7 @@ export async function mount(container) {
         <td style="text-align:center">${it.qty || 1}</td>
         <td style="text-align:right">${fmt(it.price || 0)}</td>
         <td style="text-align:right">${it.discount ? '-' + fmt(it.discount) : '—'}</td>
+          <td style="text-align:center">${it.bhDate ? it.bhDate.split('-').reverse().join('/') : '&mdash;'}</td>
         <td style="text-align:right;font-weight:600">${fmt(line)}</td>
       </tr>`;
     }).join('');
@@ -1014,6 +1019,7 @@ export async function mount(container) {
       <th style="width:100px;text-align:right">Đơn giá</th>
       <th style="width:80px;text-align:right">Giảm</th>
       <th style="width:100px;text-align:right">Thành tiền</th>
+          <th style="width:100px;text-align:center">BH đến</th>
     </tr>
   </thead>
   <tbody>${itemRows}</tbody>
