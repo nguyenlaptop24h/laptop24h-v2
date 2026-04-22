@@ -1,4 +1,4 @@
-// modules/sales.js - Ban hang v41 (fix font print + truong BH den)
+// modules/sales.js - Ban hang v42 (fix font print + truong BH den)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, formatVND } from '../core/ui.js';
@@ -690,6 +690,7 @@ export async function mount(container) {
         <div style="width:56px;text-align:center">SL</div>
         <div style="width:110px;text-align:right">Đơn giá</div>
         <div style="width:80px;text-align:right">Giảm</div>
+        <div style="width:120px;text-align:center">Hết BH</div>
         <div style="width:90px;text-align:right">Thành tiền</div>
         <div style="width:22px"></div>
       </div>
