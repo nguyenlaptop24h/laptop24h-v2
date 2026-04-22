@@ -1,4 +1,4 @@
-// modules/sales.js - Ban hang v40 (phieu bao hanh moi + logo)
+// modules/sales.js - Ban hang v41 (fix font print + truong BH den)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, formatVND } from '../core/ui.js';
@@ -237,7 +237,8 @@ export async function mount(container) {
 .sf-name  { flex:1; min-width:0; }
 .sf-qty   { width:56px !important; text-align:center; }
 .sf-price { width:110px !important; text-align:right; }
-.sf-disc  { width:80px !important; text-align:right; }
+.sf-disc    { width:80px !important; text-align:right; }
+.sf-bh-date { width:120px !important; }
 .sf-line-total { width:90px; text-align:right; font-size:12px; font-weight:700; color:#1a3a6b; flex-shrink:0; }
 .sf-remove-btn {
   background:none; border:none; color:#ccc; cursor:pointer; font-size:15px;
@@ -774,7 +775,8 @@ export async function mount(container) {
       <input class="sf-name"  placeholder="Tên sản phẩm..." autocomplete="off" style="flex:1;min-width:0">
       <input class="sf-qty"   type="number" min="1"  title="Số lượng">
       <input class="sf-price" type="number" min="0"  title="Đơn giá" style="width:110px">
-      <input class="sf-disc"  type="number" min="0"  title="Giảm giá" style="width:80px">
+      <input class="sf-disc"    type="number" min="0"  title="Giảm giá" style="width:80px">
+      <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
       <span class="sf-line-total">0đ</span>
       <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>`;
     wrap.appendChild(row);
@@ -784,6 +786,7 @@ export async function mount(container) {
     row.querySelector('.sf-qty').value   = data.qty      || 1;
     row.querySelector('.sf-price').value = data.price    || 0;
     row.querySelector('.sf-disc').value  = data.discount || 0;
+    row.querySelector('.sf-bh-date').value = data.bhDate || '';
 
     const nameInput = row.querySelector('.sf-name');
     const drop = getOrCreateDrop();
@@ -872,6 +875,7 @@ export async function mount(container) {
         qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
         price:    parseFloat(row.querySelector('.sf-price').value) || 0,
         discount: parseFloat(row.querySelector('.sf-disc').value)  || 0,
+        bhDate:   row.querySelector('.sf-bh-date').value || null,
       });
     });
     if (!items.length) { toast('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
@@ -955,9 +959,11 @@ export async function mount(container) {
 <head>
 <meta charset="utf-8">
 <title>${invTitle} ${code}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;padding:28px 12px;color:#333}
+  body{font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;background:#f0f2f5;padding:28px 12px;color:#333}
   .page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
   .top-stripe{height:7px;background:linear-gradient(90deg,#00897b,#26a69a,#80cbc4)}
   .header{padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8f5e9}
@@ -1061,10 +1067,11 @@ export async function mount(container) {
 </div>
 </body></html>`;
 
-    const win = window.open('', '_blank', 'width=740,height=900,scrollbars=yes,resizable=yes');
-    if (!win) { toast('⚠ Vui lòng cho phép popup để in phiếu'); return; }
-    win.document.write(html);
-    win.document.close();
+    const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const win  = window.open(url, '_blank', 'width=740,height=900,scrollbars=yes,resizable=yes');
+    if (!win) { toast('⚠ Vui lòng cho phép popup để in phiếu'); URL.revokeObjectURL(url); return; }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
     win.focus();
   }
   // ══════════════════════════════════════════════
