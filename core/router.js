@@ -37,7 +37,7 @@ export function initRouter() {
   // Import tất cả modules đồng thời cùng ký routes
   Promise.allSettled([
     import('../modules/repairs.js?v=53'),
-    import('../modules/sales.js?v=38'),
+    import('../modules/sales.js?v=39'),
     import('../modules/inventory.js?v=19'),
     import('../modules/customers.js?v=3'),
     import('../modules/debts.js?v=3'),
