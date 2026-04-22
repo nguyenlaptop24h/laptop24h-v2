@@ -939,8 +939,8 @@ export async function mount(container) {
         <td style="text-align:center">${it.qty || 1}</td>
         <td style="text-align:right">${fmt(it.price || 0)}</td>
         <td style="text-align:right">${it.discount ? '-' + fmt(it.discount) : '—'}</td>
-          <td style="text-align:center">${it.bhDate ? it.bhDate.split('-').reverse().join('/') : '&mdash;'}</td>
         <td style="text-align:right;font-weight:600">${fmt(line)}</td>
+          <td style="text-align:center">${it.bhDate ? it.bhDate.split('-').reverse().join('/') : '&mdash;'}</td>
       </tr>`;
     }).join('');
 
