@@ -12,6 +12,7 @@ const _fn = n => {
 };
 new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(_fn)))
   .observe(document.body, {childList: true, subtree: true});
+_fn(document.body); // fix initial DOM (sidebar nav links)
 
 async function main() {
     await initDB();
