@@ -1,4 +1,4 @@
-// modules/sales.js - Ban hang v42 (fix font print + truong BH den)
+// modules/sales.js - Ban hang v43 (fix invItems tu Firestore + no-cors sheet)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
 import { toast, formatVND } from '../core/ui.js';
@@ -17,6 +17,7 @@ function logToSheet(data, action) {
   try {
     fetch(SALES_SHEET_URL, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...data })
     }).catch(() => {});
@@ -40,10 +41,8 @@ export async function mount(container) {
   let globalDrop = null;
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  try {
-    const snap = await firebase.database().ref('products').once('value');
-    snap.forEach(c => invItems.push({ _key: c.key, ...c.val() }));
-  } catch(e) {}
+  // Load sản phẩm từ Firestore (collection 'products' giống inventory.js)
+  const unsubProducts = onSnapshot('products', items => { invItems = items; });
 
   // ══════════════════════════════════════════════
   //  SHELL HTML
@@ -1122,6 +1121,7 @@ export async function mount(container) {
 
   container._cleanup = () => {
     if (unsub) { unsub(); unsub = null; }
+    if (unsubProducts) unsubProducts();
     hideDrop();
     if (globalDrop) { globalDrop.remove(); globalDrop = null; }
   };
