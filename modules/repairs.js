@@ -314,7 +314,7 @@ let showTrash = false;
       { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
       { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
     ,
-      { label: 'Thao tác', key: r => showTrash ? '<button onclick="window.__restoreRepair(\''+r.key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>' : '' }];
+      { label: 'Thao tác', key: r => showTrash ? '<button onclick="window.__restoreRepair(\''+r._key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>' : '' }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const trs = data.map(r =>
       '<tr class="rep-row" data-key="' + r._key + '">' +
@@ -522,7 +522,7 @@ function openForm(record) {
   }
 
   async function restoreRepair(key) {
-  const item = allData.find(r => r.key === key);
+  const item = allData.find(r => r._key === key);
   if (!item) return;
   const {deletedAt, ...rest} = item;
   try { await updateItem(COLLECTION, key, rest); toast('Khôi phục thành công'); filterData(); }
@@ -531,11 +531,17 @@ function openForm(record) {
 window.__restoreRepair = k => restoreRepair(k);
 
 async function confirmDelete(key) {
-    const ok = await showModal('Xác nhận', 'Xóa phiếu sửa chữa này?', true);
-    if (!ok) return;
-    const item = allData.find(r => r.key === key);
-    if (!item) return;
-    try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
-    catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    const item = allData.find(r => r._key === key);
+    if (!item) { toast('Không tìm thấy phiếu', 'error'); return; }
+    showModal({
+      title: 'Xác nhận xóa phiếu',
+      body: 'Xóa phiếu sửa chữa của <strong>' + (item.customerName||'') + '<\/strong>?',
+      danger: true,
+      confirmText: 'Xóa phiếu',
+      onConfirm: async () => {
+        try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
+        catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+      }
+    });
   }
 }
