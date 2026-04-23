@@ -224,6 +224,7 @@ export async function mount(container) {
 
   let allData = [];
   let selectedKey = null;
+  let selectedKeys = new Set();
 let showTrash = false;
 
   const searchEl   = container.querySelector('#rep-search');
@@ -261,7 +262,7 @@ let showTrash = false;
     const rec = allData.find(r => r._key === selectedKey);
     if (rec) openForm(rec);
   });
-  delBtn.addEventListener('click', () => { if (selectedKey) confirmDelete(selectedKey); });
+  delBtn.addEventListener('click', () => { if (selectedKeys.size) confirmDeleteKeys([...selectedKeys]); });
   printBtn.addEventListener('click', () => {
     const rec = allData.find(r => r._key === selectedKey);
     if (rec) printWarrantyBill(rec);
@@ -271,13 +272,19 @@ let showTrash = false;
 
   function setSelected(key) {
     selectedKey = key;
-    const on = !!key;
-    [editBtn, delBtn, printBtn, statusBtn, editBhBtn].forEach(b => { b.disabled = !on; b.style.opacity = on ? '1' : '.4'; });
-    selHint.style.display = on ? 'none' : '';
-    container.querySelectorAll('.rep-row').forEach(tr => {
-      tr.style.background = tr.dataset.key === key ? '#dbeafe' : '';
-    });
-    container.querySelectorAll('.rep-radio').forEach(rb => { rb.checked = rb.dataset.key === key; });
+    selectedKeys = key ? new Set([key]) : new Set();
+    updateBtnStates();
+    const selHint = container.querySelector('#rep-sel-hint');
+    if (selHint) selHint.textContent = key ? 'Đã chọn 1 phiếu' : '';
+  }
+
+  function updateBtnStates() {
+    const n = selectedKeys.size;
+    const one = n === 1;
+    selectedKey = one ? [...selectedKeys][0] : null;
+    [editBtn, printBtn, statusBtn, editBhBtn].forEach(b => { b.disabled = !one; b.style.opacity = one ? '1' : '.4'; });
+    delBtn.disabled = !n; delBtn.style.opacity = n ? '1' : '.4';
+    delBtn.textContent = n > 1 ? 'Xóa (' + n + ')' : 'Xóa';
   }
 
   function filterData() {
@@ -304,7 +311,7 @@ let showTrash = false;
     const wrap = container.querySelector('#rep-table-wrap');
     if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>'; return; }
     const cols = [
-      { label: '', key: r => '<input type="radio" class="rep-radio" data-key="' + r._key + '" name="rep-sel" style="cursor:pointer;accent-color:#2563eb">' },
+      { label: '<input type="checkbox" id="rep-chk-all" title="Chọn tất cả" style="cursor:pointer;accent-color:#2563eb">', key: r => '<input type="checkbox" class="rep-chk" data-key="' + r._key + '" style="cursor:pointer;accent-color:#2563eb">' },
       { label: 'Ngày nhận',  key: r => formatDate(r.receivedDate || r.ts) },
       { label: 'Khách hàng', key: r => r.customerName || '' },
       { label: 'SĐT',        key: r => r.phone || '' },
@@ -324,31 +331,46 @@ let showTrash = false;
     wrap.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">' +
       '<thead><tr style="background:#f9fafb">' + ths + '</tr></thead>' +
       '<tbody>' + trs + '</tbody></table></div>';
-    wrap.querySelectorAll('.rep-radio').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const rec = data.find(r => r._key === radio.dataset.key);
-        setSelected(rec ? rec._key : null);
+    const chkAll = wrap.querySelector('#rep-chk-all');
+    if (chkAll) chkAll.addEventListener('change', () => {
+      wrap.querySelectorAll('.rep-chk').forEach(c => { c.checked = chkAll.checked; });
+      selectedKeys = new Set(chkAll.checked ? data.map(r => r._key) : []);
+      updateBtnStates();
+    });
+    wrap.querySelectorAll('.rep-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.checked) selectedKeys.add(chk.dataset.key);
+        else selectedKeys.delete(chk.dataset.key);
+        const allChks = wrap.querySelectorAll('.rep-chk');
+        const ca = wrap.querySelector('#rep-chk-all');
+        if (ca) { ca.checked = [...allChks].every(x => x.checked); ca.indeterminate = !ca.checked && [...allChks].some(x => x.checked); }
+        updateBtnStates();
       });
     });
-    // Row click — select by clicking anywhere on the row
+    // Row click — toggle checkbox
     wrap.querySelectorAll('.rep-row').forEach(tr => {
       tr.style.cursor = 'pointer';
       tr.addEventListener('click', e => {
-        if (e.target.classList.contains('rep-radio')) return;
-        const key = tr.dataset.key;
-        setSelected(selectedKey === key ? null : key);
+        if (e.target.classList.contains('rep-chk') || e.target.tagName === 'BUTTON') return;
+        const chk = tr.querySelector('.rep-chk');
+        if (chk) { chk.checked = !chk.checked; chk.dispatchEvent(new Event('change')); }
       });
     });
   }
 
-  async function quickDeliver(record) {
+  function quickDeliver(record) {
     if (!record) return;
-    const ok = await showModal('Giao máy', 'Xác nhận giao máy cho: ' + record.customerName + '?', true);
-    if (!ok) return;
-    try {
-      await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: todayStr() });
-      toast('✅ Đã giao máy thành công');
-    } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    showModal({
+      title: 'Giao máy',
+      body: 'Xác nhận giao máy cho: <strong>' + (record.customerName||'') + '</strong>?',
+      confirmText: 'Giao máy',
+      onConfirm: async () => {
+        try {
+          await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: todayStr() });
+          toast('✅ Đã giao máy thành công');
+        } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+      }
+    });
   }
 
   function quickChangeStatus(record) {
@@ -530,18 +552,26 @@ function openForm(record) {
 }
 window.__restoreRepair = k => restoreRepair(k);
 
-async function confirmDelete(key) {
-    const item = allData.find(r => r._key === key);
-    if (!item) { toast('Không tìm thấy phiếu', 'error'); return; }
+async function confirmDeleteKeys(keys) {
+    if (!keys || !keys.length) return;
+    const names = keys.map(k => { const r = allData.find(x => x._key === k); return r ? (r.customerName||k) : k; }).join(', ');
     showModal({
-      title: 'Xác nhận xóa phiếu',
-      body: 'Xóa phiếu sửa chữa của <strong>' + (item.customerName||'') + '<\/strong>?',
+      title: 'Xác nhận xóa ' + keys.length + ' phiếu',
+      body: 'Xóa phiếu của: <strong>' + names + '</strong>?',
       danger: true,
-      confirmText: 'Xóa phiếu',
+      confirmText: 'Xóa ' + keys.length + ' phiếu',
       onConfirm: async () => {
-        try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); toast('Đã xóa phiếu'); setSelected(null); }
-        catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+        let ok = 0, fail = 0;
+        for (const key of keys) {
+          const item = allData.find(r => r._key === key);
+          if (!item) continue;
+          try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); ok++; }
+          catch(e) { fail++; }
+        }
+        selectedKeys = new Set(); updateBtnStates();
+        toast(ok + ' phiếu đã xóa' + (fail ? ', ' + fail + ' lỗi' : ''));
       }
     });
   }
+  async function confirmDelete(key) { confirmDeleteKeys([key]); }
 }
