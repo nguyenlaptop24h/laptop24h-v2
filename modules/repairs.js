@@ -555,21 +555,31 @@ window.__restoreRepair = k => restoreRepair(k);
 async function confirmDeleteKeys(keys) {
     if (!keys || !keys.length) return;
     const names = keys.map(k => { const r = allData.find(x => x._key === k); return r ? (r.customerName||k) : k; }).join(', ');
+    const perm = showTrash;
     showModal({
-      title: 'Xác nhận xóa ' + keys.length + ' phiếu',
+      title: (perm ? 'Xóa vĩnh viễn ' : 'Xác nhận xóa ') + keys.length + ' phiếu',
       body: 'Xóa phiếu của: <strong>' + names + '</strong>?',
       danger: true,
-      confirmText: 'Xóa ' + keys.length + ' phiếu',
+      confirmText: (perm ? 'Xóa vĩnh viễn ' : 'Xóa ') + keys.length + ' phiếu',
       onConfirm: async () => {
         let ok = 0, fail = 0;
         for (const key of keys) {
-          const item = allData.find(r => r._key === key);
-          if (!item) continue;
-          try { await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()}); ok++; }
-          catch(e) { fail++; }
+          try {
+            if (perm) {
+              await deleteItem(COLLECTION, key);
+              allData = allData.filter(r => r._key !== key);
+            } else {
+              const item = allData.find(r => r._key === key);
+              if (!item) { fail++; continue; }
+              await updateItem(COLLECTION, key, {...item, deletedAt: Date.now()});
+              allData = allData.map(r => r._key === key ? {...r, deletedAt: Date.now()} : r);
+            }
+            ok++;
+          } catch(e) { fail++; }
         }
+        filterData();
         selectedKeys = new Set(); updateBtnStates();
-        toast(ok + ' phiếu đã xóa' + (fail ? ', ' + fail + ' lỗi' : ''));
+        toast(ok + ' phiếu đã ' + (perm ? 'xóa vĩnh viễn' : 'xóa') + (fail ? ', ' + fail + ' lỗi' : ''));
       }
     });
   }
