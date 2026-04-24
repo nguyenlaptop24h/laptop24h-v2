@@ -294,7 +294,7 @@ let showTrash = false;
     const to   = dateToEl.value;
     const filtered = allData.filter(r => {
       if (showTrash) return !!r.deletedAt;
-      if (r.deletedAt) return false;
+      if (r.deletedAt) { console.log('[v57-debug] FILTERED OUT key='+r._key+' name='+r.customerName+' deletedAt='+r.deletedAt); return false; }
       const matchQ = !q || (r.customerName||'').toLowerCase().includes(q) ||
         (r.phone||'').toLowerCase().includes(q) || (r.device||'').toLowerCase().includes(q) ||
         (r.serial||'').toLowerCase().includes(q);
