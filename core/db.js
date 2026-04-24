@@ -37,7 +37,10 @@ export function onSnapshot(collection, callback) {
   const ref = db.ref(collection);
   ref.on('value', snap => {
     const data = snap.val() || {};
-    const items = Object.entries(data).map(([key, val]) => ({ _key: key, ...val }));
+    const items = Object.entries(data).map(([key, val]) => {
+      const { _key: storedKey, ...rest } = val;
+      return { _key: key, ...rest };
+    });
     callback(items);
   });
   return () => ref.off('value');
@@ -71,7 +74,7 @@ export function queryByField(collection, field, value) {
 }
 
 export function formatVND(amount) {
-  return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
+  return Number(amount || 0).toLocaleString('vi-VN') + ' Ä';
 }
 
 export function parseVND(str) {
