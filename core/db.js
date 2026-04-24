@@ -74,7 +74,7 @@ export function queryByField(collection, field, value) {
 }
 
 export function formatVND(amount) {
-  return Number(amount || 0).toLocaleString('vi-VN') + ' Ä';
+  return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
 }
 
 export function parseVND(str) {
