@@ -39,8 +39,8 @@ export async function mount(container) {
       ]);
 
       // Filter by period (using ts timestamp)
-      const repFiltered = repairs.filter(r => inRange(r.ts, from, to));
-      const saleFiltered = sales.filter(s => inRange(s.ts, from, to));
+      const repFiltered = repairs.filter(r => inRange(r.ts || r.createdAt, from, to));
+      const saleFiltered = sales.filter(s => inRange(s.ts || s.createdAt, from, to));
 
       // Repairs stats: profit = cost - capital - discount
       const repRevenue = repFiltered.reduce((s, r) => s + (r.cost || 0), 0);
