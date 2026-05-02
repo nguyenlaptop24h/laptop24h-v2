@@ -41,7 +41,7 @@ export function initRouter() {
     import('../modules/inventory.js?v=19'),
     import('../modules/customers.js?v=3'),
     import('../modules/debts.js?v=3'),
-    import('../modules/stats.js?v=3'),
+    import('../modules/stats.js?v=4'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=3'),
   ]).then(([repairs, sales, inventory, customers, debts, stats, users, settings]) => {
