@@ -44,7 +44,7 @@ export async function mount(container) {
 
       // Repairs stats: profit = cost - capital - discount
       const repRevenue = repFiltered.reduce((s, r) => s + (r.cost || 0), 0);
-      const repCapital  = repFiltered.reduce((s, r) => s + (r.capital || 0), 0);
+      const repCapital  = repFiltered.reduce((s, r) => s + (r.partsCost || 0), 0);
       const repDiscount = repFiltered.reduce((s, r) => s + (r.discount || 0), 0);
       const repProfit   = repRevenue - repCapital - repDiscount;
 
