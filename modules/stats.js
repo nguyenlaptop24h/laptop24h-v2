@@ -99,11 +99,11 @@ export async function mount(container) {
         return { from: new Date(now.getFullYear(), now.getMonth(), 1).getTime(), to: Date.now() };
       case 'last_month': {
         const fm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      2 const to = new Date(now.getFullYear(), now.getMonth(), 1).getTime() - 1;
+        const to = new Date(now.getFullYear(), now.getMonth(), 1).getTime() - 1;
         return { from: fm.getTime(), to };
       }
       case 'year':
-     2  return { from: new Date(now.getFullYear(), 0, 1).getTime(), to: Date.now() };
+        return { from: new Date(now.getFullYear(), 0, 1).getTime(), to: Date.now() };
       case 'custom': {
         // Dùng local time để tránh lệch múi giờ UTC+7
         const f = fromEl.value
@@ -154,7 +154,7 @@ export async function mount(container) {
             <th>Tên sản phẩm</th>
             <th>Danh mục</th>
             <th>Tồn kho</th>
-    2     </tr>
+          </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -187,7 +187,7 @@ export async function mount(container) {
       const saleF = sales.filter(s => inRange(s.ts || s.createdAt, from, to));
 
       // ── Repairs ──
- 2    const repRevenue  = repF.reduce((s, r) => s + (r.cost       || 0), 0);
+      const repRevenue  = repF.reduce((s, r) => s + (r.cost       || 0), 0);
       const repCapital  = repF.reduce((s, r) => s + (r.partsCost  || 0), 0);
       const repDiscount = repF.reduce((s, r) => s + (r.discount   || 0), 0);
       const repDeposit  = repF.reduce((s, r) => s + (r.deposit    || 0), 0);
@@ -210,7 +210,7 @@ export async function mount(container) {
           const ca = (a.category || a.type || '').toLowerCase();
           const cb = (b.category || b.type || '').toLowerCase();
           if (ca !== cb) return ca.localeCompare(cb, 'vi');
-      2   return (a.name || '').localeCompare(b.name || '', 'vi');
+          return (a.name || '').localeCompare(b.name || '', 'vi');
         });
       _curPage = 1;
 
@@ -228,17 +228,17 @@ export async function mount(container) {
             <h3 class="rep-hdr">🔧 Sửa chữa &mdash; ${lbl}</h3>
             <div class="st-row">
               <span class="st-label">Doanh thu</span>
-      2      <span class="st-val blue">${formatVND(repRevenue)}</span>
+              <span class="st-val blue">${formatVND(repRevenue)}</span>
             </div>
             <div class="st-row">
-              <span class="st-label">Vốn linh kieện</span>
+              <span class="st-label">Vốn linh kiện</span>
               <span class="st-val">${formatVND(repCapital)}</span>
             </div>
             <div class="st-row">
- 2            <span class="st-label">Chiết khấu</span>
+              <span class="st-label">Chiết khấu</span>
               <span class="st-val">${formatVND(repDiscount)}</span>
             </div>
-     2      <div class="st-row" style="border-top:2px solid #e3f2fd;margin-top:4px;padding-top:8px;">
+            <div class="st-row" style="border-top:2px solid #e3f2fd;margin-top:4px;padding-top:8px;">
               <span class="st-label" style="font-weight:600">Lợi nhuận</span>
               <span class="st-val ${repProfit >= 0 ? 'green' : 'red'}" style="font-size:15px">${formatVND(repProfit)}</span>
             </div>
@@ -248,7 +248,7 @@ export async function mount(container) {
             </div>
             <div class="st-row">
               <span class="st-label">Còn nợ</span>
-   2          <span class="st-val ${repDebt > 0 ? 'red' : ''}">${formatVND(Math.max(0, repDebt))}</span>
+              <span class="st-val ${repDebt > 0 ? 'red' : ''}">${formatVND(Math.max(0, repDebt))}</span>
             </div>
             <div class="st-row">
               <span class="st-label">Số phiếu</span>
@@ -266,13 +266,13 @@ export async function mount(container) {
           <div class="st-panel">
             <h3 class="sale-hdr">💻 Bán hàng &mdash; ${lbl}</h3>
             <div class="st-row">
-            2 <span class="st-label">Doanh thu</span>
+              <span class="st-label">Doanh thu</span>
               <span class="st-val blue">${formatVND(saleRevenue)}</span>
             </div>
             <div class="st-row">
               <span class="st-label">Đã thu</span>
               <span class="st-val green">${formatVND(salePaid)}</span>
-         2  </div>
+            </div>
             <div class="st-row">
               <span class="st-label">Còn nợ</span>
               <span class="st-val ${saleDebt > 0 ? 'red' : ''}">${formatVND(Math.max(0, saleDebt))}</span>
@@ -290,7 +290,7 @@ export async function mount(container) {
               <div class="st-row">
                 <span class="st-label">Số sản phẩm sắp hết</span>
                 <span class="st-val ${_lowStock.length > 0 ? 'red' : 'green'}">${_lowStock.length} sản phẩm</span>
-          2   </div>
+              </div>
               <div class="st-row">
                 <span class="st-label">Giá trị kho (vốn)</span>
                 <span class="st-val">${formatVND(totalStock)}</span>
