@@ -1,9 +1,20 @@
-// modules/stats.js - Thong ke v7
+// modules/stats.js - Thong ke v9
 import { registerRoute } from '../core/router.js';
 import { getAll } from '../core/db.js';
 import { formatVND } from '../core/ui.js';
 
 registerRoute('#stats', mount);
+
+function loadChartJs() {
+  return new Promise((resolve, reject) => {
+    if (window.Chart) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
 export async function mount(container) {
   container.innerHTML = `
@@ -36,59 +47,69 @@ export async function mount(container) {
 .st-pg button:hover:not(:disabled){background:#f0f0f0;}
 .st-pg button:disabled{opacity:0.4;cursor:default;}
 .st-pg span{font-size:13px;color:#666;}
-@media(max-width:600px){.st-grid{grid-template-columns:1fr;}}
+.st-chart-wrap{position:relative;height:260px;width:100%;}
+@media(max-width:600px){.st-grid{grid-template-columns:1fr;}.st-chart-wrap{height:200px;}}
 </style>
     <div class="module-header">
-      <h2>Thống kê</h2>
+      <h2>Th&#7889;ng k&#234;</h2>
       <div class="module-actions" style="flex-wrap:wrap;gap:8px;">
         <select id="st-period" class="search-input" style="width:160px">
-          <option value="today">Hôm nay</option>
-          <option value="week">7 ngày qua</option>
-          <option value="month" selected>Tháng này</option>
-          <option value="last_month">Tháng trước</option>
-          <option value="year">Năm nay</option>
-          <option value="custom">Tùy chọn ngày...</option>
-          <option value="all">Tất cả</option>
+          <option value="today">H&#244;m nay</option>
+          <option value="week">7 ng&#224;y qua</option>
+          <option value="month" selected>Th&#225;ng n&#224;y</option>
+          <option value="last_month">Th&#225;ng tr&#432;&#7899;c</option>
+          <option value="year">N&#259;m nay</option>
+          <option value="single">Ng&#224;y c&#7909; th&#7875;</option>
+          <option value="custom">T&#249; ch&#7885;n ng&#224;y...</option>
+          <option value="all">T&#7845;t c&#7843;</option>
         </select>
+        <div id="st-single-wrap" class="st-custom">
+          <input type="date" id="st-single" class="search-input" style="width:150px">
+          <button id="st-apply-single" class="btn btn--primary" style="padding:5px 12px">Xem</button>
+        </div>
         <div id="st-custom-wrap" class="st-custom">
           <input type="date" id="st-from" class="search-input" style="width:140px">
-          <span>—</span>
+          <span>&#8212;</span>
           <input type="date" id="st-to" class="search-input" style="width:140px">
           <button id="st-apply" class="btn btn--primary" style="padding:5px 12px">Xem</button>
         </div>
-        <button id="st-refresh" class="btn btn--secondary">Làm mới</button>
+        <button id="st-refresh" class="btn btn--secondary">L&#224;m m&#7899;i</button>
       </div>
     </div>
-    <div id="st-content"><p style="padding:1rem;color:#888">Đang tải...</p></div>
+    <div id="st-content"><p style="padding:1rem;color:#888">&#272;ang t&#7843;i...</p></div>
   `;
 
-  const periodEl = container.querySelector('#st-period');
+  const periodEl   = container.querySelector('#st-period');
   const customWrap = container.querySelector('#st-custom-wrap');
-  const fromEl = container.querySelector('#st-from');
-  const toEl = container.querySelector('#st-to');
+  const singleWrap = container.querySelector('#st-single-wrap');
+  const fromEl     = container.querySelector('#st-from');
+  const toEl       = container.querySelector('#st-to');
+  const singleEl   = container.querySelector('#st-single');
 
-  // Default custom range = today
   const todayStr = new Date().toISOString().slice(0, 10);
-  fromEl.value = todayStr;
-  toEl.value = todayStr;
+  fromEl.value   = todayStr;
+  toEl.value     = todayStr;
+  singleEl.value = todayStr;
 
-  // Pagination state
-  let _lowStock = [];
-  let _curPage = 1;
-  const PAGE_SIZE = 10;
+  let _lowStock      = [];
+  let _curPage       = 1;
+  let _chartInstance = null;
+  const PAGE_SIZE    = 10;
 
   periodEl.addEventListener('change', () => {
-    const isCustom = periodEl.value === 'custom';
-    customWrap.classList.toggle('show', isCustom);
-    if (!isCustom) loadStats();
+    const val = periodEl.value;
+    customWrap.classList.toggle('show', val === 'custom');
+    singleWrap.classList.toggle('show', val === 'single');
+    if (val !== 'custom' && val !== 'single') loadStats();
   });
   container.querySelector('#st-apply').addEventListener('click', loadStats);
+  container.querySelector('#st-apply-single').addEventListener('click', loadStats);
   container.querySelector('#st-refresh').addEventListener('click', loadStats);
   loadStats();
 
   // ─── helpers ────────────────────────────────────────────
   function getPeriodRange(period) {
-    const now = new Date();
+    const now   = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     switch (period) {
       case 'today':
@@ -104,14 +125,16 @@ export async function mount(container) {
       }
       case 'year':
         return { from: new Date(now.getFullYear(), 0, 1).getTime(), to: Date.now() };
+      case 'single': {
+        const d = singleEl.value || todayStr;
+        return {
+          from: new Date(d + 'T00:00:00').getTime(),
+          to:   new Date(d + 'T23:59:59').getTime()
+        };
+      }
       case 'custom': {
-        // Dùng local time để tránh lệch múi giờ UTC+7
-        const f = fromEl.value
-          ? new Date(fromEl.value + 'T00:00:00').getTime()
-          : 0;
-        const t = toEl.value
-          ? new Date(toEl.value + 'T23:59:59').getTime()
-          : Date.now();
+        const f = fromEl.value ? new Date(fromEl.value + 'T00:00:00').getTime() : 0;
+        const t = toEl.value   ? new Date(toEl.value   + 'T23:59:59').getTime() : Date.now();
         return { from: f, to: t };
       }
       default:
@@ -124,21 +147,94 @@ export async function mount(container) {
     return ts >= from && ts <= to;
   }
 
-  // ─── render low-stock table (phân trang) ───────────────
+  // ─── revenue chart ──────────────────────────────────────
+  async function renderRevenueChart(repF, saleF, from, to) {
+    const canvas = container.querySelector('#st-chart');
+    if (!canvas) return;
+    try { await loadChartJs(); } catch (e) {
+      canvas.parentElement.innerHTML = '<p style="color:#888;text-align:center;padding:20px">Kh&#244;ng t&#7843;i &#273;&#432;&#7907;c Chart.js</p>';
+      return;
+    }
+    try { if (_chartInstance) { _chartInstance.destroy(); } } catch (_) {}
+    _chartInstance = null;
+
+    const diffDays = Math.ceil((to - from) / 86400000);
+    const labels = [], repData = [], saleData = [];
+
+    if (diffDays <= 1) {
+      // Hourly
+      const baseDay = new Date(from); baseDay.setHours(0,0,0,0);
+      for (let h = 0; h < 24; h++) {
+        labels.push(h + ':00');
+        const hS = new Date(baseDay); hS.setHours(h,0,0,0);
+        const hE = new Date(baseDay); hE.setHours(h,59,59,999);
+        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt, hS.getTime(), hE.getTime())).reduce((s,r)=>s+(r.cost||0),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+(sl.total||0),0));
+      }
+    } else if (diffDays <= 62) {
+      // Daily
+      const d0 = new Date(from); d0.setHours(0,0,0,0);
+      for (let d = new Date(d0); d.getTime() <= to; d.setDate(d.getDate()+1)) {
+        labels.push(d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}));
+        const dS = d.getTime(), dE = dS + 86399999;
+        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt,dS,dE)).reduce((s,r)=>s+(r.cost||0),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+(sl.total||0),0));
+      }
+    } else {
+      // Monthly
+      const m0 = new Date(from); m0.setDate(1); m0.setHours(0,0,0,0);
+      let cur = new Date(m0);
+      while (cur.getTime() <= to) {
+        labels.push((cur.getMonth()+1)+'/'+cur.getFullYear());
+        const mS = cur.getTime();
+        const nx = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+        const mE = nx.getTime()-1;
+        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt,mS,mE)).reduce((s,r)=>s+(r.cost||0),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+(sl.total||0),0));
+        cur = nx;
+      }
+    }
+
+    _chartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Sửa chữa', data: repData,  backgroundColor:'rgba(33,150,243,0.7)', borderColor:'#2196F3', borderWidth:1 },
+          { label: 'Bán hàng',  data: saleData, backgroundColor:'rgba(76,175,80,0.7)',  borderColor:'#4CAF50', borderWidth:1 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label+': '+formatVND(ctx.parsed.y) } }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }
+          }
+        }
+      }
+    });
+  }
+
+  // ─── low-stock table ────────────────────────────────────
   function renderLowStockTable(page) {
     _curPage = page;
-    const total = _lowStock.length;
+    const total      = _lowStock.length;
     const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
-    const start = (page - 1) * PAGE_SIZE;
-    const slice = _lowStock.slice(start, start + PAGE_SIZE);
+    const start      = (page - 1) * PAGE_SIZE;
+    const slice      = _lowStock.slice(start, start + PAGE_SIZE);
 
     const rows = slice.map(p => {
       const cat = p.category || p.type || '—';
-      const s = p.stock || 0;
+      const s   = p.stock || 0;
       const cls = s === 0 ? 'stock-zero' : 'stock-low';
       return `<tr>
-        <td>${p.code || p.id || '—'}</td>
-        <td>${p.name || '—'}</td>
+        <td>${p.code||p.id||'—'}</td>
+        <td>${p.name||'—'}</td>
         <td><span class="cat-badge">${cat}</span></td>
         <td class="${cls}">${s}</td>
       </tr>`;
@@ -148,165 +244,144 @@ export async function mount(container) {
     if (!wrap) return;
     wrap.innerHTML = `
       <table class="st-tbl">
-        <thead>
-          <tr>
-            <th>Mã SP</th>
-            <th>Tên sản phẩm</th>
-            <th>Danh mục</th>
-            <th>Tồn kho</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>M&#227; SP</th><th>T&#234;n s&#7843;n ph&#7849;m</th>
+          <th>Danh m&#7909;c</th><th>T&#7891;n kho</th>
+        </tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="st-pg">
-        <button id="st-pg-prev" ${page <= 1 ? 'disabled' : ''}>‹ Trước</button>
+        <button id="st-pg-prev" ${page<=1?'disabled':''}>&#8249; Tr&#432;&#7899;c</button>
         <span>Trang ${page} / ${totalPages} &nbsp;(${total} SP)</span>
-        <button id="st-pg-next" ${page >= totalPages ? 'disabled' : ''}>Sau ›</button>
-      </div>
-    `;
-
-    wrap.querySelector('#st-pg-prev')?.addEventListener('click', () => renderLowStockTable(_curPage - 1));
-    wrap.querySelector('#st-pg-next')?.addEventListener('click', () => renderLowStockTable(_curPage + 1));
+        <button id="st-pg-next" ${page>=totalPages?'disabled':''}>Sau &#8250;</button>
+      </div>`;
+    wrap.querySelector('#st-pg-prev')?.addEventListener('click',()=>renderLowStockTable(_curPage-1));
+    wrap.querySelector('#st-pg-next')?.addEventListener('click',()=>renderLowStockTable(_curPage+1));
   }
 
   // ─── main load ──────────────────────────────────────────
   async function loadStats() {
     const content = container.querySelector('#st-content');
-    content.innerHTML = `<p style="padding:1rem;color:#888">Đang tải...</p>`;
+    content.innerHTML = `<p style="padding:1rem;color:#888">&#272;ang t&#7843;i...</p>`;
     const period = periodEl.value;
     const { from, to } = getPeriodRange(period);
 
     try {
       const [repairs, sales, products] = await Promise.all([
-        getAll('repairs'),
-        getAll('sales'),
-        getAll('products'),
+        getAll('repairs'), getAll('sales'), getAll('products')
       ]);
 
       const repF  = repairs.filter(r => inRange(r.ts || r.createdAt, from, to));
-      const saleF = sales.filter(s => inRange(s.ts || s.createdAt, from, to));
+      const saleF = sales.filter(s   => inRange(s.ts || s.createdAt, from, to));
 
       // ── Repairs ──
-      const repRevenue  = repF.reduce((s, r) => s + (r.cost       || 0), 0);
-      const repCapital  = repF.reduce((s, r) => s + (r.partsCost  || 0), 0);
-      const repDiscount = repF.reduce((s, r) => s + (r.discount   || 0), 0);
-      const repDeposit  = repF.reduce((s, r) => s + (r.deposit    || 0), 0);
+      const repRevenue  = repF.reduce((s,r)=>s+(r.cost||0),0);
+      const repCapital  = repF.reduce((s,r)=>s+(r.partsCost||0),0);
+      const repDiscount = repF.reduce((s,r)=>s+(r.discount||0),0);
+      const repDeposit  = repF.reduce((s,r)=>s+(r.deposit||0),0);
       const repProfit   = repRevenue - repCapital - repDiscount;
       const repDebt     = repRevenue - repDeposit - repDiscount;
 
       const statusMap = {};
-      repF.forEach(r => { const k = r.status || 'Tiếp nhận'; statusMap[k] = (statusMap[k] || 0) + 1; });
+      repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
 
       // ── Sales ──
-      const saleRevenue = saleF.reduce((s, sl) => s + (sl.total || 0), 0);
-      const salePaid    = saleF.reduce((s, sl) => s + (sl.paid  || 0), 0);
+      const productMap = {};
+      products.forEach(p=>{ if(p.id) productMap[p.id]=p; });
+
+      const saleRevenue = saleF.reduce((s,sl)=>s+(sl.total||0),0);
+      const salePaid    = saleF.reduce((s,sl)=>s+(sl.paid||0),0);
       const saleDebt    = saleRevenue - salePaid;
 
+      let saleCapital = 0;
+      for (const sl of saleF) {
+        for (const it of (sl.items||[])) {
+          const prodId = it.id||it.prodId||it.productId;
+          const prod   = prodId ? productMap[prodId] : null;
+          const cost   = prod?.cost ?? it.cost ?? 0;
+          saleCapital += (it.qty||it.quantity||1) * cost;
+        }
+      }
+      const saleProfit = saleRevenue - saleCapital;
+
       // ── Inventory ──
-      // Sắp xếp theo danh mục, rồi theo tên
       _lowStock = products
-        .filter(p => (p.stock ?? 0) <= 3 && !p.deletedAt)
-        .sort((a, b) => {
-          const ca = (a.category || a.type || '').toLowerCase();
-          const cb = (b.category || b.type || '').toLowerCase();
-          if (ca !== cb) return ca.localeCompare(cb, 'vi');
-          return (a.name || '').localeCompare(b.name || '', 'vi');
+        .filter(p=>(p.stock??0)<=3 && !p.deletedAt)
+        .sort((a,b)=>{
+          const ca=(a.category||a.type||'').toLowerCase();
+          const cb=(b.category||b.type||'').toLowerCase();
+          if(ca!==cb) return ca.localeCompare(cb,'vi');
+          return (a.name||'').localeCompare(b.name||'','vi');
         });
       _curPage = 1;
 
       const totalStock = products
-        .filter(p => !p.deletedAt)
-        .reduce((s, p) => s + (p.stock || 0) * (p.cost || 0), 0);
+        .filter(p=>!p.deletedAt)
+        .reduce((s,p)=>s+(p.stock||0)*(p.cost||0),0);
 
-      const lbl = periodEl.options[periodEl.selectedIndex]?.text || '';
+      let lbl = periodEl.options[periodEl.selectedIndex]?.text || '';
+      if (period==='single' && singleEl.value)
+        lbl = new Date(singleEl.value+'T00:00:00').toLocaleDateString('vi-VN');
 
       content.innerHTML = `
         <div class="st-grid">
 
-          <!-- ══ SUA CHUA ══ -->
-          <div class="st-panel">
-            <h3 class="rep-hdr">🔧 Sửa chữa &mdash; ${lbl}</h3>
-            <div class="st-row">
-              <span class="st-label">Doanh thu</span>
-              <span class="st-val blue">${formatVND(repRevenue)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Vốn linh kiện</span>
-              <span class="st-val">${formatVND(repCapital)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Chiết khấu</span>
-              <span class="st-val">${formatVND(repDiscount)}</span>
-            </div>
-            <div class="st-row" style="border-top:2px solid #e3f2fd;margin-top:4px;padding-top:8px;">
-              <span class="st-label" style="font-weight:600">Lợi nhuận</span>
-              <span class="st-val ${repProfit >= 0 ? 'green' : 'red'}" style="font-size:15px">${formatVND(repProfit)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Đã đặt cọc</span>
-              <span class="st-val green">${formatVND(repDeposit)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Còn nợ</span>
-              <span class="st-val ${repDebt > 0 ? 'red' : ''}">${formatVND(Math.max(0, repDebt))}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Số phiếu</span>
-              <span class="st-val">${repF.length}</span>
-            </div>
-            ${Object.keys(statusMap).length > 0 ? `
-            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;">
-              ${Object.entries(statusMap).map(([k, v]) =>
-                `<div class="st-row"><span class="st-label" style="font-size:12px">${k}</span><span style="font-size:12px;font-weight:600">${v}</span></div>`
-              ).join('')}
-            </div>` : ''}
-          </div>
-
-          <!-- ══ BAN HANG ══ -->
-          <div class="st-panel">
-            <h3 class="sale-hdr">💻 Bán hàng &mdash; ${lbl}</h3>
-            <div class="st-row">
-              <span class="st-label">Doanh thu</span>
-              <span class="st-val blue">${formatVND(saleRevenue)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Đã thu</span>
-              <span class="st-val green">${formatVND(salePaid)}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Còn nợ</span>
-              <span class="st-val ${saleDebt > 0 ? 'red' : ''}">${formatVND(Math.max(0, saleDebt))}</span>
-            </div>
-            <div class="st-row">
-              <span class="st-label">Số đơn hàng</span>
-              <span class="st-val">${saleF.length}</span>
-            </div>
-          </div>
-
-          <!-- ══ KHO HANG ══ -->
+          <!-- BIEU DO -->
           <div class="st-panel st-full">
-            <h3>📦 Kho hàng &mdash; Hàng sắp hết (≤3)</h3>
+            <h3>&#128200; Bi&#7875;u &#273;&#7891; doanh thu &mdash; ${lbl}</h3>
+            <div class="st-chart-wrap"><canvas id="st-chart"></canvas></div>
+          </div>
+
+          <!-- SUA CHUA -->
+          <div class="st-panel">
+            <h3 class="rep-hdr">&#128295; S&#7917;a ch&#7919;a &mdash; ${lbl}</h3>
+            <div class="st-row"><span class="st-label">Doanh thu</span><span class="st-val blue">${formatVND(repRevenue)}</span></div>
+            <div class="st-row"><span class="st-label">V&#7889;n linh ki&#7879;n</span><span class="st-val">${formatVND(repCapital)}</span></div>
+            <div class="st-row"><span class="st-label">Chi&#7871;t kh&#7845;u</span><span class="st-val">${formatVND(repDiscount)}</span></div>
+            <div class="st-row" style="border-top:2px solid #e3f2fd;margin-top:4px;padding-top:8px;">
+              <span class="st-label" style="font-weight:600">L&#7907;i nhu&#7853;n</span>
+              <span class="st-val ${repProfit>=0?'green':'red'}" style="font-size:15px">${formatVND(repProfit)}</span>
+            </div>
+            <div class="st-row"><span class="st-label">&#272;&#227; &#273;&#7863;t c&#7885;c</span><span class="st-val green">${formatVND(repDeposit)}</span></div>
+            <div class="st-row"><span class="st-label">C&#242;n n&#7907;</span><span class="st-val ${repDebt>0?'red':''}">${formatVND(Math.max(0,repDebt))}</span></div>
+            <div class="st-row"><span class="st-label">S&#7889; phi&#7871;u</span><span class="st-val">${repF.length}</span></div>
+            ${Object.keys(statusMap).length>0?`
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;">
+              ${Object.entries(statusMap).map(([k,v])=>`<div class="st-row"><span class="st-label" style="font-size:12px">${k}</span><span style="font-size:12px;font-weight:600">${v}</span></div>`).join('')}
+            </div>`:''}
+          </div>
+
+          <!-- BAN HANG -->
+          <div class="st-panel">
+            <h3 class="sale-hdr">&#128187; B&#225;n h&#224;ng &mdash; ${lbl}</h3>
+            <div class="st-row"><span class="st-label">Doanh thu</span><span class="st-val blue">${formatVND(saleRevenue)}</span></div>
+            <div class="st-row"><span class="st-label">Gi&#225; v&#7889;n h&#224;ng b&#225;n</span><span class="st-val">${formatVND(saleCapital)}</span></div>
+            <div class="st-row" style="border-top:2px solid #e8f5e9;margin-top:4px;padding-top:8px;">
+              <span class="st-label" style="font-weight:600">L&#7907;i nhu&#7853;n</span>
+              <span class="st-val ${saleProfit>=0?'green':'red'}" style="font-size:15px">${formatVND(saleProfit)}</span>
+            </div>
+            <div class="st-row"><span class="st-label">&#272;&#227; thu</span><span class="st-val green">${formatVND(salePaid)}</span></div>
+            <div class="st-row"><span class="st-label">C&#242;n n&#7907;</span><span class="st-val ${saleDebt>0?'red':''}">${formatVND(Math.max(0,saleDebt))}</span></div>
+            <div class="st-row"><span class="st-label">S&#7889; &#273;&#417;n h&#224;ng</span><span class="st-val">${saleF.length}</span></div>
+          </div>
+
+          <!-- KHO HANG -->
+          <div class="st-panel st-full">
+            <h3>&#128230; Kho h&#224;ng &mdash; H&#224;ng s&#7855;p h&#7871;t (&#8804;3)</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-              <div class="st-row">
-                <span class="st-label">Số sản phẩm sắp hết</span>
-                <span class="st-val ${_lowStock.length > 0 ? 'red' : 'green'}">${_lowStock.length} sản phẩm</span>
-              </div>
-              <div class="st-row">
-                <span class="st-label">Giá trị kho (vốn)</span>
-                <span class="st-val">${formatVND(totalStock)}</span>
-              </div>
+              <div class="st-row"><span class="st-label">S&#7889; s&#7843;n ph&#7849;m s&#7855;p h&#7871;t</span><span class="st-val ${_lowStock.length>0?'red':'green'}">${_lowStock.length} s&#7843;n ph&#7849;m</span></div>
+              <div class="st-row"><span class="st-label">Gi&#225; tr&#7883; kho (v&#7889;n)</span><span class="st-val">${formatVND(totalStock)}</span></div>
             </div>
             <div id="st-lowstock-wrap"></div>
           </div>
 
-        </div>
-      `;
+        </div>`;
 
-      // Render bảng phân trang
       renderLowStockTable(1);
+      renderRevenueChart(repF, saleF, from, to);
 
     } catch (e) {
-      content.innerHTML = `<p style="padding:1rem;color:red">Lỗi: ${e.message}</p>`;
+      content.innerHTML = `<p style="padding:1rem;color:red">L&#7895;i: ${e.message}</p>`;
     }
   }
 }
