@@ -19,7 +19,7 @@ export function initRouter() {
   async function navigate() {
     const hash = location.hash || '#repairs';
   const _role = (JSON.parse(localStorage.getItem('l24_session')||'{}')).role;
-  if ((['#stats','#debts']).includes(hash) && _role === 'staff') { location.hash = '#repairs'; return; }
+  if (hash === '#stats' && _role === 'staff') { location.hash = '#repairs'; return; }
     const mountFn = routes[hash];
     const main = document.getElementById('main-content');
     if (!mountFn) {
@@ -40,7 +40,10 @@ export function initRouter() {
   {
     const _s = JSON.parse(localStorage.getItem('l24_session')||'{}');
     if (_s.role === 'staff') {
-      ['#stats','#debts'].forEach(h=>{const li=document.querySelector('#nav-links a[href="'+h+'"]')?.closest('li');if(li)li.style.display='none';});
+      ['#stats','#debts'].forEach(function(h){
+        var el=document.querySelector('#nav-links a[href="'+h+'"]');
+        if(el)el.closest('li').style.display='none';
+      });
     }
   }
 
@@ -51,7 +54,7 @@ export function initRouter() {
     import('../modules/inventory.js?v=19'),
     import('../modules/customers.js?v=3'),
     import('../modules/debts.js?v=3'),
-    import('../modules/stats.js?v=10'),
+    import('../modules/stats.js?v=9'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=3'),
   ]).then(([repairs, sales, inventory, customers, debts, stats, users, settings]) => {
