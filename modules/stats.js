@@ -1,4 +1,4 @@
-// modules/stats.js - Thong ke v9
+// modules/stats.js - Thong ke v10
 import { registerRoute } from '../core/router.js';
 import { getAll } from '../core/db.js';
 import { formatVND } from '../core/ui.js';
@@ -104,6 +104,7 @@ export async function mount(container) {
   });
   container.querySelector('#st-apply').addEventListener('click', loadStats);
   container.querySelector('#st-apply-single').addEventListener('click', loadStats);
+  singleEl.addEventListener('change', loadStats);
   container.querySelector('#st-refresh').addEventListener('click', loadStats);
   loadStats();
 
