@@ -19,7 +19,7 @@ export function initRouter() {
   async function navigate() {
     const hash = location.hash || '#repairs';
   const _role = (JSON.parse(localStorage.getItem('l24_session')||'{}')).role;
-  if (hash === '#stats' && _role === 'staff') { location.hash = '#repairs'; return; }
+  if ((['#stats','#debts']).includes(hash) && _role === 'staff') { location.hash = '#repairs'; return; }
     const mountFn = routes[hash];
     const main = document.getElementById('main-content');
     if (!mountFn) {
@@ -40,8 +40,7 @@ export function initRouter() {
   {
     const _s = JSON.parse(localStorage.getItem('l24_session')||'{}');
     if (_s.role === 'staff') {
-      const li = document.querySelector('#nav-links a[href="#stats"]')?.closest('li');
-      if (li) li.style.display = 'none';
+      ['#stats','#debts'].forEach(h=>{const li=document.querySelector('#nav-links a[href="'+h+'"]')?.closest('li');if(li)li.style.display='none';});
     }
   }
 
