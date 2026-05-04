@@ -18,6 +18,8 @@ export function initRouter() {
 
   async function navigate() {
     const hash = location.hash || '#repairs';
+  const _role = (JSON.parse(localStorage.getItem('l24_session')||'{}')).role;
+  if (hash === '#stats' && _role === 'staff') { location.hash = '#repairs'; return; }
     const mountFn = routes[hash];
     const main = document.getElementById('main-content');
     if (!mountFn) {
@@ -33,6 +35,15 @@ export function initRouter() {
 
   window.addEventListener('hashchange', navigate);
   navigate();
+
+  // Hide stats for staff
+  {
+    const _s = JSON.parse(localStorage.getItem('l24_session')||'{}');
+    if (_s.role === 'staff') {
+      const li = document.querySelector('#nav-links a[href="#stats"]')?.closest('li');
+      if (li) li.style.display = 'none';
+    }
+  }
 
   // Import tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥t cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ modules ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng thÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¹ng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ routes
   Promise.allSettled([
