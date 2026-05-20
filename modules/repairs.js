@@ -71,6 +71,9 @@ function openEditRepairBH(rec) {
 
 function printWarrantyBill(record) {
   const tpl = getRepBillTpl();
+  const _br = (function(){try{return JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch||'';}catch(e){return '';}}());
+  const addr  = _br==='cantho' ? '36 Mạc Thiên Tích, phường Ninh Kiều, Tp Cần Thơ' : (tpl.address || '');
+  const phone = _br==='cantho' ? '0913.929.515' : (tpl.phone || '');
   const giao = record.deliveredDate || record.receivedDate || '';
   let warrantyEnd = 'Không bảo hành';
   if (record.warrantyMonths > 0 && giao) {
@@ -108,7 +111,7 @@ function printWarrantyBill(record) {
   '.rep-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px}' +
   '.rep-modal .form-card{margin:0 auto}' +
   '</style></head><body>' +
-  '<div class="header"><h2>' + (tpl.shopName || 'LAPTOP 24H') + '</h2>' + (tpl.address ? '<p>' + tpl.address + '</p>' : '') + (tpl.phone ? '<p>SĐT: ' + tpl.phone + '</p>' : '') + '</div>' +
+  '<div class="header"><h2>' + (tpl.shopName || 'LAPTOP 24H') + '</h2>' + (addr ? '<p>' + addr + '</p>' : '') + (phone ? '<p>SĐT: ' + phone + '</p>' : '') + '</div>' +
   '<div class="divider"></div>' +
   '<div class="title">' + (tpl.title || 'Phiếu Bảo Hành') + '</div>' +
   '<table>' +
