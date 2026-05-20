@@ -1055,8 +1055,6 @@ export async function mount(container) {
     <div class="totals-wrap"><div class="totals-box">
       ${s.extraDiscount ? `<div class="t-row disc"><span class="k">Giảm thêm:</span><span class="v">-${fmt(s.extraDiscount)}đ</span></div>` : ''}
       <div class="t-row grand"><span class="k">TỔNG THANH TOÁN</span><span class="v">${fmt(s.total || 0)}đ</span></div>
-      <div class="t-row"><span class="k">Đã trả:</span><span class="v">${fmt(s.paid || 0)}đ</span></div>
-      ${remaining > 0 ? `<div class="t-row owe"><span class="k">Còn lại:</span><span class="v">${fmt(remaining)}đ</span></div>` : ''}
     </div></div>
     <div class="wn-box">
       <div class="wn-head">📋 ĐIỀU KHOẢN BẢO HÀNH</div>
