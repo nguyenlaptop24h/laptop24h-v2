@@ -997,7 +997,7 @@ export async function mount(container) {
   .totals-wrap{display:flex;justify-content:flex-end;margin-top:8px}
   .totals-box{min-width:240px}
   .t-row{display:flex;justify-content:space-between;padding:5px 9px;font-size:12.5px}
-  .t-row .k{color:#555}.t-row .v{font-weight:600}
+  .t-row .k{color:#555;flex:1}.t-row .v{font-weight:600;white-space:nowrap;text-align:right}
   .t-row.disc .v{color:#e53935}
   .t-row.grand{background:#00897b;color:#fff;border-radius:7px;margin-top:4px;padding:8px 11px;font-size:14px}
   .t-row.grand .k,.t-row.grand .v{font-weight:800;color:#fff}
