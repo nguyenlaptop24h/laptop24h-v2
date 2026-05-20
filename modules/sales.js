@@ -999,8 +999,8 @@ export async function mount(container) {
   .t-row{display:flex;justify-content:space-between;padding:5px 9px;font-size:12.5px}
   .t-row .k{color:#555;flex:1}.t-row .v{font-weight:600;white-space:nowrap;text-align:right}
   .t-row.disc .v{color:#e53935}
-  .t-row.grand{background:#00897b;color:#fff;border-radius:7px;margin-top:4px;padding:8px 11px;font-size:14px}
-  .t-row.grand .k,.t-row.grand .v{font-weight:800;color:#fff}
+  .t-row.grand{background:#00897b;color:#fff;border-radius:7px;margin-top:4px;padding:8px 11px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .t-row.grand .k{font-weight:800;color:#fff;flex:1}.t-row.grand .v{font-weight:800;color:#fff;white-space:nowrap}
   .t-row.owe .v{color:#e53935}
   .wn-box{margin-top:18px;border:1.5px solid #b2dfdb;border-radius:7px;overflow:hidden}
   .wn-head{background:#e0f2f1;padding:7px 15px;font-size:12px;font-weight:700;color:#00695c;letter-spacing:.5px}
