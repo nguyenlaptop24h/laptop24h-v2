@@ -1,9 +1,9 @@
-// core/auth.js - Xac thuc bang DB (username + password plain text)
+// core/auth.js - Xác thực bằng DB (username + password plain text)
 import { getDB } from './db.js';
 
 let currentUser = null; // { _key, id, name, username, role, branch }
 
-const BRANCH_NAMES = { vinhlong: '📍 Vinh Long', cantho: '📍 Can Tho' };
+const BRANCH_NAMES = { vinhlong: '📍 Vĩnh Long', cantho: '📍 Cần Thơ' };
 
 export async function initAuth() {
   return new Promise((resolve) => {
@@ -35,7 +35,7 @@ async function handleLogin() {
   errEl.textContent = '';
 
   if (!username || !password) {
-    errEl.textContent = 'Vui long nhap day du thong tin';
+    errEl.textContent = 'Vui lòng nhập đầy đủ thông tin';
     return;
   }
 
@@ -52,7 +52,7 @@ async function handleLogin() {
     });
 
     if (!found) {
-      errEl.textContent = 'Ten dang nhap hoac mat khau khong dung';
+      errEl.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng';
       return;
     }
 
@@ -60,7 +60,7 @@ async function handleLogin() {
     sessionStorage.setItem('laptop24h_user', JSON.stringify(currentUser));
     showApp();
   } catch(e) {
-    errEl.textContent = 'Loi ket noi: ' + e.message;
+    errEl.textContent = 'Lỗi kết nối: ' + e.message;
   }
 }
 
