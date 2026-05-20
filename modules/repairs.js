@@ -429,11 +429,11 @@ function quickChangeStatus(record) {
         const ns = btn.dataset.status;
         const update = { ...record, status: ns };
         if (ns === 'Đã giao' && !record.deliveredDate) update.deliveredDate = todayStr();
-        try { await updateItem(COLLECTION, record._key, update); toast('✅ ' + ns); formWrap.innerHTML = ''; }
+        try { await updateItem(COLLECTION, record._key, update); toast('✅ ' + ns); formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); }
         catch(e) { toast('Lỗi: ' + e.message, 'error'); }
       });
     });
-    formWrap.querySelector('#qs-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; });
+    formWrap.querySelector('#qs-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -575,7 +575,7 @@ function openForm(record) {
       try {
         if (record) { await updateItem(COLLECTION, record._key, data); logRepairToSheet({...data, key:record._key}, 'update'); toast('Đã cập nhật phiếu'); }
         else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('Đã thêm phiếu mới'); }
-        formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal');
+        formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); selectedKeys = new Set(); updateBtnStates();
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
