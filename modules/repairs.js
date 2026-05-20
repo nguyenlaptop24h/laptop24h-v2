@@ -86,7 +86,7 @@ function printWarrantyBill(record) {
     '.header { text-align: center; margin-bottom: 10px; }' +
     '.header h2 { font-size: 20px; font-weight: bold; letter-spacing: 1px; }' +
     '.header p { font-size: 12px; color: #555; }' +
-    '.divider { border-top: 1px dashed #999; margin: 8px 0; }' +
+    '.divider { border-top: 1px dashed #999; margin: 8px 0; }.rb-block{padding:4px 0;margin:2px 0}.rb-row{display:flex;align-items:flex-start;margin:3px 0;font-size:12.5px}.rb-lbl{color:#555;min-width:130px;font-weight:600;flex-shrink:0}.rb-val{flex:1;color:#222;line-height:1.5}' +
     '.title { text-align: center; font-size: 15px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
     'table { width: 100%; border-collapse: collapse; }' +
     'td { padding: 4px 2px; vertical-align: top; }' +
@@ -124,6 +124,7 @@ function printWarrantyBill(record) {
   (record.techName ? '<tr><td>KTV:</td><td>' + record.techName + '</td></tr>' : '') +
   '</table>' +
   '<div class="divider"></div>' +
+  ((record.repairRequest || (record.partsUsed && record.partsUsed.length)) ? '<div class="rb-block">' + (record.repairRequest ? '<div class="rb-row"><span class="rb-lbl">Nội dung sửa chữa:</span><span class="rb-val">' + record.repairRequest + '</span></div>' : '') + (record.partsUsed && record.partsUsed.length ? '<div class="rb-row"><span class="rb-lbl">Linh kiện thay thế:</span><span class="rb-val">' + record.partsUsed.map(function(pt){return pt.name+(pt.qty>1?' x'+pt.qty:'');}).join(', ') + '</span></div>' : '') + '</div><div class="divider"></div>' : '') +
   '<table>' +
   '<tr><td>Chi phí sửa:</td><td>' + formatVND(record.cost || 0) + '</td></tr>' +
   (record.deposit > 0 ? '<tr><td>Đặt cọc:</td><td>' + formatVND(record.deposit) + '</td></tr>' : '') +
