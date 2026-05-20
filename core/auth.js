@@ -1,12 +1,12 @@
-// core/auth.js - Xác thực bằng DB (username + password plain text)
-// Giống cơ chế app cũ — không dùng Firebase Auth
+// core/auth.js - Xac thuc bang DB (username + password plain text)
 import { getDB } from './db.js';
 
-let currentUser = null; // { _key, id, name, username, role }
+let currentUser = null; // { _key, id, name, username, role, branch }
+
+const BRANCH_NAMES = { vinhlong: '📍 Vinh Long', cantho: '📍 Can Tho' };
 
 export async function initAuth() {
   return new Promise((resolve) => {
-    // Kiểm tra session đã lưu trong sessionStorage
     const saved = sessionStorage.getItem('laptop24h_user');
     if (saved) {
       try {
@@ -19,7 +19,6 @@ export async function initAuth() {
     showAuth();
     resolve(null);
 
-    // Gắn sự kiện login
     document.getElementById('auth-btn').addEventListener('click', handleLogin);
     document.getElementById('auth-pass').addEventListener('keydown', e => {
       if (e.key === 'Enter') handleLogin();
@@ -31,11 +30,12 @@ export async function initAuth() {
 async function handleLogin() {
   const username = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-pass').value;
-  const errEl   = document.getElementById('auth-err');
+  const branch = (document.getElementById('auth-branch') || {}).value || 'vinhlong';
+  const errEl = document.getElementById('auth-err');
   errEl.textContent = '';
 
   if (!username || !password) {
-    errEl.textContent = 'Vui lòng nhập đầy đủ thông tin';
+    errEl.textContent = 'Vui long nhap day du thong tin';
     return;
   }
 
@@ -52,15 +52,15 @@ async function handleLogin() {
     });
 
     if (!found) {
-      errEl.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng';
+      errEl.textContent = 'Ten dang nhap hoac mat khau khong dung';
       return;
     }
 
-    currentUser = found;
-    sessionStorage.setItem('laptop24h_user', JSON.stringify(found));
+    currentUser = { ...found, branch };
+    sessionStorage.setItem('laptop24h_user', JSON.stringify(currentUser));
     showApp();
   } catch(e) {
-    errEl.textContent = 'Lỗi kết nối: ' + e.message;
+    errEl.textContent = 'Loi ket noi: ' + e.message;
   }
 }
 
@@ -79,6 +79,8 @@ function showApp() {
   });
   const nameEl = document.getElementById('user-name');
   if (nameEl) nameEl.textContent = currentUser?.name || currentUser?.username || '';
+  const branchEl = document.getElementById('branch-label');
+  if (branchEl) branchEl.textContent = BRANCH_NAMES[currentUser?.branch] || '';
 }
 
 function showAuth() {
