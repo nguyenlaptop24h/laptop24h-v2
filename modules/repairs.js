@@ -267,7 +267,10 @@ let showTrash = false;
     const rec = allData.find(r => r._key === selectedKey);
     if (rec) printWarrantyBill(rec);
   });
-  statusBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); });
+  statusBtn.addEventListener('click', () => {
+  if (selectedKeys.size > 1) { bulkChangeStatus([...selectedKeys]); }
+  else { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); }
+});
   editBhBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
 
   function setSelected(key) {
@@ -282,7 +285,9 @@ let showTrash = false;
     const n = selectedKeys.size;
     const one = n === 1;
     selectedKey = one ? [...selectedKeys][0] : null;
-    [editBtn, printBtn, statusBtn, editBhBtn].forEach(b => { b.disabled = !one; b.style.opacity = one ? '1' : '.4'; });
+    [editBtn, printBtn, editBhBtn].forEach(b => { b.disabled = !one; b.style.opacity = one ? '1' : '.4'; });
+statusBtn.disabled = !n; statusBtn.style.opacity = n ? '1' : '.4';
+statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
     delBtn.disabled = !n; delBtn.style.opacity = n ? '1' : '.4';
     delBtn.textContent = n > 1 ? 'Xóa (' + n + ')' : 'Xóa';
   }
@@ -373,7 +378,40 @@ let showTrash = false;
     });
   }
 
-  function quickChangeStatus(record) {
+  function bulkChangeStatus(keys) {
+  const formWrap = container.querySelector('#rep-form-wrap');
+  const count = keys.length;
+  formWrap.innerHTML = '<div class="form-card" style="max-width:360px;margin:1rem auto;padding:1.2rem">' +
+    '<h3 style="margin:0 0 .8rem;font-size:1rem">⇄ Đổi trạng thái ' + count + ' phiếu</h3>' +
+    '<p style="color:#555;margin:0 0 .8rem;font-size:.88rem">Chọn trạng thái mới áp dụng cho tất cả:</p>' +
+    '<div style="display:flex;flex-direction:column;gap:.35rem">' +
+    STATUS_LIST.map(s =>
+      '<button class="btn btn--secondary qs-bulk-btn" data-status="' + s + '" style="text-align:left;justify-content:flex-start;background:#f9fafb">' + s + '</button>'
+    ).join('') +
+    '</div><button id="qs-bulk-cancel" class="btn btn--secondary" style="width:100%;margin-top:.6rem">Hủy</button></div>';
+  formWrap.querySelectorAll('.qs-bulk-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const ns = btn.dataset.status;
+      btn.disabled = true; btn.textContent = 'Đang lưu...';
+      let ok = 0, fail = 0;
+      for (const key of keys) {
+        const rec = allData.find(r => r._key === key);
+        if (!rec) { fail++; continue; }
+        const update = { ...rec, status: ns };
+        if (ns === 'Đã giao' && !rec.deliveredDate) update.deliveredDate = todayStr();
+        try { await updateItem(COLLECTION, key, update); ok++; }
+        catch(e) { fail++; }
+      }
+      toast('Đã đổi ' + ok + ' phiếu → "' + ns + '"' + (fail ? ', ' + fail + ' lỗi' : ''));
+      formWrap.innerHTML = '';
+      selectedKeys = new Set(); updateBtnStates();
+    });
+  });
+  formWrap.querySelector('#qs-bulk-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; });
+  formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function quickChangeStatus(record) {
     if (!record) return;
     const formWrap = container.querySelector('#rep-form-wrap');
     formWrap.innerHTML = '<div class="form-card" style="max-width:360px;margin:1rem auto;padding:1.2rem">' +
