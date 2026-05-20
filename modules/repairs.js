@@ -1,5 +1,5 @@
 // modules/repairs.js - Phiếu sửa chữa
-import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
@@ -517,8 +517,9 @@ function openForm(record) {
 </div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>TÌNH TRẠNG KHI NHẬN (MÔ TẢ LỖI)</label><textarea id="f-initialCondition" placeholder="Không lên nguồn, màn hình trắng, bàn phím liệt...">${record?.initialCondition||''}</textarea></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>PHỤ KIỆN KÈM THEO</label><input id="f-accessories" type="text" placeholder="Sạc, túi, chuột..." value="${record?.accessories||''}"></div></div>
-<div class="rfm-r rfm-r3"><div class="rfm-f"><label>NGÀY NHẬN *</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||new Date().toISOString().slice(0,10)}"></div><div class="rfm-f"><label>CHI PHÍ DỰ KIẾN (Đ)</label><input id="f-cost" type="text" data-fmt="number" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>TIỀN CỌC (Đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
-<div class="rfm-r rfm-r1"><div class="rfm-f"><label>VỐN LINH KIỆN (Đ)</label><input id="f-partsCost" type="text" data-fmt="number" value="${String(record?.partsCost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
+<div class="rfm-r" style="display:block"><div style="background:#eef4ff;border:1px solid #c7d9f0;border-radius:8px;padding:10px;margin:0 0 4px"><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-bottom:8px">LINH KIỆN Sử DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><select id="f-parts-select" style="flex:1;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><option value="">-- Chọn sản phẩm từ kho --</option></select><input id="f-parts-qty" type="number" min="1" value="1" style="width:52px;padding:7px 5px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center"><button type="button" id="f-parts-add" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-parts-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng LK: <b id="f-parts-total">0</b>₫ &nbsp;|&nbsp; Vốn LK: <b id="f-parts-vcost">0</b>₫</div></div></div>
+<div class="rfm-r rfm-r3"><div class="rfm-f"><label>NGÀY NHẬN *</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||new Date().toISOString().slice(0,10)}"></div><div class="rfm-f"><label>CÔNG SỬa (₫)</label><input id="f-serviceFee" type="text" data-fmt="number" value="${String(record?.serviceFee??record?.cost??0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>TIỀN CỌC (Đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
+<div class="rfm-r rfm-r2"><div class="rfm-f"><label>TỔNG TIỀN SỬa (₫)</label><input id="f-cost" type="text" data-fmt="number" readonly style="background:#eef4ff;font-weight:700;color:#1e40af" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LINH KIỆN (₫)</label><input id="f-partsCost" type="text" data-fmt="number" readonly style="background:#f5f5f5" value="${String(record?.partsCost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
 <div class="rfm-r rfm-r2"><div class="rfm-f"><label>BẢO HÀNH SỬA CHỮA</label><select id="f-warranty"><option value="3 tháng" ${(record?.warranty||'3 tháng')==='3 tháng'?'selected':''}>3 tháng</option><option value="6 tháng" ${record?.warranty==='6 tháng'?'selected':''}>6 tháng</option><option value="1 năm" ${record?.warranty==='1 năm'?'selected':''}>1 năm</option><option value="Không bảo hành" ${record?.warranty==='Không bảo hành'?'selected':''}>Không bảo hành</option></select></div><div class="rfm-f"><label>KỸ THUẬT VIÊN</label><input id="f-techName" type="text" placeholder="Tên KTV..." value="${record?.techName||''}"></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>GHI CHÚ NỘI BỘ</label><textarea id="f-internalNote" placeholder="Chỉ nhân viên thấy...">${record?.internalNote||''}</textarea></div></div>
 <input type="hidden" id="f-repairRequest" value="${record?.repairRequest||''}">
@@ -559,6 +560,8 @@ function openForm(record) {
         deliveredDate:  formWrap.querySelector('#f-deliveredDate').value,
         cost:           parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,'')) || 0,
         deposit:        parseFloat((formWrap.querySelector('#f-deposit').value||'').replace(/\./g,'')) || 0,
+              serviceFee:    parseFloat((formWrap.querySelector('#f-serviceFee').value||'').replace(/\./g,'')) || 0,
+              partsUsed:     _partsArr,
               partsCost:     parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,'')) || 0,
               warranty:      formWrap.querySelector('#f-warranty')?.value || '',
               internalNote:  formWrap.querySelector('#f-internalNote')?.value || '',
@@ -575,10 +578,83 @@ function openForm(record) {
       try {
         if (record) { await updateItem(COLLECTION, record._key, data); logRepairToSheet({...data, key:record._key}, 'update'); toast('Đã cập nhật phiếu'); }
         else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('Đã thêm phiếu mới'); }
+        if (record && record.partsUsed && record.partsUsed.length) { await restorePartsStock(record.partsUsed); }
+        await deductPartsStock(_partsArr);
         formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); selectedKeys = new Set(); updateBtnStates();
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
-    formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+  // ── Parts Picker ──────────────────────────
+  var _partsArr = (record && Array.isArray(record.partsUsed)) ? record.partsUsed.map(function(p){return Object.assign({},p);}) : [];
+  var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,"."); };
+
+  function renderPartsList() {
+    var list = formWrap.querySelector("#f-parts-list");
+    var tot  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
+    var von  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
+    formWrap.querySelector("#f-parts-total").textContent = fmtN(tot);
+    formWrap.querySelector("#f-parts-vcost").textContent = fmtN(von);
+    list.innerHTML = _partsArr.length ? _partsArr.map(function(p,i){
+      return "<div style=\"display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #e0e8f4\">"
+           + "<span style=\"flex:1;font-size:13px\">" + p.name + "</span>"
+           + "<span style=\"font-size:12px;color:#666\">x" + p.qty + "</span>"
+           + "<span style=\"font-size:13px;font-weight:600;color:#1d4ed8;min-width:68px;text-align:right\">" + fmtN(p.salePrice*p.qty) + "\u20ab</span>"
+           + "<button type=\"button\" data-idx=\"" + i + "\" class=\"rm-part\" style=\"border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px\">\u00d7</button>"
+           + "</div>";
+    }).join("") : "<div style=\"color:#aaa;font-size:12px;padding:2px 0\">Ch\u01b0a c\u00f3 linh ki\u1ec7n</div>";
+    recalcTotals();
+  }
+
+  function recalcTotals() {
+    var svc = parseFloat((formWrap.querySelector("#f-serviceFee").value||"").replace(/\./g,""))||0;
+    var pT  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
+    var vT  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
+    formWrap.querySelector("#f-cost").value      = fmtN(svc+pT);
+    formWrap.querySelector("#f-partsCost").value = fmtN(vT);
+  }
+
+  (async function loadProds(){
+    try {
+      var prods = await getAll("products");
+      var sel = formWrap.querySelector("#f-parts-select");
+      sel.innerHTML = "<option value=\"\">" + "-- Ch\u1ecdn s\u1ea3n ph\u1ea9m t\u1eeb kho --" + "</option>";
+      prods.filter(function(p){return !p.deletedAt&&(p.stock||0)>0;})
+           .sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");})
+           .forEach(function(p){
+             var o = document.createElement("option");
+             o.value = p._key;
+             o.setAttribute("data-n",  p.name||"");
+             o.setAttribute("data-sp", p.price||0);
+             o.setAttribute("data-cp", p.cost||0);
+             o.textContent = (p.name||"?") + " (kho:" + (p.stock||0) + ") - " + fmtN(p.price||0) + "\u20ab";
+             sel.appendChild(o);
+           });
+    } catch(e){ console.warn("loadProds",e); }
+  })();
+
+  renderPartsList();
+
+  formWrap.querySelector("#f-parts-add").addEventListener("click", function(){
+    var sel = formWrap.querySelector("#f-parts-select");
+    var o   = sel.options[sel.selectedIndex];
+    if(!o||!o.value){ toast("Ch\u1ecdn s\u1ea3n ph\u1ea9m tr\u01b0\u1edbc","error"); return; }
+    var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
+    var ei  = _partsArr.findIndex(function(p){return p.invKey===o.value;});
+    if(ei>=0){ _partsArr[ei].qty += qty; } else {
+      _partsArr.push({invKey:o.value, name:o.getAttribute("data-n"), qty:qty,
+        salePrice:Number(o.getAttribute("data-sp")), costPrice:Number(o.getAttribute("data-cp"))});
+    }
+    renderPartsList();
+  });
+  formWrap.querySelector("#f-parts-list").addEventListener("click", function(e){
+    var btn = e.target.closest(".rm-part");
+    if(!btn) return;
+    _partsArr.splice(Number(btn.dataset.idx),1);
+    renderPartsList();
+  });
+  formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
+
+formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function restoreRepair(key) {
@@ -610,7 +686,9 @@ async function confirmDeleteKeys(keys) {
               const item = allData.find(r => r._key === key);
               if (!item) { fail++; continue; }
               const { _key: rk, ...ci } = item;
-                 await updateItem(COLLECTION, key, {...ci, deletedAt: Date.now()});
+                 const _dr = allData.find(function(r){return r._key===key;});
+              if(_dr && _dr.partsUsed && _dr.partsUsed.length) await restorePartsStock(_dr.partsUsed);
+              await updateItem(COLLECTION, key, {...ci, deletedAt: Date.now()});
               allData = allData.map(r => r._key === key ? {...r, deletedAt: Date.now()} : r);
             }
             ok++;
@@ -624,3 +702,16 @@ async function confirmDeleteKeys(keys) {
   }
   async function confirmDelete(key) { confirmDeleteKeys([key]); }
 }
+async function restorePartsStock(partsUsed) {
+  if (!partsUsed || !partsUsed.length) return;
+  for (const p of partsUsed) {
+    try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: (prod.stock||0) + p.qty }); } catch(e) {}
+  }
+}
+async function deductPartsStock(partsUsed) {
+  if (!partsUsed || !partsUsed.length) return;
+  for (const p of partsUsed) {
+    try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: Math.max(0, (prod.stock||0) - p.qty) }); } catch(e) {}
+  }
+}
+
