@@ -944,8 +944,9 @@ export async function mount(container) {
     const fmt = n => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0));
 
     const shopName   = esc(tpl.shopName || 'Laptop 24h');
-    const addr       = tpl.address ? esc(tpl.address) : '123 Đường ABC, TP.HCM';
-    const phone      = tpl.phone   ? esc(tpl.phone)   : '0909 123 456';
+    const _br        = (function(){try{return JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch||'';}catch(e){return '';}}());
+    const addr       = _br==='cantho' ? '36 Mạc Thiên Tích, phường Ninh Kiều, Tp Cần Thơ' : (tpl.address ? esc(tpl.address) : '123 Đường ABC, TP.HCM');
+    const phone      = _br==='cantho' ? '0913.929.515' : (tpl.phone   ? esc(tpl.phone)   : '0909 123 456');
     const invTitle   = esc(tpl.title   || 'PHIẾU BẢO HÀNH');
     const footerText = esc(tpl.footer  || 'Cảm ơn quý khách đã tin tưởng mua sắm! 🙏');
 
