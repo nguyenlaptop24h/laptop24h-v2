@@ -1,13 +1,13 @@
 // core/db.js - Firebase init & CRUD helpers
 
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyCDT00j5rXt8IeFHHxkDIuwasi2st_NEyM",
-  authDomain:        "quan-li-laptop24h.firebaseapp.com",
-  databaseURL:       "https://quan-li-laptop24h-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "quan-li-laptop24h",
-  storageBucket:     "quan-li-laptop24h.firebasestorage.app",
+  apiKey: "AIzaSyCDT00j5rXt8IeFHHxkDIuwasi2st_NEyM",
+  authDomain: "quan-li-laptop24h.firebaseapp.com",
+  databaseURL: "https://quan-li-laptop24h-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "quan-li-laptop24h",
+  storageBucket: "quan-li-laptop24h.firebasestorage.app",
   messagingSenderId: "716540645874",
-  appId:             "1:716540645874:web:9c16a779fcc4ffd7e19b6b"
+  appId: "1:716540645874:web:9c16a779fcc4ffd7e19b6b"
 };
 
 let db = null;
@@ -24,17 +24,32 @@ export function getDB() {
   return db;
 }
 
+// ---- Branch path helper ----
+const GLOBAL_COLLECTIONS = ['users'];
+
+function branchPath(collection) {
+  if (GLOBAL_COLLECTIONS.includes(collection)) return collection;
+  try {
+    const session = JSON.parse(sessionStorage.getItem('laptop24h_user') || '{}');
+    const branch = session.branch || 'vinhlong';
+    if (branch === 'vinhlong') return collection;
+    return 'branches/' + branch + '/' + collection;
+  } catch(e) {
+    return collection;
+  }
+}
+
 // ---- CRUD helpers ----
 
 export function getAll(collection) {
-  return db.ref(collection).once('value').then(snap => {
+  return db.ref(branchPath(collection)).once('value').then(snap => {
     const data = snap.val() || {};
     return Object.entries(data).map(([key, val]) => ({ _key: key, ...val }));
   });
 }
 
 export function onSnapshot(collection, callback) {
-  const ref = db.ref(collection);
+  const ref = db.ref(branchPath(collection));
   ref.on('value', snap => {
     const data = snap.val() || {};
     const items = Object.entries(data).map(([key, val]) => {
@@ -47,23 +62,23 @@ export function onSnapshot(collection, callback) {
 }
 
 export function addItem(collection, data) {
-  return db.ref(collection).push({ ...data, createdAt: Date.now() });
+  return db.ref(branchPath(collection)).push({ ...data, createdAt: Date.now() });
 }
 
 export function updateItem(collection, key, data) {
-  return db.ref(`${collection}/${key}`).update({ ...data, updatedAt: Date.now() });
+  return db.ref(branchPath(collection) + '/' + key).update({ ...data, updatedAt: Date.now() });
 }
 
 export function deleteItem(collection, key) {
-  return db.ref(`${collection}/${key}`).remove();
+  return db.ref(branchPath(collection) + '/' + key).remove();
 }
 
 export function getItem(collection, key) {
-  return db.ref(`${collection}/${key}`).once('value').then(snap => snap.val());
+  return db.ref(branchPath(collection) + '/' + key).once('value').then(snap => snap.val());
 }
 
 export function queryByField(collection, field, value) {
-  return db.ref(collection)
+  return db.ref(branchPath(collection))
     .orderByChild(field)
     .equalTo(value)
     .once('value')
