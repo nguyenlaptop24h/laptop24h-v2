@@ -567,6 +567,7 @@ function openForm(record) {
               serviceFee:    parseFloat((formWrap.querySelector('#f-serviceFee').value||'').replace(/\./g,'')) || 0,
               partsUsed:     _partsArr,
               partsCost:     parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,'')) || 0,
+        profit:        (parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,''))||0) - (parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,''))||0),
               warranty:      formWrap.querySelector('#f-warranty')?.value || '',
               internalNote:  formWrap.querySelector('#f-internalNote')?.value || '',
         paymentType:    formWrap.querySelector('#f-paymentType').value,
@@ -602,6 +603,7 @@ function openForm(record) {
       return "<div style=\"display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #e0e8f4\">"
            + "<span style=\"flex:1;font-size:13px\">" + p.name + "</span>"
            + "<span style=\"font-size:12px;color:#666\">x" + p.qty + "</span>"
+           + "<input type=\"text\" class=\"part-von-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.costPrice) + "\" style=\"width:62px;font-size:11px;border:1px solid #d0d7e5;border-radius:3px;padding:1px 4px;text-align:right;color:#888\" placeholder=\"V\u1ed1n\">"
            + "<span style=\"font-size:13px;font-weight:600;color:#1d4ed8;min-width:68px;text-align:right\">" + fmtN(p.salePrice*p.qty) + "\u20ab</span>"
            + "<button type=\"button\" data-idx=\"" + i + "\" class=\"rm-part\" style=\"border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px\">\u00d7</button>"
            + "</div>";
@@ -655,6 +657,12 @@ function openForm(record) {
     if(!btn) return;
     _partsArr.splice(Number(btn.dataset.idx),1);
     renderPartsList();
+  });
+  formWrap.querySelector("#f-parts-list").addEventListener("input", function(e){
+    var vi = e.target.classList.contains("part-von-inp") ? e.target : null;
+    if(!vi) return;
+    _partsArr[Number(vi.dataset.idx)].costPrice = parseFloat((vi.value||"").replace(/\./g,""))||0;
+    recalcTotals();
   });
   formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
 
