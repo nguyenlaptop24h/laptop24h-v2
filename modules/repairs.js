@@ -651,6 +651,7 @@ function openForm(record) {
         salePrice:Number(o.getAttribute("data-sp")), costPrice:Number(o.getAttribute("data-cp"))});
     }
     renderPartsList();
+    recalcTotals();
   });
   formWrap.querySelector("#f-parts-list").addEventListener("click", function(e){
     var btn = e.target.closest(".rm-part");
