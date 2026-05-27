@@ -616,7 +616,7 @@ function openForm(record) {
     var pT  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
     var vT  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
     formWrap.querySelector("#f-cost").value      = fmtN(svc+pT);
-    formWrap.querySelector("#f-partsCost").value = fmtN(vT);
+    if (vT > 0) formWrap.querySelector("#f-partsCost").value = fmtN(vT);
   }
 
   (async function loadProds(){
