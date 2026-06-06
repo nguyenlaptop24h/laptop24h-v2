@@ -213,6 +213,6 @@ async function showCustStats(name, phone) {
     '<div><div style="font-weight:600;color:#1d4ed8;margin-bottom:5px">📅 Thống kê 6 tháng gần nhất</div>'+
       '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#dbeafe;font-weight:600"><th style="padding:4px 6px;text-align:left">Tháng</th><th style="text-align:center">Số máy</th><th style="text-align:right">Lợi nhuận</th></tr>'+monthRows+'</table></div>'+
   '</div>';
-  showModal({ title: 'Thống kê: '+name+' ('+phone+')', body: html });
+  showModal({ title: 'Thống kê: '+name+' ('+phone+')', body: html, confirmText: 'Đóng' });
 }
 }
