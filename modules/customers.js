@@ -73,7 +73,7 @@ export async function mount(container) {
       { label: '',           key: c => `
         <button class="btn btn--sm btn--secondary cust-edit" data-key="${c._key}">Sửa</button>
         ${isAdmin() ? `<button class="btn btn--sm btn--danger cust-del" data-key="${c._key}">Xóa</button>` : ''}
-        <button class='btn btn--sm cust-stats' data-key='${c._key}' style='background:#0891b2;color:#fff;border:none;cursor:pointer;padding:2px 8px;border-radius:3px;font-size:12px' title='Thống kê sửa chửa'>📊</button>
+        <button class='btn btn--sm cust-stats' data-key='${c._key}' data-n='${c.name||String.fromCharCode(32)}' data-p='${c.phone||String.fromCharCode(32)}' style='background:#0891b2;color:#fff;border:none;cursor:pointer;padding:2px 8px;border-radius:3px;font-size:12px' title='Thống kê sửa chửa'>📊</button>
       `}
     ];
     wrap.innerHTML = buildTable(cols, data);
@@ -84,7 +84,7 @@ export async function mount(container) {
       btn.addEventListener('click', () => confirmDelete(btn.dataset.key))
     );
     wrap.querySelectorAll('.cust-stats').forEach(btn =>
-      btn.addEventListener('click', () => showCustStats(btn.dataset.key, data.find(x => x._key === btn.dataset.key)))
+      btn.addEventListener('click', () => showCustStats((btn.dataset.n||'').trim(), (btn.dataset.p||'').trim()))
     );
   }
 
@@ -176,10 +176,8 @@ export async function mount(container) {
     }
   }
 
-async function showCustStats(key, cust) {
-  if (!cust) return;
-  var phone = cust.phone || '';
-  var name  = cust.name  || '';
+async function showCustStats(name, phone) {
+  if (!name && !phone) return;
   var allReps = [];
   try { allReps = await getAll('repairs'); } catch(e){}
   var myReps = allReps.filter(function(r){ return (phone && r.phone === phone) || (name && r.customerName === name); });
