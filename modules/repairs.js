@@ -83,7 +83,7 @@ function printWarrantyBill(record) {
   }
   const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
   const win = window.open('', '_blank', 'width=620,height=840');
-  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>@page{size:A5 portrait;margin:10mm}' +
+  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>@page{size:A5 portrait;margin:8mm}' +
     '* { margin:0; padding:0; box-sizing:border-box; }' +
     'body { font-family: Arial, sans-serif; font-size: 15px; padding: 0; width: 128mm; max-width: 128mm; margin: 0 auto; }' +
     '.header { text-align: center; margin-bottom: 10px; }' +
@@ -146,7 +146,7 @@ function printWarrantyBill(record) {
   '<div><div class="line">Kỹ thuật viên</div></div>' +
   '</div>' +
   '<div class="footer"><p>' + (tpl.footer || 'Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!') + '</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
-  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' +
+  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' + '<script>(function(){var M=96/25.4,T=190*M;function f(){document.body.style.zoom=1;var b=document.querySelector(".btn-bar"),d=b?b.style.display:"";if(b)b.style.display="none";var h=document.body.scrollHeight;if(b)b.style.display=d;if(h>T)document.body.style.zoom=T/h;}f();window.addEventListener("beforeprint",f);})();</script>' +
   '</body></html>');
   win.document.close();
 }
