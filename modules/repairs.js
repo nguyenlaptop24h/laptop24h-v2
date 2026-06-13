@@ -82,22 +82,22 @@ function printWarrantyBill(record) {
     warrantyEnd = d.toLocaleDateString('vi-VN');
   }
   const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
-  const win = window.open('', '_blank', 'width=420,height=650');
-  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>' +
+  const win = window.open('', '_blank', 'width=620,height=840');
+  win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>@page{size:A5 portrait;margin:10mm}' +
     '* { margin:0; padding:0; box-sizing:border-box; }' +
-    'body { font-family: Arial, sans-serif; font-size: 13px; padding: 16px; max-width: 380px; margin: 0 auto; }' +
+    'body { font-family: Arial, sans-serif; font-size: 15px; padding: 0; width: 128mm; max-width: 128mm; margin: 0 auto; }' +
     '.header { text-align: center; margin-bottom: 10px; }' +
-    '.header h2 { font-size: 20px; font-weight: bold; letter-spacing: 1px; }' +
+    '.header h2 { font-size: 26px; font-weight: bold; letter-spacing: 1px; }' +
     '.header p { font-size: 12px; color: #555; }' +
     '.divider { border-top: 1px dashed #999; margin: 8px 0; }.rb-block{padding:4px 0;margin:2px 0}.rb-row{display:flex;align-items:flex-start;margin:3px 0;font-size:12.5px}.rb-lbl{color:#555;min-width:130px;font-weight:600;flex-shrink:0}.rb-val{flex:1;color:#222;line-height:1.5}' +
-    '.title { text-align: center; font-size: 15px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
+    '.title { text-align: center; font-size: 19px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
     'table { width: 100%; border-collapse: collapse; }' +
-    'td { padding: 4px 2px; vertical-align: top; }' +
+    'td { padding: 6px 2px; vertical-align: top; font-size: 14px; }' +
     'td:first-child { width: 38%; font-weight: 600; color: #333; white-space: nowrap; }' +
     '.total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #333; padding-top: 6px; }' +
     '.wbox { border: 2px solid #2563eb; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center; }' +
     '.wbox .wlabel { font-size: 11px; color: #666; }' +
-    '.wbox .wvalue { font-size: 16px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
+    '.wbox .wvalue { font-size: 22px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
     '.footer { text-align: center; font-size: 11px; color: #888; margin-top: 12px; }' +
     '.sig { display: flex; justify-content: space-between; margin-top: 24px; font-size: 12px; }' +
     '.sig div { text-align: center; width: 45%; }' +
