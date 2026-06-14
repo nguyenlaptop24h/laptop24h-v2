@@ -1028,7 +1028,7 @@ export async function mount(container) {
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:${billFont};background:#f0f2f5;padding:28px 12px;color:#333}
-  @page{size:${billPaper} portrait;margin:8mm}.page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+  @page{size:${billPaper} portrait;margin:8mm}.page{max-width:700px;min-height:${billPaper==='A4'?1010:1000}px;display:flex;flex-direction:column;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
   .top-stripe{height:7px;background:linear-gradient(90deg,#00897b,#26a69a,#80cbc4)}
   .header{padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8f5e9}
   .shop-sub{font-size:11.5px;color:#777;margin-top:4px;line-height:1.7}
@@ -1036,15 +1036,15 @@ export async function mount(container) {
   .main-title{font-size:17px;font-weight:800;color:#004d40;letter-spacing:2px;text-transform:uppercase}
   .bill-num{display:inline-block;margin-top:5px;background:#e0f2f1;color:#00695c;border:1.5px solid #80cbc4;border-radius:20px;padding:2px 13px;font-size:12px;font-weight:700}
   .ribbon{background:#00897b;color:#fff;padding:6px 28px;display:flex;justify-content:space-between;font-size:11.5px;font-weight:600}
-  .body{padding:20px 28px}
+  .body{padding:20px 28px;flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
   .cust-box{display:grid;grid-template-columns:1fr 1fr;gap:7px 24px;margin-bottom:18px;background:#f9fffe;border:1px solid #e0f2f1;border-radius:7px;padding:11px 14px}
   .cust-box .fi{font-size:12.5px}.cust-box .k{font-weight:700;color:#00695c}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   thead tr{background:#00897b;color:#fff}
-  thead th{padding:8px 9px;font-weight:600;text-align:left}
+  thead th{padding:11px 9px;font-weight:600;text-align:left}
   .tc{text-align:center}.tr{text-align:right}
   tbody tr:nth-child(even){background:#f4fdfb}
-  tbody td{padding:8px 9px;border-bottom:1px solid #e8f5e9;vertical-align:middle}
+  tbody td{padding:12px 9px;border-bottom:1px solid #e8f5e9;vertical-align:middle}
   .totals-wrap{display:flex;justify-content:flex-end;margin-top:8px}
   .totals-box{min-width:240px}
   .t-row{display:flex;justify-content:space-between;padding:5px 9px;font-size:12.5px}
@@ -1055,7 +1055,7 @@ export async function mount(container) {
   .t-row.owe .v{color:#e53935}
   .wn-box{margin-top:18px;border:1.5px solid #b2dfdb;border-radius:7px;overflow:hidden}
   .wn-head{background:#e0f2f1;padding:7px 15px;font-size:12px;font-weight:700;color:#00695c;letter-spacing:.5px}
-  .wn-body{padding:9px 15px 11px}.wn-body li{font-size:12px;color:#555;line-height:1.85;margin-left:15px}
+  .wn-body{padding:9px 15px 11px}.wn-body li{font-size:12px;color:#555;line-height:2.05;margin-left:15px}
   .footer-band{margin-top:20px;background:#e0f2f1;padding:11px 28px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#00695c;font-weight:600}
   .footer-band span{opacity:.8;font-weight:400;font-style:italic}
   .bottom-stripe{height:5px;background:linear-gradient(90deg,#80cbc4,#26a69a,#00897b)}
