@@ -1,6 +1,6 @@
 // modules/sales.js - Ban hang v43 (fix invItems tu Firestore + no-cors sheet)
 import { registerRoute } from '../core/router.js';
-import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
 import { toast, formatVND } from '../core/ui.js';
 
 const COLLECTION = 'sales';
@@ -24,10 +24,14 @@ function logToSheet(data, action) {
   } catch(e) {}
 }
 
-function getTemplate() {
-  try { return JSON.parse(localStorage.getItem(TPL_KEY) || '{}'); } catch(e) { return {}; }
+let _billTpl = {};
+try { _billTpl = JSON.parse(localStorage.getItem(TPL_KEY) || '{}'); } catch(e) {}
+function getTemplate() { return _billTpl || {}; }
+function saveTemplate(obj) {
+  _billTpl = obj;
+  try { localStorage.setItem(TPL_KEY, JSON.stringify(obj)); } catch(e) {}
+  try { getDB().ref('billTemplate').set(obj); } catch(e) { try { toast('Lưu Firebase lỗi, đã lưu tạm trên máy'); } catch(_) {} }
 }
-function saveTemplate(obj) { localStorage.setItem(TPL_KEY, JSON.stringify(obj)); }
 
 export async function mount(container) {
   let allItems = [];
@@ -362,6 +366,39 @@ export async function mount(container) {
             <label>Ghi chú cuối trang</label>
             <textarea id="tpl-footer" rows="2" style="resize:vertical;padding:7px 9px;border:1px solid #ddd;border-radius:6px;font-size:12.5px;font-family:inherit;outline:none" placeholder="Cảm ơn quý khách đã mua hàng! 🙏"></textarea>
           </div>
+          <div class="sl-field">
+            <label>Hotline (hỗ trợ bảo hành)</label>
+            <input id="tpl-hotline" placeholder="0966 666 786">
+          </div>
+          <div class="sl-field" style="grid-column:1/-1">
+            <label>Điều khoản bảo hành (mỗi dòng 1 ý)</label>
+            <textarea id="tpl-terms" rows="4" style="resize:vertical;padding:7px 9px;border:1px solid #ddd;border-radius:6px;font-size:12.5px;font-family:inherit;outline:none" placeholder="Mỗi dòng là một điều khoản bảo hành..."></textarea>
+          </div>
+          <div class="sl-field" style="grid-column:1/-1">
+            <label>Logo (dán link ảnh, để trống = dùng logo mặc định)</label>
+            <input id="tpl-logo" placeholder="https://...png">
+          </div>
+          <div class="sl-field">
+            <label>Font chữ</label>
+            <select id="tpl-font" style="padding:7px 9px;border:1px solid #ddd;border-radius:6px;font-size:12.5px;outline:none">
+              <option value="">Mặc định (Be Vietnam Pro)</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="'Roboto', Arial, sans-serif">Roboto</option>
+              <option value="'Courier New', monospace">Courier New</option>
+            </select>
+          </div>
+          <div class="sl-field">
+            <label>Khổ giấy</label>
+            <select id="tpl-paper" style="padding:7px 9px;border:1px solid #ddd;border-radius:6px;font-size:12.5px;outline:none">
+              <option value="A5">A5 (nửa trang)</option>
+              <option value="A4">A4 (cả trang)</option>
+            </select>
+          </div>
+          <div class="sl-field">
+            <label>Cỡ chữ (%, 60-100)</label>
+            <input id="tpl-scale" type="number" min="60" max="100" step="5" placeholder="100">
+          </div>
         </div>
       </div>
       <div class="sl-tpl-footer">
@@ -386,6 +423,7 @@ export async function mount(container) {
     f.onclick = () => { filterMode = f.dataset.mode; updateFilterUI(); currentPage = 1; render(); };
   });
   container.querySelector('#sl-tpl-btn').onclick = openTemplateEditor;
+  try { getDB().ref('billTemplate').on('value', s => { const v = s.val(); if (v) { _billTpl = v; try { localStorage.setItem(TPL_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
 
   // Template editor buttons
   container.querySelector('#sl-tpl-close').onclick  = () => container.querySelector('#sl-tpl-overlay').style.display = 'none';
@@ -398,6 +436,12 @@ export async function mount(container) {
       phone:    o.querySelector('#tpl-phone').value.trim(),
       title:    o.querySelector('#tpl-title').value.trim(),
       footer:   o.querySelector('#tpl-footer').value.trim(),
+      hotline:  o.querySelector('#tpl-hotline').value.trim(),
+      terms:    o.querySelector('#tpl-terms').value.trim(),
+      logo:     o.querySelector('#tpl-logo').value.trim(),
+      font:     o.querySelector('#tpl-font').value,
+      paper:    o.querySelector('#tpl-paper').value,
+      scale:    o.querySelector('#tpl-scale').value.trim(),
     });
     o.style.display = 'none';
     toast('Đã lưu mẫu hóa đơn ✓');
@@ -949,6 +993,13 @@ export async function mount(container) {
     const phone      = _br==='cantho' ? '0913.929.515' : (tpl.phone   ? esc(tpl.phone)   : '0909 123 456');
     const invTitle   = esc(tpl.title   || 'PHIẾU BẢO HÀNH');
     const footerText = esc(tpl.footer  || 'Cảm ơn quý khách đã tin tưởng mua sắm! 🙏');
+    const hotline    = (tpl.hotline && tpl.hotline.trim()) ? esc(tpl.hotline) : phone;
+    const billFont   = tpl.font ? tpl.font : "'Be Vietnam Pro','Segoe UI',Arial,sans-serif";
+    const billPaper  = (tpl.paper === 'A4') ? 'A4' : 'A5';
+    const billScale  = Math.max(0.6, Math.min(1, (parseFloat(tpl.scale) || 100) / 100));
+    const _defTerms  = ['Bảo hành áp dụng cho lỗi kỹ thuật phát sinh trong điều kiện sử dụng bình thường.','Không áp dụng với các trường hợp: vỡ, vào nước, cháy nổ, tự ý tháo lắp.','Vui lòng xuất trình phiếu này khi yêu cầu bảo hành.'];
+    const termsArr   = (tpl.terms && tpl.terms.trim()) ? tpl.terms.split('\n').map(t => t.trim()).filter(Boolean) : _defTerms;
+    const termsHtml  = termsArr.map(t => '<li>' + esc(t) + '</li>').join('') + '<li>Hotline hỗ trợ: <strong>' + hotline + '</strong> (8h–21h, Thứ 2 – Chủ Nhật).</li>';
 
     const remaining = (s.total || 0) - (s.paid || 0);
 
@@ -976,8 +1027,8 @@ export async function mount(container) {
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;background:#f0f2f5;padding:28px 12px;color:#333}
-  @page{size:A5 portrait;margin:8mm}.page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+  body{font-family:${billFont};background:#f0f2f5;padding:28px 12px;color:#333}
+  @page{size:${billPaper} portrait;margin:8mm}.page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
   .top-stripe{height:7px;background:linear-gradient(90deg,#00897b,#26a69a,#80cbc4)}
   .header{padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8f5e9}
   .shop-sub{font-size:11.5px;color:#777;margin-top:4px;line-height:1.7}
@@ -1058,12 +1109,7 @@ export async function mount(container) {
     </div></div>
     <div class="wn-box">
       <div class="wn-head">📋 ĐIỀU KHOẢN BẢO HÀNH</div>
-      <div class="wn-body"><ul>
-        <li>Bảo hành áp dụng cho lỗi kỹ thuật phát sinh trong điều kiện sử dụng bình thường.</li>
-        <li>Không áp dụng với các trường hợp: vỡ, vào nước, cháy nổ, tự ý tháo lắp.</li>
-        <li>Vui lòng xuất trình phiếu này khi yêu cầu bảo hành.</li>
-        <li>Hotline hỗ trợ: <strong>${phone}</strong> (8h–21h, Thứ 2 – Chủ Nhật).</li>
-      </ul></div>
+      <div class="wn-body"><ul>${termsHtml}</ul></div>
     </div>
   </div>
   <div class="footer-band">
@@ -1076,7 +1122,7 @@ export async function mount(container) {
     <button class="btn-c" onclick="window.close()">✕ Đóng</button>
   </div>
 </div>
-<script>(function(){var M=96/25.4,PW=128*M,PH=185*M;var p=document.querySelector(".page");function f(){if(!p)return;p.style.zoom=1;var w=p.scrollWidth,h=p.scrollHeight,k=Math.min(PW/w,PH/h,1);p.style.zoom=k;}f();window.addEventListener("beforeprint",f);})();</script></body></html>`;
+<script>(function(){${tpl.logo ? 'try{document.querySelector(".header img").src='+JSON.stringify(tpl.logo)+';}catch(e){}' : ''}var M=96/25.4,PW=${billPaper==='A4'?190:128}*M,PH=${billPaper==='A4'?277:185}*M,SC=${billScale};var p=document.querySelector(".page");function f(){if(!p)return;p.style.zoom=1;var w=p.scrollWidth,h=p.scrollHeight,k=Math.min(PW/w,PH/h,1)*SC;p.style.zoom=k;}f();window.addEventListener("beforeprint",f);})();</script></body></html>`;
 
     const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
     const url  = URL.createObjectURL(blob);
@@ -1096,6 +1142,12 @@ export async function mount(container) {
     o.querySelector('#tpl-phone').value     = tpl.phone    || '';
     o.querySelector('#tpl-title').value     = tpl.title    || '';
     o.querySelector('#tpl-footer').value    = tpl.footer   || '';
+    o.querySelector('#tpl-hotline').value   = tpl.hotline  || '';
+    o.querySelector('#tpl-terms').value     = tpl.terms    || '';
+    o.querySelector('#tpl-logo').value      = tpl.logo     || '';
+    o.querySelector('#tpl-font').value      = tpl.font     || '';
+    o.querySelector('#tpl-paper').value     = tpl.paper    || 'A5';
+    o.querySelector('#tpl-scale').value     = tpl.scale    || '';
     o.style.display = 'flex';
     o.onclick = e => { if (e.target === o) o.style.display = 'none'; };
   }
