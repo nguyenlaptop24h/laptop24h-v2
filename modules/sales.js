@@ -977,7 +977,7 @@ export async function mount(container) {
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;background:#f0f2f5;padding:28px 12px;color:#333}
-  .page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+  @page{size:A5 portrait;margin:8mm}.page{max-width:700px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12)}
   .top-stripe{height:7px;background:linear-gradient(90deg,#00897b,#26a69a,#80cbc4)}
   .header{padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8f5e9}
   .shop-sub{font-size:11.5px;color:#777;margin-top:4px;line-height:1.7}
@@ -1076,7 +1076,7 @@ export async function mount(container) {
     <button class="btn-c" onclick="window.close()">✕ Đóng</button>
   </div>
 </div>
-</body></html>`;
+<script>(function(){var M=96/25.4,PW=128*M,PH=185*M;var p=document.querySelector(".page");function f(){if(!p)return;p.style.zoom=1;var w=p.scrollWidth,h=p.scrollHeight,k=Math.min(PW/w,PH/h,1);p.style.zoom=k;}f();window.addEventListener("beforeprint",f);})();</script></body></html>`;
 
     const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
     const url  = URL.createObjectURL(blob);
