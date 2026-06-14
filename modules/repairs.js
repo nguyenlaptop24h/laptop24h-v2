@@ -85,23 +85,23 @@ function printWarrantyBill(record) {
   const win = window.open('', '_blank', 'width=620,height=840');
   win.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bill Bảo Hành</title><style>@page{size:A5 portrait;margin:8mm}' +
     '* { margin:0; padding:0; box-sizing:border-box; }' +
-    'body { font-family: Arial, sans-serif; font-size: 15px; padding: 0; width: 128mm; max-width: 128mm; margin: 0 auto; }' +
-    '.header { text-align: center; margin-bottom: 10px; }' +
-    '.header h2 { font-size: 26px; font-weight: bold; letter-spacing: 1px; }' +
-    '.header p { font-size: 12px; color: #555; }' +
-    '.divider { border-top: 1px dashed #999; margin: 8px 0; }.rb-block{padding:4px 0;margin:2px 0}.rb-row{display:flex;align-items:flex-start;margin:3px 0;font-size:12.5px}.rb-lbl{color:#555;min-width:130px;font-weight:600;flex-shrink:0}.rb-val{flex:1;color:#222;line-height:1.5}' +
-    '.title { text-align: center; font-size: 19px; font-weight: bold; margin: 8px 0; text-transform: uppercase; letter-spacing: 1px; }' +
+    'body { font-family: Arial, sans-serif; font-size: 12px; padding: 0; width: 132mm; max-width: 132mm; margin: 0 auto; }' +
+    '.header { text-align: center; margin-bottom: 6px; }' +
+    '.header h2 { font-size: 20px; font-weight: bold; letter-spacing: 1px; }' +
+    '.header p { font-size: 11px; color: #555; }' +
+    '.divider { border-top: 1px dashed #999; margin: 6px 0; }.rb-block{padding:4px 0;margin:2px 0}.rb-row{display:flex;align-items:flex-start;margin:2px 0;font-size:12px}.rb-lbl{color:#555;min-width:125px;font-weight:600;flex-shrink:0}.rb-val{flex:1;color:#222;line-height:1.5}' +
+    '.title { text-align: center; font-size: 16px; font-weight: bold; margin: 6px 0; text-transform: uppercase; letter-spacing: 1px; }' +
     'table { width: 100%; border-collapse: collapse; }' +
-    'td { padding: 6px 2px; vertical-align: top; font-size: 14px; }' +
+    'td { padding: 2px 2px; vertical-align: top; font-size: 12.5px; }' +
     'td:first-child { width: 38%; font-weight: 600; color: #333; white-space: nowrap; }' +
-    '.total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #333; padding-top: 6px; }' +
-    '.wbox { border: 2px solid #2563eb; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center; }' +
-    '.wbox .wlabel { font-size: 11px; color: #666; }' +
-    '.wbox .wvalue { font-size: 22px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
-    '.footer { text-align: center; font-size: 11px; color: #888; margin-top: 12px; }' +
-    '.sig { display: flex; justify-content: space-between; margin-top: 24px; font-size: 12px; }' +
+    '.total-row td { font-weight: bold; font-size: 14px; border-top: 1px solid #333; padding-top: 4px; }' +
+    '.wbox { border: 2px solid #2563eb; border-radius: 8px; padding: 7px; margin: 7px 0; text-align: center; }' +
+    '.wbox .wlabel { font-size: 10.5px; color: #666; }' +
+    '.wbox .wvalue { font-size: 17px; font-weight: bold; color: #2563eb; margin: 2px 0; }' +
+    '.footer { text-align: center; font-size: 10px; color: #888; margin-top: 7px; }' +
+    '.sig { display: flex; justify-content: space-between; margin-top: 16px; font-size: 12px; }' +
     '.sig div { text-align: center; width: 45%; }' +
-    '.sig .line { border-top: 1px solid #333; margin-top: 32px; padding-top: 4px; }' +
+    '.sig .line { border-top: 1px solid #333; margin-top: 22px; padding-top: 4px; }' +
     '.btn-bar { text-align: center; margin-top: 12px; }' +
     '.btn-bar button { padding: 6px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 0 4px; }' +
     '.btn-print { background: #2563eb; color: white; }' +
@@ -146,7 +146,7 @@ function printWarrantyBill(record) {
   '<div><div class="line">Kỹ thuật viên</div></div>' +
   '</div>' +
   '<div class="footer"><p>' + (tpl.footer || 'Cảm ơn quý khách đã tin tưởng sử dụng dịch vụ!') + '</p><p>In lúc: ' + new Date().toLocaleString('vi-VN') + '</p></div>' +
-  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' + '<script>(function(){var M=96/25.4,T=190*M;function f(){document.body.style.zoom=1;var b=document.querySelector(".btn-bar"),d=b?b.style.display:"";if(b)b.style.display="none";var h=document.body.scrollHeight;if(b)b.style.display=d;if(h>T)document.body.style.zoom=T/h;}f();window.addEventListener("beforeprint",f);})();</script>' +
+  '<div class="btn-bar"><button class="btn-print" onclick="window.print()">🖨 In</button><button class="btn-edit-content" onclick="if(window.opener){window.opener.document.getElementById(&apos;rep-edit-bh-btn&apos;).click();window.close();}">✏️ Sửa nội dung</button><button class="btn-close" onclick="window.close()">Đóng</button></div>' + '<script>(function(){var M=96/25.4,T=180*M;function f(){document.body.style.zoom=1;var b=document.querySelector(".btn-bar"),d=b?b.style.display:"";if(b)b.style.display="none";var h=document.body.scrollHeight;if(b)b.style.display=d;if(h>T)document.body.style.zoom=T/h;}f();window.addEventListener("beforeprint",f);})();</script>' +
   '</body></html>');
   win.document.close();
 }
