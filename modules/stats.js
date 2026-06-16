@@ -281,7 +281,7 @@ export async function mount(container) {
       const repDiscount = repF.reduce((s,r)=>s+(r.discount||0),0);
       const repDeposit  = repF.reduce((s,r)=>s+(r.deposit||0),0);
       const repProfit   = repRevenue - repCapital - repDiscount;
-      const repDebt     = repRevenue - repDeposit - repDiscount;
+      const repDebt     = repF.filter(r => r.paymentStatus === 'debt').reduce((s,r) => s + Math.max(0, (r.cost||0) - (r.deposit||0) - (r.discount||0)), 0);
 
       const statusMap = {};
       repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
