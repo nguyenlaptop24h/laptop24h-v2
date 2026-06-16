@@ -230,7 +230,7 @@ export async function mount(container) {
 
   let allData = [];
   let currentPage = 1;
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 20;
   let selectedKey = null;
   let selectedKeys = new Set();
 let showTrash = false;
