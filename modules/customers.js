@@ -180,7 +180,8 @@ async function showCustStats(name, phone) {
   if (!name && !phone) return;
   var allReps = [];
   try { allReps = await getAll('repairs'); } catch(e){}
-  var myReps = allReps.filter(function(r){ return (phone && r.phone === phone) || (name && r.customerName === name); });
+  var phoneReal = phone && /[0-9]/.test(phone);
+  var myReps = allReps.filter(function(r){ return (name && r.customerName === name) || (phoneReal && r.phone === phone); });
   var open = myReps.filter(function(r){ return ['Tiếp nhận','\u0110ang sửa','Hoàn thành'].indexOf(r.status||'') >= 0; });
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
   var now = new Date();
