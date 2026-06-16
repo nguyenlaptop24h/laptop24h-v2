@@ -181,7 +181,7 @@ async function showCustStats(name, phone) {
   var allReps = [];
   try { allReps = await getAll('repairs'); } catch(e){}
   var myReps = allReps.filter(function(r){ return (phone && r.phone === phone) || (name && r.customerName === name); });
-  var open = myReps.filter(function(r){ return ['Tiếp nhận','\u0110ang sửa'].indexOf(r.status||'') >= 0; });
+  var open = myReps.filter(function(r){ return ['Tiếp nhận','\u0110ang sửa','Hoàn thành'].indexOf(r.status||'') >= 0; });
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
   var now = new Date();
   var months = [];

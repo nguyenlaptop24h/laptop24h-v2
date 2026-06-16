@@ -431,6 +431,8 @@ function quickChangeStatus(record) {
     formWrap.querySelectorAll('.qs-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const ns = btn.dataset.status;
+        const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
+        if (ns === 'Đã giao' && remaining > 0) { askDeliverPayment(record, remaining, formWrap); return; }
         const update = { ...record, status: ns };
         if (ns === 'Đã giao' && !record.deliveredDate) update.deliveredDate = todayStr();
         try { await updateItem(COLLECTION, record._key, update); toast('✅ ' + ns); formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); }
@@ -438,6 +440,35 @@ function quickChangeStatus(record) {
       });
     });
     formWrap.querySelector('#qs-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); });
+    formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function askDeliverPayment(record, remaining, formWrap) {
+    formWrap.innerHTML = '<div class="form-card" style="max-width:380px;margin:1rem auto;padding:1.2rem">' +
+      '<h3 style="margin:0 0 .4rem">\uD83D\uDE9A Giao máy \u2014 thanh toán</h3>' +
+      '<p style="color:#555;margin:0 0 .8rem;font-size:.88rem"><strong>' + (record.customerName || '') + '</strong> \u2014 còn lại <strong style="color:#dc2626">' + formatVND(remaining) + '</strong></p>' +
+      '<div style="display:flex;flex-direction:column;gap:.5rem">' +
+      '<button id="dp-paid" class="btn btn--primary" style="justify-content:flex-start">\u2705 Đã thanh toán đủ</button>' +
+      '<button id="dp-debt" class="btn" style="justify-content:flex-start;background:#f59e0b;color:#fff;border-color:#f59e0b">\uD83D\uDCB0 Ghi công nợ ' + formatVND(remaining) + '</button>' +
+      '</div><button id="dp-cancel" class="btn btn--secondary" style="width:100%;margin-top:.6rem">Hủy</button></div>';
+    const done = () => { formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); };
+    const today = todayStr();
+    formWrap.querySelector('#dp-paid').addEventListener('click', async () => {
+      try {
+        await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'paid' });
+        toast('\u2705 Đã giao \u2014 đã thanh toán'); done();
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    });
+    formWrap.querySelector('#dp-debt').addEventListener('click', async () => {
+      try {
+        const dev = (record.device || '') + (record.serial ? (' / ' + record.serial) : '');
+        const note = 'Nợ phiếu sửa: ' + dev + ' \u2014 nhận ' + (record.receivedDate ? formatDate(record.receivedDate) : '?') + ', giao ' + formatDate(today) + '. Còn lại ' + formatVND(remaining) + '.';
+        await addItem('debts', { name: record.customerName || '', phone: record.phone || '', amount: remaining, paid: 0, status: 'unpaid', dueDate: '', note: note, source: 'repair', repairKey: record._key });
+        await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'debt' });
+        toast('\u2705 Đã giao \u2014 đã ghi công nợ ' + formatVND(remaining)); done();
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    });
+    formWrap.querySelector('#dp-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
