@@ -195,6 +195,7 @@ export async function mount(container) {
   const today = todayStr();
 
   container.innerHTML = `
+    <div id="rep-sticky" style="position:sticky;top:0;z-index:30;background:#fff;padding:.45rem 0 .55rem;box-shadow:0 4px 8px rgba(0,0,0,.05)">
     <div class="module-header" style="display:flex;align-items:center">
       <h2>Phiếu sửa chữa</h2>
       <button id="rep-trash-btn" style="margin-left:auto;padding:4px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">🗑 Thùng rác</button>
@@ -222,11 +223,14 @@ export async function mount(container) {
       <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
+    </div>
     <div id="rep-table-wrap"></div>
     <div id="rep-form-wrap"></div>
   `;
 
   let allData = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
   let selectedKey = null;
   let selectedKeys = new Set();
 let showTrash = false;
@@ -250,15 +254,16 @@ let showTrash = false;
   const selHint    = container.querySelector('#rep-sel-hint');
   const billTplBtn = container.querySelector('#rep-bill-tpl-btn');
 
-  searchEl.addEventListener('input', filterData);
-  statusEl.addEventListener('change', filterData);
-  dateFromEl.addEventListener('change', filterData);
-  dateToEl.addEventListener('change', filterData);
-  trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; filterData(); });
+  function applyFilter() { currentPage = 1; filterData(); }
+  searchEl.addEventListener('input', applyFilter);
+  statusEl.addEventListener('change', applyFilter);
+  dateFromEl.addEventListener('change', applyFilter);
+  dateToEl.addEventListener('change', applyFilter);
+  trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; applyFilter(); });
   billTplBtn?.addEventListener('click', () => openRepBillTplModal());
 
   container.querySelector('#rep-clear-date').addEventListener('click', () => {
-    dateFromEl.value = ''; dateToEl.value = ''; filterData();
+    dateFromEl.value = ''; dateToEl.value = ''; applyFilter();
   });
   container.querySelector('#rep-add').addEventListener('click', () => openForm(null));
 
@@ -332,14 +337,26 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
     ,
       { label: 'Thao tác', key: r => showTrash ? '<button onclick="window.__restoreRepair(\''+r._key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>' : '' }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
-    const trs = data.map(r =>
+    const total = data.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    const pageData = data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const trs = pageData.map(r =>
       '<tr class="rep-row" data-key="' + r._key + '">' +
       cols.map(c => '<td style="padding:.45rem .75rem;border-bottom:1px solid #f3f4f6;font-size:.85rem;vertical-align:middle">' + c.key(r) + '</td>').join('') +
       '</tr>'
     ).join('');
+    const pgBtn = (pg, lbl, dis) => '<button class="rep-page-btn" data-page="' + pg + '"' + (dis ? ' disabled' : '') + ' style="padding:.35rem .8rem;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem' + (dis ? ';opacity:.4;cursor:default' : '') + '">' + lbl + '</button>';
+    const pager = '<div style="display:flex;gap:.5rem;align-items:center;justify-content:center;margin-top:.7rem;flex-wrap:wrap">' +
+      (totalPages > 1 ? pgBtn('prev', '\u2039 Tr\u01b0\u1edbc', currentPage <= 1) : '') +
+      '<span style="font-size:.85rem;color:#374151">Trang ' + currentPage + '/' + totalPages + ' \u00b7 ' + total + ' phi\u1ebfu</span>' +
+      (totalPages > 1 ? pgBtn('next', 'Sau \u203a', currentPage >= totalPages) : '') +
+      '</div>';
     wrap.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">' +
       '<thead><tr style="background:#f9fafb">' + ths + '</tr></thead>' +
-      '<tbody>' + trs + '</tbody></table></div>';
+      '<tbody>' + trs + '</tbody></table></div>' + pager;
+    wrap.querySelectorAll('.rep-page-btn').forEach(function(b){ b.addEventListener('click', function(){ if (b.dataset.page === 'prev' && currentPage > 1) currentPage--; else if (b.dataset.page === 'next' && currentPage < totalPages) currentPage++; renderTable(data); }); });
     const chkAll = wrap.querySelector('#rep-chk-all');
     if (chkAll) chkAll.addEventListener('change', () => {
       wrap.querySelectorAll('.rep-chk').forEach(c => { c.checked = chkAll.checked; });
