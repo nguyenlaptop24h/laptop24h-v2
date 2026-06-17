@@ -502,11 +502,10 @@ function quickChangeStatus(record) {
   function printReceipt(d) {
     var T = {};
     try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
-    var DEFAULT_LOGO = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzOTIgOTYnPjxwYXRoIGQ9J00xMCAxNiBMNjAgOSBMNjAgNTUgTDM2IDcyIEwxMCA1OCBaJyBmaWxsPSdub25lJyBzdHJva2U9JyNGNTlFMEInIHN0cm9rZS13aWR0aD0nNycgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcvPjxwYXRoIGQ9J00yMSA1MSBMNTEgNTEgTDM2IDcyIFonIGZpbGw9JyNGNTlFMEInLz48dGV4dCB4PSc3MicgeT0nNjQnIGZvbnQtZmFtaWx5PSdBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZicgZm9udC13ZWlnaHQ9J2JvbGQnIGZvbnQtc3R5bGU9J2l0YWxpYycgZm9udC1zaXplPSc1NCcgZmlsbD0nI0Y1OUUwQic+TGFwdG9wMjRoPC90ZXh0Pjwvc3ZnPg==';
     var shopName = (T.shopName || 'LAPTOP 24H');
     var shopAddr = (T.address || '');
     var shopHot  = (T.hotline || T.phone || '');
-    var shopLogo = (T.logo || DEFAULT_LOGO);
+    var shopLogo = (T.logo || '');
     var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
     var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
@@ -515,8 +514,9 @@ function quickChangeStatus(record) {
     var lien = function(label, brk){
       return '<div class="lien"' + (brk ? ' style="page-break-after:always"' : '') + '>' +
         '<div class="head">' +
-          '<img class="logo" src="'+shopLogo+'" alt="">' +
+          (shopLogo ? '<img class="logo" src="'+shopLogo+'" alt="">' : '') +
           '<div class="shop">' +
+            (shopLogo ? '' : '<div class="sn">'+esc(shopName)+'</div>') +
             (shopAddr ? '<div class="si">📍 '+esc(shopAddr)+'</div>' : '') +
             (shopHot ? '<div class="si">📞 Hotline: '+esc(shopHot)+'</div>' : '') +
           '</div>' +
@@ -551,7 +551,7 @@ function quickChangeStatus(record) {
       '.lien{padding:4px 0 6px}' +
       '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #f59e0b;padding-bottom:7px;margin-bottom:8px}' +
       '.logo{height:42px;width:auto;object-fit:contain}' +
-      '.shop{flex:1}.si{font-size:10px;color:#555;line-height:1.5}' +
+      '.shop{flex:1}.sn{font-size:18px;font-weight:bold;color:#f59e0b;line-height:1.2;margin-bottom:1px}.si{font-size:10px;color:#555;line-height:1.5}' +
       '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px;color:#0f172a}.dl{font-size:10px;font-weight:bold;color:#b45309}.dd{font-size:9.5px;color:#666;margin-top:1px}' +
       '.info{width:100%;border-collapse:collapse;margin-bottom:8px}' +
       '.info td{border:1px solid #d1d5db;padding:5px 8px;font-size:11px;vertical-align:top;line-height:1.4}' +
