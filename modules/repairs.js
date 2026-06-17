@@ -500,57 +500,79 @@ function quickChangeStatus(record) {
   }
 
   function printReceipt(d) {
-  var r = function(l,v){ return '<tr><td style="font-weight:bold;width:40%;padding:3px 6px;color:#444;vertical-align:top">'+l+'</td><td style="padding:3px 6px">'+(v||'')+'</td></tr>'; };
-  var css = 'body{font-family:Arial,sans-serif;font-size:13px;padding:20px;color:#222}'
-    + 'h2{text-align:center;font-size:18px;margin:0 0 2px}'
-    + '.sub{text-align:center;font-size:14px;font-weight:bold;margin-bottom:12px;letter-spacing:1px}'
-    + 'table{width:100%;border-collapse:collapse;margin-bottom:8px}'
-    + 'tr{border-bottom:1px solid #eee}'
-    + '.sec{background:#eeeeee;font-weight:bold;padding:3px 8px;font-size:12px;margin-top:6px}'
-    + '.sign{display:flex;justify-content:space-between;margin-top:30px}'
-    + '.line{border-top:1px solid #999;margin-top:38px;padding-top:4px;font-size:12px;text-align:center}'
-    + '@media print{.np{display:none}}';
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>'
-    + '<h2>LAPTOP 24H</h2>'
-    + '<div class="sub">PHIẾU NHậN MÁY</div>'
-    + '<div class="sec">THÔNG TIN KHÁCH HÀNG</div><table>'
-    + r('Khách hàng:',d.customerName)
-    + r('Điện thoại:',d.phone)
-    + r('Địa chỉ:',d.address)
-    + '</table><div class="sec">THÔNG TIN THIết Bị</div><table>'
-    + r('Thiết bị:',d.device)
-    + r('Serial:',d.serial)
-    + r('Mật khẩu:',d.password)
-    + r('Phụ kiện kèm:',d.accessories)
-    
-    + '</table><div class="sec">CẤU HÌNH MÁY</div><table>'
-    + r('CPU:',d.cpu)
-    + r('RAM:',d.ram)
-    + r('SSD:',d.ssd)
-    + r('VGA:',d.vga)
-    + '</table><div class="sec">THÔNG TIN SỪa CHỮa</div><table>'
-    + r('Kỹ thuật viên:',d.techName)
-    + r('Ngày nhận:',d.receivedDate)
-    + r('Ngày trả dự kiến:',d.deliveredDate)
-    + r('Tình trạng ban đầu:',d.initialCondition)
-    + r('Yêu cầu sửa chỮa:',d.repairRequest)
-    + r('Trạng thái:',d.status)
-    + '</table><div class="sec">THANH TOÁN</div><table>'
-    + r('Chi phí ước tính:',d.cost)
-    + r('Đặt cọc:',d.deposit)
-    + r('Hình thức thanh toán:',d.paymentType)
-    + '</table>'
-    + '<div class="sign">'
-    + '<div style="width:45%"><div class="line">Khách hàng ký tên</div></div>'
-    + '<div style="width:45%"><div class="line">Kỹ thuật viên</div></div>'
-    + '</div>'
-    + '<div class="np" style="text-align:center;margin-top:14px">'
-    + '<button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">&#128424; In phiếu</button>'
-    + '</div>'
-    + '</body></html>';
-  var w = window.open('', '_blank', 'width=640,height=820');
-  w.document.write(html);
-  w.document.close();
+    var T = {};
+    try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
+    var shopName = (T.shopName || 'LAPTOP 24H');
+    var shopAddr = (T.address || '');
+    var shopHot  = (T.hotline || T.phone || '');
+    var shopLogo = (T.logo || '');
+    var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'đ'; };
+    var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  •  ');
+    var cell = function(l,v,full){ return '<div class="c'+(full?' full':'')+'"><span class="l">'+l+':</span> <span class="v">'+esc(v||'—')+'</span></div>'; };
+
+    var lien = function(label){
+      return '<div class="lien">' +
+        '<div class="head">' +
+          (shopLogo ? '<img class="logo" src="'+esc(shopLogo)+'" alt="">' : '') +
+          '<div class="shop"><div class="sn">'+esc(shopName)+'</div>' +
+            (shopAddr ? '<div class="si">📍 '+esc(shopAddr)+'</div>' : '') +
+            (shopHot ? '<div class="si">📞 '+esc(shopHot)+'</div>' : '') +
+          '</div>' +
+          '<div class="doc"><div class="dt">PHIẾU NHẬN MÁY</div><div class="dl">'+label+'</div>' +
+            '<div class="dd">Ngày nhận: '+esc(d.receivedDate||'')+'</div></div>' +
+        '</div>' +
+        '<div class="grid">' +
+          cell('Khách hàng', d.customerName) + cell('SĐT', d.phone) +
+          cell('Địa chỉ', d.address, true) +
+          cell('Thiết bị', d.device) + cell('Serial', d.serial) +
+          (cfg ? '<div class="c full"><span class="l">Cấu hình:</span> <span class="v">'+esc(cfg)+'</span></div>' : '') +
+          cell('Mật khẩu', d.password) + cell('Phụ kiện kèm', d.accessories) +
+          cell('Tình trạng ban đầu', d.initialCondition, true) +
+          cell('Yêu cầu sửa chữa', d.repairRequest, true) +
+          cell('Chi phí ước tính', money(d.cost)) + cell('Đặt cọc', money(d.deposit)) +
+          cell('Ngày trả dự kiến', d.deliveredDate) + cell('KTV', d.techName) +
+        '</div>' +
+        '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: Cửa hàng <b>KHÔNG chịu trách nhiệm</b> về dữ liệu trong máy. Nếu có dữ liệu cực kỳ quan trọng, vui lòng <b>trao đổi/sao lưu trực tiếp với nhân viên</b> trước khi giao máy.</div>' +
+        '<div class="terms"><b>Điều khoản:</b> 1) Cửa hàng kiểm tra &amp; báo giá trước khi sửa, khách đồng ý mới tiến hành. 2) Quý khách giữ phiếu này &amp; xuất trình khi nhận máy. 3) Quá <b>30 ngày</b> kể từ ngày hẹn trả không đến nhận, cửa hàng không chịu trách nhiệm bảo quản. 4) Khách đã kiểm tra &amp; đồng ý tình trạng máy/phụ kiện ghi trên phiếu.</div>' +
+        '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div>' +
+          '<div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' +
+      '</div>';
+    };
+
+    var css = '@page{size:A4 portrait;margin:8mm}' +
+      '*{margin:0;padding:0;box-sizing:border-box}' +
+      'body{font-family:Arial,sans-serif;color:#222;font-size:11px;width:194mm;margin:0 auto}' +
+      '.lien{padding:6px 2px 8px}' +
+      '.cut{border-top:1px dashed #999;text-align:center;margin:6px 0}' +
+      '.cut span{background:#fff;padding:0 8px;position:relative;top:-9px;color:#999;font-size:10px}' +
+      '.head{display:flex;align-items:center;gap:10px;border-bottom:2px solid #1e293b;padding-bottom:5px;margin-bottom:6px}' +
+      '.logo{height:46px;width:auto;object-fit:contain}' +
+      '.shop{flex:1}.sn{font-size:16px;font-weight:bold;color:#0e7490}.si{font-size:10px;color:#555}' +
+      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px}.dl{font-size:10px;font-weight:bold;color:#b91c1c}.dd{font-size:10px;color:#555}' +
+      '.grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin-bottom:6px}' +
+      '.c{font-size:11px;border-bottom:1px dotted #e2e8f0;padding:2px 0}.c.full{grid-column:1/-1}' +
+      '.c .l{color:#555;font-weight:600}.c .v{color:#111}' +
+      '.warn{border:1.5px solid #dc2626;background:#fef2f2;color:#991b1b;font-size:10px;padding:5px 8px;border-radius:5px;margin-bottom:5px;line-height:1.4}' +
+      '.terms{font-size:9.5px;color:#444;line-height:1.5;margin-bottom:6px}' +
+      '.sign{display:flex;justify-content:space-between;margin-top:6px}' +
+      '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:3px;margin-top:30px}' +
+      '.sl{font-weight:bold;font-size:11px}.su{font-size:9px;color:#777}' +
+      '@media print{.np{display:none}}';
+
+    var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
+      '<div id="sheet">' +
+        lien('LIÊN 1 · CỬA HÀNG GIỮ') +
+        '<div class="cut"><span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</span></div>' +
+        lien('LIÊN 2 · GIAO KHÁCH') +
+      '</div>' +
+      '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">🖨 In phiếu</button></div>' +
+      '<script>(function(){var M=96/25.4,PH=281*M;var s=document.getElementById("sheet");function f(){if(!s)return;s.style.zoom=1;var h=s.scrollHeight;if(h>PH)s.style.zoom=PH/h;}f();window.addEventListener("beforeprint",f);})();</script>' +
+      '</body></html>';
+
+    var w = window.open('', '_blank', 'width=820,height=1000');
+    w.document.write(html);
+    w.document.close();
 }
 
 function openForm(record) {
