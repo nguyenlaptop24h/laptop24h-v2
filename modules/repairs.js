@@ -502,39 +502,44 @@ function quickChangeStatus(record) {
   function printReceipt(d) {
     var T = {};
     try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
+    var DEFAULT_LOGO = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzOTIgOTYnPjxwYXRoIGQ9J00xMCAxNiBMNjAgOSBMNjAgNTUgTDM2IDcyIEwxMCA1OCBaJyBmaWxsPSdub25lJyBzdHJva2U9JyNGNTlFMEInIHN0cm9rZS13aWR0aD0nNycgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcvPjxwYXRoIGQ9J00yMSA1MSBMNTEgNTEgTDM2IDcyIFonIGZpbGw9JyNGNTlFMEInLz48dGV4dCB4PSc3MicgeT0nNjQnIGZvbnQtZmFtaWx5PSdBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZicgZm9udC13ZWlnaHQ9J2JvbGQnIGZvbnQtc3R5bGU9J2l0YWxpYycgZm9udC1zaXplPSc1NCcgZmlsbD0nI0Y1OUUwQic+TGFwdG9wMjRoPC90ZXh0Pjwvc3ZnPg==';
     var shopName = (T.shopName || 'LAPTOP 24H');
     var shopAddr = (T.address || '');
     var shopHot  = (T.hotline || T.phone || '');
-    var shopLogo = (T.logo || '');
+    var shopLogo = (T.logo || DEFAULT_LOGO);
     var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'đ'; };
-    var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  •  ');
-    var cell = function(l,v,full){ return '<div class="c'+(full?' full':'')+'"><span class="l">'+l+':</span> <span class="v">'+esc(v||'—')+'</span></div>'; };
+    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
+    var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
+    var v = function(x){ return esc(x||'—'); };
 
     var lien = function(label, brk){
       return '<div class="lien"' + (brk ? ' style="page-break-after:always"' : '') + '>' +
         '<div class="head">' +
-          (shopLogo ? '<img class="logo" src="'+esc(shopLogo)+'" alt="">' : '') +
-          '<div class="shop"><div class="sn">'+esc(shopName)+'</div>' +
+          '<img class="logo" src="'+shopLogo+'" alt="">' +
+          '<div class="shop">' +
             (shopAddr ? '<div class="si">📍 '+esc(shopAddr)+'</div>' : '') +
-            (shopHot ? '<div class="si">📞 '+esc(shopHot)+'</div>' : '') +
+            (shopHot ? '<div class="si">📞 Hotline: '+esc(shopHot)+'</div>' : '') +
           '</div>' +
           '<div class="doc"><div class="dt">PHIẾU NHẬN MÁY</div><div class="dl">'+label+'</div>' +
             '<div class="dd">Ngày nhận: '+esc(d.receivedDate||'')+'</div></div>' +
         '</div>' +
-        '<div class="grid">' +
-          cell('Khách hàng', d.customerName) + cell('SĐT', d.phone) +
-          cell('Địa chỉ', d.address, true) +
-          cell('Thiết bị', d.device) + cell('Serial', d.serial) +
-          (cfg ? '<div class="c full"><span class="l">Cấu hình:</span> <span class="v">'+esc(cfg)+'</span></div>' : '') +
-          cell('Mật khẩu', d.password) + cell('Phụ kiện kèm', d.accessories) +
-          cell('Tình trạng ban đầu', d.initialCondition, true) +
-          cell('Yêu cầu sửa chữa', d.repairRequest, true) +
-          cell('Chi phí ước tính', money(d.cost)) + cell('Đặt cọc', money(d.deposit)) +
-          cell('Ngày trả dự kiến', d.deliveredDate) + cell('KTV', d.techName) +
-        '</div>' +
+        '<table class="info">' +
+          '<tr><td class="sec" colspan="4">THÔNG TIN KHÁCH HÀNG</td></tr>' +
+          '<tr><td class="lb">Khách hàng</td><td class="vl">'+v(d.customerName)+'</td><td class="lb">SĐT</td><td class="vl">'+v(d.phone)+'</td></tr>' +
+          '<tr><td class="lb">Địa chỉ</td><td class="vl" colspan="3">'+v(d.address)+'</td></tr>' +
+          '<tr><td class="sec" colspan="4">THÔNG TIN THIẾT BỊ</td></tr>' +
+          '<tr><td class="lb">Thiết bị</td><td class="vl">'+v(d.device)+'</td><td class="lb">Serial</td><td class="vl">'+v(d.serial)+'</td></tr>' +
+          '<tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">'+(cfg?esc(cfg):'—')+'</td></tr>' +
+          '<tr><td class="lb">Mật khẩu</td><td class="vl">'+v(d.password)+'</td><td class="lb">Phụ kiện</td><td class="vl">'+v(d.accessories)+'</td></tr>' +
+          '<tr><td class="sec" colspan="4">TÌNH TRẠNG &amp; YÊU CẦU</td></tr>' +
+          '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>' +
+          '<tr><td class="lb">Yêu cầu sửa chữa</td><td class="vl" colspan="3">'+v(d.repairRequest)+'</td></tr>' +
+          '<tr><td class="sec" colspan="4">CHI PHÍ &amp; HẸN TRẢ</td></tr>' +
+          '<tr><td class="lb">Chi phí ước tính</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>' +
+          '<tr><td class="lb">Ngày trả dự kiến</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>' +
+        '</table>' +
         '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: Cửa hàng <b>KHÔNG chịu trách nhiệm</b> về dữ liệu trong máy. Nếu có dữ liệu cực kỳ quan trọng, vui lòng <b>trao đổi/sao lưu trực tiếp với nhân viên</b> trước khi giao máy.</div>' +
-        '<div class="terms"><b>Điều khoản:</b> 1) Cửa hàng kiểm tra &amp; báo giá trước khi sửa, khách đồng ý mới tiến hành. 2) Quý khách giữ phiếu này &amp; xuất trình khi nhận máy. 3) Quá <b>30 ngày</b> kể từ ngày hẹn trả không đến nhận, cửa hàng không chịu trách nhiệm bảo quản. 4) Khách đã kiểm tra &amp; đồng ý tình trạng máy/phụ kiện ghi trên phiếu.</div>' +
+        '<div class="terms"><b>Điều khoản:</b><br>1) Cửa hàng kiểm tra &amp; báo giá trước khi sửa, khách đồng ý mới tiến hành.<br>2) Quý khách giữ phiếu này &amp; xuất trình khi nhận máy.<br>3) Quá <b>30 ngày</b> kể từ ngày hẹn trả mà không đến nhận, cửa hàng không chịu trách nhiệm bảo quản.<br>4) Khách đã kiểm tra &amp; đồng ý tình trạng máy/phụ kiện ghi trên phiếu.</div>' +
         '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div>' +
           '<div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' +
       '</div>';
@@ -542,29 +547,27 @@ function quickChangeStatus(record) {
 
     var css = '@page{size:A5 portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
-      'body{font-family:Arial,sans-serif;color:#222;font-size:11px;width:132mm;margin:0 auto}' +
-      '.lien{padding:6px 2px 8px}' +
-      '.cut{border-top:1px dashed #999;text-align:center;margin:6px 0}' +
-      '.cut span{background:#fff;padding:0 8px;position:relative;top:-9px;color:#999;font-size:10px}' +
-      '.head{display:flex;align-items:center;gap:10px;border-bottom:2px solid #1e293b;padding-bottom:5px;margin-bottom:6px}' +
-      '.logo{height:46px;width:auto;object-fit:contain}' +
-      '.shop{flex:1}.sn{font-size:16px;font-weight:bold;color:#0e7490}.si{font-size:10px;color:#555}' +
-      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px}.dl{font-size:10px;font-weight:bold;color:#b91c1c}.dd{font-size:10px;color:#555}' +
-      '.grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin-bottom:6px}' +
-      '.c{font-size:11px;border-bottom:1px dotted #e2e8f0;padding:2px 0}.c.full{grid-column:1/-1}' +
-      '.c .l{color:#555;font-weight:600}.c .v{color:#111}' +
-      '.warn{border:1.5px solid #dc2626;background:#fef2f2;color:#991b1b;font-size:10px;padding:5px 8px;border-radius:5px;margin-bottom:5px;line-height:1.4}' +
-      '.terms{font-size:9.5px;color:#444;line-height:1.5;margin-bottom:6px}' +
-      '.sign{display:flex;justify-content:space-between;margin-top:6px}' +
-      '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:3px;margin-top:30px}' +
+      'body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;width:132mm;margin:0 auto}' +
+      '.lien{padding:4px 0 6px}' +
+      '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #f59e0b;padding-bottom:7px;margin-bottom:8px}' +
+      '.logo{height:42px;width:auto;object-fit:contain}' +
+      '.shop{flex:1}.si{font-size:10px;color:#555;line-height:1.5}' +
+      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px;color:#0f172a}.dl{font-size:10px;font-weight:bold;color:#b45309}.dd{font-size:9.5px;color:#666;margin-top:1px}' +
+      '.info{width:100%;border-collapse:collapse;margin-bottom:8px}' +
+      '.info td{border:1px solid #d1d5db;padding:5px 8px;font-size:11px;vertical-align:top;line-height:1.4}' +
+      '.info .lb{background:#fff7ed;color:#9a3412;font-weight:700;width:20%;white-space:nowrap;font-size:9.5px}' +
+      '.info .vl{color:#111}' +
+      '.info .sec{background:#f59e0b;color:#fff;font-weight:bold;font-size:10px;letter-spacing:.6px;padding:4px 8px}' +
+      '.warn{border:1.5px solid #dc2626;background:#fef2f2;color:#991b1b;font-size:10px;padding:6px 9px;border-radius:6px;margin-bottom:8px;line-height:1.5}' +
+      '.terms{font-size:9.5px;color:#444;line-height:1.7;margin-bottom:10px}' +
+      '.sign{display:flex;justify-content:space-between;margin-top:8px}' +
+      '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:4px;margin-top:34px}' +
       '.sl{font-weight:bold;font-size:11px}.su{font-size:9px;color:#777}' +
       '@media print{.np{display:none}}';
 
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
-      '<div id="sheet">' +
-        lien('LIÊN 1 · CỬA HÀNG GIỮ', true) +
-        lien('LIÊN 2 · GIAO KHÁCH', false) +
-      '</div>' +
+      lien('LIÊN 1 · CỬA HÀNG GIỮ', true) +
+      lien('LIÊN 2 · GIAO KHÁCH', false) +
       '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">🖨 In phiếu</button></div>' +
       '<script>(function(){var M=96/25.4,PH=194*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();</script>' +
       '</body></html>';
