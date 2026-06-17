@@ -151,7 +151,7 @@ function printWarrantyBill(record) {
   win.document.close();
 }
 
-const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
+const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzha41ZadrH6LNqgttslMWyVN0OzFmFW1YW8CaWs2Yd_b8CF82xZhtqsM36XxJJZy8D5Q/exec';
 function getRepBillTpl() { try { return JSON.parse(localStorage.getItem(RPL_BILL_KEY) || '{}'); } catch(e) { return {}; } }
 function saveRepBillTpl(obj) { localStorage.setItem(RPL_BILL_KEY, JSON.stringify(obj)); }
 function openRepBillTplModal() {
@@ -753,7 +753,7 @@ formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const item = allData.find(r => r._key === key);
   if (!item) return;
   const {deletedAt, _key: rk2, ...rest} = item;
-  try { await updateItem(COLLECTION, key, {...rest, deletedAt: null}); toast('Khôi phục thành công'); filterData(); }
+  try { await updateItem(COLLECTION, key, {...rest, deletedAt: null}); logRepairToSheet({...rest, key: key}, 'add'); toast('Khôi phục thành công'); filterData(); }
   catch(e) { toast('Lỗi: ' + e.message, 'error'); }
 }
 window.__restoreRepair = k => restoreRepair(k);
@@ -783,6 +783,7 @@ async function confirmDeleteKeys(keys) {
               await updateItem(COLLECTION, key, {...ci, deletedAt: Date.now()});
               allData = allData.map(r => r._key === key ? {...r, deletedAt: Date.now()} : r);
             }
+            logRepairToSheet({ key: key }, 'delete');
             ok++;
           } catch(e) { fail++; }
         }
