@@ -1,5 +1,5 @@
 // modules/repairs.js - Phiếu sửa chữa
-import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
@@ -154,6 +154,48 @@ function printWarrantyBill(record) {
 const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzha41ZadrH6LNqgttslMWyVN0OzFmFW1YW8CaWs2Yd_b8CF82xZhtqsM36XxJJZy8D5Q/exec';
 function getRepBillTpl() { try { return JSON.parse(localStorage.getItem(RPL_BILL_KEY) || '{}'); } catch(e) { return {}; } }
 function saveRepBillTpl(obj) { localStorage.setItem(RPL_BILL_KEY, JSON.stringify(obj)); }
+const RPL_RECEIPT_KEY = 'rp_receipt_tpl';
+let _recTpl = {};
+try { _recTpl = JSON.parse(localStorage.getItem(RPL_RECEIPT_KEY) || '{}'); } catch(e) {}
+function getReceiptTpl() { return _recTpl || {}; }
+function saveReceiptTpl(obj) {
+  _recTpl = obj;
+  try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(obj)); } catch(e) {}
+  try { getDB().ref('repairReceiptTpl').set(obj); } catch(e) {}
+}
+function openReceiptTplModal() {
+  const t = getReceiptTpl();
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(560px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.2)">
+    <h3 style="margin:0 0 .3rem;font-size:1.1rem">📋 Cài đặt mẫu Phiếu nhận máy</h3>
+    <p style="margin:0 0 1rem;font-size:.8rem;color:#94a3b8">Tên/địa chỉ/hotline/logo lấy từ "🖨 Mẫu bill" / "Mẫu HĐ". Ở đây chỉnh nội dung phiếu nhận.</p>
+    <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
+      <label style="flex:1"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Tiêu đề phiếu</span><input id="rct-title" placeholder="PHIẾU NHẬN MÁY" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
+      <label style="width:150px"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Khổ giấy</span><select id="rct-paper" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"><option value="A5">A5 (2 trang)</option><option value="A4">A4</option></select></label>
+    </div>
+    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Cảnh báo dữ liệu (ô đỏ/đậm)</span><textarea id="rct-warn" rows="3" placeholder="Cửa hàng KHÔNG chịu trách nhiệm về dữ liệu..." style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea></label>
+    <label style="display:block;margin-bottom:1rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Điều khoản nhận máy (mỗi dòng 1 ý)</span><textarea id="rct-terms" rows="5" placeholder="Mỗi dòng là một điều khoản..." style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea></label>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end"><button id="rct-cancel" class="btn btn--secondary">Hủy</button><button id="rct-save" class="btn btn--primary">💾 Lưu mẫu</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('rct-title').value = t.title || '';
+  document.getElementById('rct-paper').value = t.paper || 'A5';
+  document.getElementById('rct-warn').value = t.warning || '';
+  document.getElementById('rct-terms').value = t.terms || '';
+  document.getElementById('rct-cancel').onclick = () => ov.remove();
+  document.getElementById('rct-save').onclick = () => {
+    saveReceiptTpl({
+      title:   document.getElementById('rct-title').value.trim(),
+      paper:   document.getElementById('rct-paper').value,
+      warning: document.getElementById('rct-warn').value.trim(),
+      terms:   document.getElementById('rct-terms').value.trim(),
+    });
+    toast('Đã lưu mẫu phiếu nhận ✓');
+    ov.remove();
+  };
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
 function openRepBillTplModal() {
   const t = getRepBillTpl();
   const ov = document.createElement('div');
@@ -220,6 +262,7 @@ export async function mount(container) {
       <button id="rep-print-btn" class="btn btn--secondary" disabled style="opacity:.4;background:#0ea5e9;color:#fff;border-color:#0ea5e9">🖨 In bill BH</button>
       <button id="rep-edit-bh-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border-color:#f59e0b">&#x270f;&#xfe0f; Sửa BH</button>
         <button id="rep-bill-tpl-btn" class="btn" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6;font-size:.85rem">🖨 Mẫu bill</button>
+        <button id="rep-receipt-tpl-btn" class="btn" style="background:#0891b2;color:#fff;border-color:#0891b2;font-size:.85rem">📋 Mẫu phiếu nhận</button>
       <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
     </div>
@@ -243,6 +286,7 @@ let showTrash = false;
     allData = items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     filterData();
   });
+  try { getDB().ref('repairReceiptTpl').on('value', sn => { const v = sn.val(); if (v) { _recTpl = v; try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
   container.addEventListener('unmount', () => unsub && unsub());
 
   const editBtn    = container.querySelector('#rep-edit-btn');
@@ -261,6 +305,7 @@ let showTrash = false;
   dateToEl.addEventListener('change', applyFilter);
   trashBtn?.addEventListener('click', () => { showTrash = !showTrash; trashBtn.textContent = showTrash ? '← Quay lại' : '🗑 Thùng rác'; applyFilter(); });
   billTplBtn?.addEventListener('click', () => openRepBillTplModal());
+  container.querySelector('#rep-receipt-tpl-btn')?.addEventListener('click', () => openReceiptTplModal());
 
   container.querySelector('#rep-clear-date').addEventListener('click', () => {
     dateFromEl.value = ''; dateToEl.value = ''; applyFilter();
@@ -511,6 +556,12 @@ function quickChangeStatus(record) {
     var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
     var v = function(x){ return esc(x||'—'); };
+    var R = getReceiptTpl();
+    var rTitle = R.title || 'PHIẾU NHẬN MÁY';
+    var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
+    var rWarnHtml = (R.warning && R.warning.trim()) ? esc(R.warning) : 'Cửa hàng <b>KHÔNG chịu trách nhiệm</b> về dữ liệu trong máy. Nếu có dữ liệu cực kỳ quan trọng, vui lòng <b>trao đổi/sao lưu trực tiếp với nhân viên</b> trước khi giao máy.';
+    var rTermsArr = (R.terms && R.terms.trim()) ? R.terms.split('\n').map(function(t){return t.trim();}).filter(Boolean) : ['Cửa hàng kiểm tra & báo giá trước khi sửa, khách đồng ý mới tiến hành.','Quý khách giữ phiếu này & xuất trình khi nhận máy.','Quá 30 ngày kể từ ngày hẹn trả mà không đến nhận, cửa hàng không chịu trách nhiệm bảo quản.','Khách đã kiểm tra & đồng ý tình trạng máy/phụ kiện ghi trên phiếu.'];
+    var rTermsHtml = rTermsArr.map(function(t,i){ return (i+1)+') '+esc(t); }).join('<br>');
 
     var lien = function(label, brk){
       return '<div class="lien"' + (brk ? ' style="page-break-after:always"' : '') + '>' +
@@ -521,7 +572,7 @@ function quickChangeStatus(record) {
             (shopAddr ? '<div class="si">📍 '+esc(shopAddr)+'</div>' : '') +
             (shopHot ? '<div class="si">📞 Hotline: '+esc(shopHot)+'</div>' : '') +
           '</div>' +
-          '<div class="doc"><div class="dt">PHIẾU NHẬN MÁY</div><div class="dl">'+label+'</div>' +
+          '<div class="doc"><div class="dt">'+esc(rTitle)+'</div>' +
             '<div class="dd">Ngày nhận: '+esc(d.receivedDate||'')+'</div></div>' +
         '</div>' +
         '<table class="info">' +
@@ -539,38 +590,38 @@ function quickChangeStatus(record) {
           '<tr><td class="lb">Chi phí ước tính</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>' +
           '<tr><td class="lb">Ngày trả dự kiến</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>' +
         '</table>' +
-        '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: Cửa hàng <b>KHÔNG chịu trách nhiệm</b> về dữ liệu trong máy. Nếu có dữ liệu cực kỳ quan trọng, vui lòng <b>trao đổi/sao lưu trực tiếp với nhân viên</b> trước khi giao máy.</div>' +
-        '<div class="terms"><b>Điều khoản:</b><br>1) Cửa hàng kiểm tra &amp; báo giá trước khi sửa, khách đồng ý mới tiến hành.<br>2) Quý khách giữ phiếu này &amp; xuất trình khi nhận máy.<br>3) Quá <b>30 ngày</b> kể từ ngày hẹn trả mà không đến nhận, cửa hàng không chịu trách nhiệm bảo quản.<br>4) Khách đã kiểm tra &amp; đồng ý tình trạng máy/phụ kiện ghi trên phiếu.</div>' +
+        '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: '+rWarnHtml+'</div>' +
+        '<div class="terms"><b>Điều khoản:</b><br>'+rTermsHtml+'</div>' +
         '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div>' +
           '<div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' +
       '</div>';
     };
 
-    var css = '@page{size:A5 portrait;margin:8mm}' +
+    var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
-      'body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;width:132mm;margin:0 auto}' +
+      'body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;width:' + (rPaper==='A4'?194:132) + 'mm;margin:0 auto}' +
       '.lien{padding:4px 0 6px}' +
-      '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #f59e0b;padding-bottom:7px;margin-bottom:8px}' +
+      '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #000;padding-bottom:7px;margin-bottom:8px}' +
       '.logo{height:42px;width:auto;object-fit:contain}' +
-      '.shop{flex:1}.sn{font-size:18px;font-weight:bold;color:#f59e0b;line-height:1.2;margin-bottom:1px}.si{font-size:10px;color:#555;line-height:1.5}' +
-      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px;color:#0f172a}.dl{font-size:10px;font-weight:bold;color:#b45309}.dd{font-size:9.5px;color:#666;margin-top:1px}' +
+      '.shop{flex:1}.sn{font-size:18px;font-weight:bold;color:#000;line-height:1.2;margin-bottom:1px}.si{font-size:10px;color:#222;line-height:1.5}' +
+      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px;color:#000}.dl{font-size:11px;font-weight:bold;color:#000;border:1.5px solid #000;border-radius:4px;padding:1px 6px;display:inline-block;margin:2px 0}.dd{font-size:9.5px;color:#333;margin-top:1px}' +
       '.info{width:100%;border-collapse:collapse;margin-bottom:8px}' +
-      '.info td{border:1px solid #d1d5db;padding:5px 8px;font-size:11px;vertical-align:top;line-height:1.4}' +
-      '.info .lb{background:#fff7ed;color:#9a3412;font-weight:700;width:20%;white-space:nowrap;font-size:9.5px}' +
-      '.info .vl{color:#111}' +
-      '.info .sec{background:#f59e0b;color:#fff;font-weight:bold;font-size:10px;letter-spacing:.6px;padding:4px 8px}' +
-      '.warn{border:1.5px solid #dc2626;background:#fef2f2;color:#991b1b;font-size:10px;padding:6px 9px;border-radius:6px;margin-bottom:8px;line-height:1.5}' +
-      '.terms{font-size:9.5px;color:#444;line-height:1.7;margin-bottom:10px}' +
+      '.info td{border:1px solid #555;padding:5px 8px;font-size:11px;vertical-align:top;line-height:1.4;color:#000}' +
+      '.info .lb{background:#ededed;color:#000;font-weight:700;width:20%;white-space:nowrap;font-size:9.5px}' +
+      '.info .vl{color:#000}' +
+      '.info .sec{background:#d6d6d6;color:#000;font-weight:bold;font-size:10px;letter-spacing:.6px;padding:4px 8px}' +
+      '.warn{border:2px solid #000;background:#f0f0f0;color:#000;font-weight:600;font-size:10px;padding:6px 9px;border-radius:6px;margin-bottom:8px;line-height:1.5}' +
+      '.terms{font-size:9.5px;color:#000;line-height:1.7;margin-bottom:10px}' +
       '.sign{display:flex;justify-content:space-between;margin-top:8px}' +
       '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:4px;margin-top:34px}' +
-      '.sl{font-weight:bold;font-size:11px}.su{font-size:9px;color:#777}' +
+      '.sl{font-weight:bold;font-size:11px;color:#000}.su{font-size:9px;color:#333}' +
       '@media print{.np{display:none}}';
 
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
-      lien('LIÊN 1 · CỬA HÀNG GIỮ', true) +
-      lien('LIÊN 2 · GIAO KHÁCH', false) +
+      lien('LIÊN KHÁCH GIỮ', true) +
+      lien('LIÊN DÁN LÊN MÁY', false) +
       '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">🖨 In phiếu</button></div>' +
-      '<script>(function(){var M=96/25.4,PH=194*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();</script>' +
+      '<script>(function(){var M=96/25.4,PH=' + (rPaper==='A4'?281:194) + '*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();</script>' +
       '</body></html>';
 
     var w = window.open('', '_blank', 'width=600,height=860');
