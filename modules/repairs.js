@@ -511,8 +511,8 @@ function quickChangeStatus(record) {
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  •  ');
     var cell = function(l,v,full){ return '<div class="c'+(full?' full':'')+'"><span class="l">'+l+':</span> <span class="v">'+esc(v||'—')+'</span></div>'; };
 
-    var lien = function(label){
-      return '<div class="lien">' +
+    var lien = function(label, brk){
+      return '<div class="lien"' + (brk ? ' style="page-break-after:always"' : '') + '>' +
         '<div class="head">' +
           (shopLogo ? '<img class="logo" src="'+esc(shopLogo)+'" alt="">' : '') +
           '<div class="shop"><div class="sn">'+esc(shopName)+'</div>' +
@@ -540,9 +540,9 @@ function quickChangeStatus(record) {
       '</div>';
     };
 
-    var css = '@page{size:A4 portrait;margin:8mm}' +
+    var css = '@page{size:A5 portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
-      'body{font-family:Arial,sans-serif;color:#222;font-size:11px;width:194mm;margin:0 auto}' +
+      'body{font-family:Arial,sans-serif;color:#222;font-size:11px;width:132mm;margin:0 auto}' +
       '.lien{padding:6px 2px 8px}' +
       '.cut{border-top:1px dashed #999;text-align:center;margin:6px 0}' +
       '.cut span{background:#fff;padding:0 8px;position:relative;top:-9px;color:#999;font-size:10px}' +
@@ -562,15 +562,14 @@ function quickChangeStatus(record) {
 
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
       '<div id="sheet">' +
-        lien('LIÊN 1 · CỬA HÀNG GIỮ') +
-        '<div class="cut"><span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</span></div>' +
-        lien('LIÊN 2 · GIAO KHÁCH') +
+        lien('LIÊN 1 · CỬA HÀNG GIỮ', true) +
+        lien('LIÊN 2 · GIAO KHÁCH', false) +
       '</div>' +
       '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">🖨 In phiếu</button></div>' +
-      '<script>(function(){var M=96/25.4,PH=281*M;var s=document.getElementById("sheet");function f(){if(!s)return;s.style.zoom=1;var h=s.scrollHeight;if(h>PH)s.style.zoom=PH/h;}f();window.addEventListener("beforeprint",f);})();</script>' +
+      '<script>(function(){var M=96/25.4,PH=194*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();</script>' +
       '</body></html>';
 
-    var w = window.open('', '_blank', 'width=820,height=1000');
+    var w = window.open('', '_blank', 'width=600,height=860');
     w.document.write(html);
     w.document.close();
 }
