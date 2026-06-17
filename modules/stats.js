@@ -147,6 +147,10 @@ export async function mount(container) {
     if (!ts) return false;
     return ts >= from && ts <= to;
   }
+  function repMs(r) {
+    if (r && r.receivedDate) { var t = new Date(r.receivedDate + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+    return (r && (r.ts || r.createdAt)) || 0;
+  }
 
   // ─── revenue chart ──────────────────────────────────────
   async function renderRevenueChart(repF, saleF, from, to) {
@@ -169,7 +173,7 @@ export async function mount(container) {
         labels.push(h + ':00');
         const hS = new Date(baseDay); hS.setHours(h,0,0,0);
         const hE = new Date(baseDay); hE.setHours(h,59,59,999);
-        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt, hS.getTime(), hE.getTime())).reduce((s,r)=>s+(r.cost||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r), hS.getTime(), hE.getTime())).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+(sl.total||0),0));
       }
     } else if (diffDays <= 62) {
@@ -178,7 +182,7 @@ export async function mount(container) {
       for (let d = new Date(d0); d.getTime() <= to; d.setDate(d.getDate()+1)) {
         labels.push(d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}));
         const dS = d.getTime(), dE = dS + 86399999;
-        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt,dS,dE)).reduce((s,r)=>s+(r.cost||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r),dS,dE)).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+(sl.total||0),0));
       }
     } else {
@@ -190,7 +194,7 @@ export async function mount(container) {
         const mS = cur.getTime();
         const nx = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
         const mE = nx.getTime()-1;
-        repData.push( repF.filter(r=>inRange(r.ts||r.createdAt,mS,mE)).reduce((s,r)=>s+(r.cost||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r),mS,mE)).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+(sl.total||0),0));
         cur = nx;
       }
@@ -272,7 +276,7 @@ export async function mount(container) {
         getAll('repairs'), getAll('sales'), getAll('products')
       ]);
 
-      const repF  = repairs.filter(r => inRange(r.ts || r.createdAt, from, to));
+      const repF  = repairs.filter(r => inRange(repMs(r), from, to));
       const saleF = sales.filter(s   => inRange(s.ts || s.createdAt, from, to));
 
       // ── Repairs ──
