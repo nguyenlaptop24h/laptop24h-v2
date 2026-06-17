@@ -210,6 +210,18 @@ function openReceiptTplModal() {
       <button id="rct-tab-adv" type="button" style="background:none;border:none;padding:.5rem .9rem;cursor:pointer;font-size:.9rem;font-weight:600;border-bottom:2px solid transparent;color:#64748b">\u{1F527} Nâng cao (HTML)</button>
     </div>
     <div id="rct-pane-basic">
+      <div style="font-size:.8rem;font-weight:700;color:#0891b2;margin:.1rem 0 .3rem">THÔNG TIN CỬA HÀNG <span style="font-weight:400;color:#94a3b8">(riêng phiếu này — để trống sẽ lấy từ Mẫu HĐ)</span></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:.5rem;margin-bottom:.5rem">
+        <label><span style="${lbl}">Tên cửa hàng</span><input id="rct-shopName" placeholder="LAPTOP 24H" style="${inp}"/></label>
+        <label><span style="${lbl}">Hotline</span><input id="rct-shopHot" placeholder="0966 666 786" style="${inp}"/></label>
+      </div>
+      <label style="display:block;margin-bottom:.5rem"><span style="${lbl}">Địa chỉ</span><input id="rct-shopAddr" placeholder="Số nhà, đường, phường, tỉnh..." style="${inp}"/></label>
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.8rem;padding:.5rem .7rem;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px">
+        <img id="rct-logo-prev" alt="" style="height:36px;max-width:140px;object-fit:contain;display:none"/>
+        <div style="flex:1"><span style="${lbl}">Logo (tải ảnh lên — tự thu nhỏ)</span><input type="file" id="rct-logo-file" accept="image/*" style="font-size:.8rem"/></div>
+        <button id="rct-logo-clear" type="button" class="btn btn--secondary" style="font-size:.78rem;padding:.3rem .7rem">Xóa logo</button>
+      </div>
+      <hr style="border:none;border-top:1px solid #eef2f7;margin:.2rem 0 .8rem"/>
       <div style="display:flex;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap">
         <label style="flex:2;min-width:160px"><span style="${lbl}">Tiêu đề phiếu</span><input id="rct-title" placeholder="PHIẾU NHẬN MÁY" style="${inp}"/></label>
         <label style="flex:1;min-width:90px"><span style="${lbl}">Khổ giấy</span><select id="rct-paper" style="${inp}"><option value="A5">A5</option><option value="A4">A4</option></select></label>
@@ -267,6 +279,20 @@ function openReceiptTplModal() {
   g('rct-footer').value = t.footer || '';
   g('rct-custom').value = t.customHtml || '';
   g('rct-useCustom').checked = !!t.useCustom;
+  let pendingLogo = (typeof t.logo === 'string') ? t.logo : '';
+  const logoPrev = g('rct-logo-prev');
+  const setLogoPrev = () => { if (pendingLogo && pendingLogo.length > 10) { logoPrev.src = pendingLogo; logoPrev.style.display = 'block'; } else { logoPrev.style.display = 'none'; } };
+  g('rct-shopName').value = t.shopName || '';
+  g('rct-shopHot').value = t.shopHot || '';
+  g('rct-shopAddr').value = t.shopAddr || '';
+  setLogoPrev();
+  g('rct-logo-file').onchange = (ev) => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { const im = new Image(); im.onload = () => { const mw = 320; const scq = Math.min(1, mw / im.width); const cv = document.createElement('canvas'); cv.width = Math.round(im.width * scq); cv.height = Math.round(im.height * scq); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); try { pendingLogo = cv.toDataURL('image/png'); } catch(e) { pendingLogo = rd.result; } setLogoPrev(); }; im.src = rd.result; };
+    rd.readAsDataURL(f);
+  };
+  g('rct-logo-clear').onclick = () => { pendingLogo = ''; g('rct-logo-file').value = ''; setLogoPrev(); };
   const showTab = adv => {
     g('rct-pane-basic').style.display = adv ? 'none' : 'block';
     g('rct-pane-adv').style.display = adv ? 'block' : 'none';
@@ -284,6 +310,10 @@ function openReceiptTplModal() {
     const gc = id => !!(g(id) && g(id).checked);
     saveReceiptTpl({
       title: gv('rct-title').trim(),
+      shopName: gv('rct-shopName').trim(),
+      shopAddr: gv('rct-shopAddr').trim(),
+      shopHot: gv('rct-shopHot').trim(),
+      logo: pendingLogo,
       paper: gv('rct-paper'),
       fontScale: parseInt(gv('rct-scale')) || 100,
       copies: parseInt(gv('rct-copies')) || 2,
@@ -660,16 +690,17 @@ function quickChangeStatus(record) {
   function printReceipt(d) {
     var T = {};
     try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
-    var shopName = (T.shopName || 'LAPTOP 24H');
-    var shopAddr = (T.address || '');
-    var shopHot  = (T.hotline || T.phone || '');
     var LOGO24H = 'data:image/png;base64,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';
-    var shopLogo = (T.logo || LOGO24H);
     var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
     var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
     var v = function(x){ return esc(x||'—'); };
     var R = getReceiptTpl();
+    var shopName = (R.shopName && R.shopName.trim()) ? R.shopName : (T.shopName || 'LAPTOP 24H');
+    var shopAddr = (R.shopAddr && R.shopAddr.trim()) ? R.shopAddr : (T.address || '');
+    var shopHot  = (R.shopHot && R.shopHot.trim()) ? R.shopHot : (T.hotline || T.phone || '');
+    shopHot = String(shopHot).replace(/^\s*hotline\s*:?\s*/i, '').trim();
+    var shopLogo = (R.logo && R.logo.length > 10) ? R.logo : (T.logo || LOGO24H);
     var rTitle = R.title || 'PHIẾU NHẬN MÁY';
     var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
     var scale = (Number(R.fontScale)||100)/100; if (scale < 0.5) scale = 0.5; if (scale > 2) scale = 2;
