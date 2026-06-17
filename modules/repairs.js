@@ -163,33 +163,146 @@ function saveReceiptTpl(obj) {
   try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(obj)); } catch(e) {}
   try { getDB().ref('repairReceiptTpl').set(obj); } catch(e) {}
 }
+function defaultReceiptCustomHtml() {
+  return [
+    '<div class="head">',
+    '  <img class="logo" src="{{logo}}" alt="">',
+    '  <div class="shop">',
+    '    <div class="sn">{{shopName}}</div>',
+    '    <div class="si">\u{1F4CD} {{shopAddr}}</div>',
+    '    <div class="si">\u{1F4DE} Hotline: {{shopHot}}</div>',
+    '  </div>',
+    '  <div class="doc"><div class="dt">{{title}}</div><div class="dd">Ngày nhận: {{receivedDate}}</div></div>',
+    '</div>',
+    '<table class="info">',
+    '  <tr><td class="sec" colspan="4">THÔNG TIN KHÁCH HÀNG</td></tr>',
+    '  <tr><td class="lb">Khách hàng</td><td class="vl">{{customerName}}</td><td class="lb">SĐT</td><td class="vl">{{phone}}</td></tr>',
+    '  <tr><td class="lb">Địa chỉ</td><td class="vl" colspan="3">{{address}}</td></tr>',
+    '  <tr><td class="sec" colspan="4">THÔNG TIN THIẾT BỊ</td></tr>',
+    '  <tr><td class="lb">Thiết bị</td><td class="vl">{{device}}</td><td class="lb">Serial</td><td class="vl">{{serial}}</td></tr>',
+    '  <tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">{{config}}</td></tr>',
+    '  <tr><td class="lb">Mật khẩu</td><td class="vl">{{password}}</td><td class="lb">Phụ kiện</td><td class="vl">{{accessories}}</td></tr>',
+    '  <tr><td class="sec" colspan="4">TÌNH TRẠNG & YÊU CẦU</td></tr>',
+    '  <tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">{{initialCondition}}</td></tr>',
+    '  <tr><td class="lb">Yêu cầu sửa chữa</td><td class="vl" colspan="3">{{repairRequest}}</td></tr>',
+    '  <tr><td class="sec" colspan="4">CHI PHÍ & HẸN TRẢ</td></tr>',
+    '  <tr><td class="lb">Chi phí ước tính</td><td class="vl">{{cost}}</td><td class="lb">Đặt cọc</td><td class="vl">{{deposit}}</td></tr>',
+    '  <tr><td class="lb">Ngày trả dự kiến</td><td class="vl">{{deliveredDate}}</td><td class="lb">KTV</td><td class="vl">{{techName}}</td></tr>',
+    '</table>',
+    '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: {{warning}}</div>',
+    '<div class="terms"><b>Điều khoản:</b><br>{{terms}}</div>',
+    '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div><div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>'
+  ].join('\n');
+}
 function openReceiptTplModal() {
   const t = getReceiptTpl();
+  const ck = (k) => (t[k] === false ? '' : 'checked');
+  const lbl = 'font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem';
+  const inp = 'width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px';
+  const tog = (k, text) => '<label style="display:flex;align-items:center;gap:.4rem;font-size:.84rem;color:#334155;padding:.2rem 0"><input type="checkbox" id="rct-'+k+'" '+ck(k)+'/>'+text+'</label>';
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.5rem;width:min(560px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.2)">
-    <h3 style="margin:0 0 .3rem;font-size:1.1rem">📋 Cài đặt mẫu Phiếu nhận máy</h3>
-    <p style="margin:0 0 1rem;font-size:.8rem;color:#94a3b8">Tên/địa chỉ/hotline/logo lấy từ "🖨 Mẫu bill" / "Mẫu HĐ". Ở đây chỉnh nội dung phiếu nhận.</p>
-    <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
-      <label style="flex:1"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Tiêu đề phiếu</span><input id="rct-title" placeholder="PHIẾU NHẬN MÁY" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"/></label>
-      <label style="width:150px"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Khổ giấy</span><select id="rct-paper" style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px"><option value="A5">A5 (2 trang)</option><option value="A4">A4</option></select></label>
+  ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.4rem;width:min(700px,96vw);max-height:92vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.2)">
+    <h3 style="margin:0 0 .3rem;font-size:1.1rem">\u{1F4CB} Cài đặt mẫu Phiếu nhận máy</h3>
+    <p style="margin:0 0 .8rem;font-size:.8rem;color:#94a3b8">Tên / địa chỉ / hotline / logo lấy từ "\u{1F5A8} Mẫu bill". Ở đây tùy chỉnh toàn bộ phiếu nhận.</p>
+    <div style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid #e5e7eb">
+      <button id="rct-tab-basic" type="button" style="background:none;border:none;padding:.5rem .9rem;cursor:pointer;font-size:.9rem;font-weight:600;border-bottom:2px solid #0891b2;color:#0891b2">⚙️ Tùy chọn</button>
+      <button id="rct-tab-adv" type="button" style="background:none;border:none;padding:.5rem .9rem;cursor:pointer;font-size:.9rem;font-weight:600;border-bottom:2px solid transparent;color:#64748b">\u{1F527} Nâng cao (HTML)</button>
     </div>
-    <label style="display:block;margin-bottom:.75rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Cảnh báo dữ liệu (ô đỏ/đậm)</span><textarea id="rct-warn" rows="3" placeholder="Cửa hàng KHÔNG chịu trách nhiệm về dữ liệu..." style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea></label>
-    <label style="display:block;margin-bottom:1rem"><span style="font-size:.82rem;color:#64748b;display:block;margin-bottom:.3rem">Điều khoản nhận máy (mỗi dòng 1 ý)</span><textarea id="rct-terms" rows="5" placeholder="Mỗi dòng là một điều khoản..." style="width:100%;box-sizing:border-box;padding:.45rem .7rem;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea></label>
-    <div style="display:flex;gap:.5rem;justify-content:flex-end"><button id="rct-cancel" class="btn btn--secondary">Hủy</button><button id="rct-save" class="btn btn--primary">💾 Lưu mẫu</button></div>
+    <div id="rct-pane-basic">
+      <div style="display:flex;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap">
+        <label style="flex:2;min-width:160px"><span style="${lbl}">Tiêu đề phiếu</span><input id="rct-title" placeholder="PHIẾU NHẬN MÁY" style="${inp}"/></label>
+        <label style="flex:1;min-width:90px"><span style="${lbl}">Khổ giấy</span><select id="rct-paper" style="${inp}"><option value="A5">A5</option><option value="A4">A4</option></select></label>
+        <label style="flex:1;min-width:90px"><span style="${lbl}">Cỡ chữ (%)</span><input id="rct-scale" type="number" min="60" max="160" step="5" style="${inp}"/></label>
+        <label style="flex:1;min-width:90px"><span style="${lbl}">Số liên</span><select id="rct-copies" style="${inp}"><option value="2">2 liên</option><option value="1">1 liên</option></select></label>
+      </div>
+      <div style="font-size:.8rem;font-weight:700;color:#0891b2;margin:.6rem 0 .3rem">TÊN CÁC MỤC</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem">
+        <label><span style="${lbl}">Mục khách hàng</span><input id="rct-secC" style="${inp}"/></label>
+        <label><span style="${lbl}">Mục thiết bị</span><input id="rct-secD" style="${inp}"/></label>
+        <label><span style="${lbl}">Mục tình trạng</span><input id="rct-secS" style="${inp}"/></label>
+        <label><span style="${lbl}">Mục chi phí</span><input id="rct-secP" style="${inp}"/></label>
+      </div>
+      <div style="font-size:.8rem;font-weight:700;color:#0891b2;margin:.6rem 0 .3rem">HIỆN / ẨN CÁC DÒNG</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.1rem .8rem;margin-bottom:.7rem;padding:.5rem .7rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
+        ${tog('showAddress','Địa chỉ')}
+        ${tog('showSerial','Serial')}
+        ${tog('showConfig','Cấu hình')}
+        ${tog('showPassword','Mật khẩu')}
+        ${tog('showAccessories','Phụ kiện')}
+        ${tog('showInitial','Tình trạng ban đầu')}
+        ${tog('showRequest','Yêu cầu sửa')}
+        ${tog('showCost','Chi phí')}
+        ${tog('showDeposit','Đặt cọc')}
+        ${tog('showDelivered','Ngày trả')}
+        ${tog('showTech','KTV')}
+        ${tog('showWarn','Ô cảnh báo')}
+        ${tog('showTerms','Điều khoản')}
+        ${tog('showSign','Ô chữ ký')}
+      </div>
+      <label style="display:block;margin-bottom:.6rem"><span style="${lbl}">Cảnh báo dữ liệu (ô đậm)</span><textarea id="rct-warn" rows="2" placeholder="Cửa hàng KHÔNG chịu trách nhiệm về dữ liệu..." style="${inp};resize:vertical"></textarea></label>
+      <label style="display:block;margin-bottom:.6rem"><span style="${lbl}">Điều khoản nhận máy (mỗi dòng 1 ý)</span><textarea id="rct-terms" rows="4" placeholder="Mỗi dòng là một điều khoản..." style="${inp};resize:vertical"></textarea></label>
+      <label style="display:block;margin-bottom:.3rem"><span style="${lbl}">Ghi chú cuối phiếu (footer, tùy chọn)</span><input id="rct-footer" placeholder="Cảm ơn quý khách..." style="${inp}"/></label>
+    </div>
+    <div id="rct-pane-adv" style="display:none">
+      <p style="font-size:.8rem;color:#64748b;margin:0 0 .5rem;line-height:1.6">Sửa trực tiếp mã HTML của <b>một liên</b> (hệ thống tự nhân bản theo "Số liên"). Dùng các biến: <code>{{shopName}} {{shopAddr}} {{shopHot}} {{logo}} {{title}} {{receivedDate}} {{customerName}} {{phone}} {{address}} {{device}} {{serial}} {{config}} {{password}} {{accessories}} {{initialCondition}} {{repairRequest}} {{cost}} {{deposit}} {{deliveredDate}} {{techName}} {{warning}} {{terms}} {{footer}}</code></p>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.86rem;color:#334155;margin-bottom:.5rem"><input type="checkbox" id="rct-useCustom"/> <b>Dùng mẫu HTML tự thiết kế</b> (bỏ qua tab Tùy chọn)</label>
+      <button id="rct-loaddef" type="button" class="btn btn--secondary" style="font-size:.8rem;padding:.3rem .7rem;margin-bottom:.5rem">↩ Chèn mẫu mặc định để sửa</button>
+      <textarea id="rct-custom" rows="14" placeholder="Dán / sửa HTML ở đây..." style="${inp};resize:vertical;font-family:monospace;font-size:.78rem;line-height:1.5"></textarea>
+    </div>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem"><button id="rct-cancel" type="button" class="btn btn--secondary">Hủy</button><button id="rct-save" type="button" class="btn btn--primary">\u{1F4BE} Lưu mẫu</button></div>
   </div>`;
   document.body.appendChild(ov);
-  document.getElementById('rct-title').value = t.title || '';
-  document.getElementById('rct-paper').value = t.paper || 'A5';
-  document.getElementById('rct-warn').value = t.warning || '';
-  document.getElementById('rct-terms').value = t.terms || '';
-  document.getElementById('rct-cancel').onclick = () => ov.remove();
-  document.getElementById('rct-save').onclick = () => {
+  const g = id => document.getElementById(id);
+  g('rct-title').value = t.title || '';
+  g('rct-paper').value = t.paper || 'A5';
+  g('rct-scale').value = t.fontScale || 100;
+  g('rct-copies').value = String(t.copies || 2);
+  g('rct-secC').value = t.secCustomer || 'THÔNG TIN KHÁCH HÀNG';
+  g('rct-secD').value = t.secDevice || 'THÔNG TIN THIẾT BỊ';
+  g('rct-secS').value = t.secStatus || 'TÌNH TRẠNG & YÊU CẦU';
+  g('rct-secP').value = t.secCost || 'CHI PHÍ & HẸN TRẢ';
+  g('rct-warn').value = t.warning || '';
+  g('rct-terms').value = t.terms || '';
+  g('rct-footer').value = t.footer || '';
+  g('rct-custom').value = t.customHtml || '';
+  g('rct-useCustom').checked = !!t.useCustom;
+  const showTab = adv => {
+    g('rct-pane-basic').style.display = adv ? 'none' : 'block';
+    g('rct-pane-adv').style.display = adv ? 'block' : 'none';
+    g('rct-tab-basic').style.borderBottom = adv ? '2px solid transparent' : '2px solid #0891b2';
+    g('rct-tab-basic').style.color = adv ? '#64748b' : '#0891b2';
+    g('rct-tab-adv').style.borderBottom = adv ? '2px solid #0891b2' : '2px solid transparent';
+    g('rct-tab-adv').style.color = adv ? '#0891b2' : '#64748b';
+  };
+  g('rct-tab-basic').onclick = () => showTab(false);
+  g('rct-tab-adv').onclick = () => showTab(true);
+  g('rct-loaddef').onclick = () => { g('rct-custom').value = defaultReceiptCustomHtml(); g('rct-useCustom').checked = true; };
+  g('rct-cancel').onclick = () => ov.remove();
+  g('rct-save').onclick = () => {
+    const gv = id => (g(id) ? g(id).value : '');
+    const gc = id => !!(g(id) && g(id).checked);
     saveReceiptTpl({
-      title:   document.getElementById('rct-title').value.trim(),
-      paper:   document.getElementById('rct-paper').value,
-      warning: document.getElementById('rct-warn').value.trim(),
-      terms:   document.getElementById('rct-terms').value.trim(),
+      title: gv('rct-title').trim(),
+      paper: gv('rct-paper'),
+      fontScale: parseInt(gv('rct-scale')) || 100,
+      copies: parseInt(gv('rct-copies')) || 2,
+      secCustomer: gv('rct-secC').trim(),
+      secDevice: gv('rct-secD').trim(),
+      secStatus: gv('rct-secS').trim(),
+      secCost: gv('rct-secP').trim(),
+      showAddress: gc('rct-showAddress'), showSerial: gc('rct-showSerial'),
+      showConfig: gc('rct-showConfig'), showPassword: gc('rct-showPassword'),
+      showAccessories: gc('rct-showAccessories'), showInitial: gc('rct-showInitial'),
+      showRequest: gc('rct-showRequest'), showCost: gc('rct-showCost'),
+      showDeposit: gc('rct-showDeposit'), showDelivered: gc('rct-showDelivered'),
+      showTech: gc('rct-showTech'), showWarn: gc('rct-showWarn'),
+      showTerms: gc('rct-showTerms'), showSign: gc('rct-showSign'),
+      warning: gv('rct-warn').trim(),
+      terms: gv('rct-terms').trim(),
+      footer: gv('rct-footer').trim(),
+      useCustom: gc('rct-useCustom'),
+      customHtml: gv('rct-custom')
     });
     toast('Đã lưu mẫu phiếu nhận ✓');
     ov.remove();
@@ -559,75 +672,113 @@ function quickChangeStatus(record) {
     var R = getReceiptTpl();
     var rTitle = R.title || 'PHIẾU NHẬN MÁY';
     var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
+    var scale = (Number(R.fontScale)||100)/100; if (scale < 0.5) scale = 0.5; if (scale > 2) scale = 2;
+    var copies = (Number(R.copies) === 1) ? 1 : 2;
+    var on = function(k){ return R[k] !== false; };
+    var secC = R.secCustomer || 'THÔNG TIN KHÁCH HÀNG';
+    var secD = R.secDevice || 'THÔNG TIN THIẾT BỊ';
+    var secS = R.secStatus || 'TÌNH TRẠNG & YÊU CẦU';
+    var secP = R.secCost || 'CHI PHÍ & HẸN TRẢ';
     var rWarnHtml = (R.warning && R.warning.trim()) ? esc(R.warning) : 'Cửa hàng <b>KHÔNG chịu trách nhiệm</b> về dữ liệu trong máy. Nếu có dữ liệu cực kỳ quan trọng, vui lòng <b>trao đổi/sao lưu trực tiếp với nhân viên</b> trước khi giao máy.';
     var rTermsArr = (R.terms && R.terms.trim()) ? R.terms.split('\n').map(function(t){return t.trim();}).filter(Boolean) : ['Cửa hàng kiểm tra & báo giá trước khi sửa, khách đồng ý mới tiến hành.','Quý khách giữ phiếu này & xuất trình khi nhận máy.','Quá 30 ngày kể từ ngày hẹn trả mà không đến nhận, cửa hàng không chịu trách nhiệm bảo quản.','Khách đã kiểm tra & đồng ý tình trạng máy/phụ kiện ghi trên phiếu.'];
     var rTermsHtml = rTermsArr.map(function(t,i){ return (i+1)+') '+esc(t); }).join('<br>');
+    var rFooter = (R.footer && R.footer.trim()) ? esc(R.footer) : '';
 
-    var lien = function(label, brk){
-      return '<div class="lien"' + (brk ? ' style="page-break-after:always"' : '') + '>' +
-        '<div class="head">' +
+    var map = {
+      shopName: esc(shopName), shopAddr: esc(shopAddr), shopHot: esc(shopHot), logo: shopLogo,
+      title: esc(rTitle), receivedDate: esc(d.receivedDate||''),
+      customerName: v(d.customerName), phone: v(d.phone), address: v(d.address),
+      device: v(d.device), serial: v(d.serial), config: (cfg?esc(cfg):'—'),
+      password: v(d.password), accessories: v(d.accessories),
+      initialCondition: v(d.initialCondition), repairRequest: v(d.repairRequest),
+      cost: money(d.cost), deposit: money(d.deposit),
+      deliveredDate: v(d.deliveredDate), techName: v(d.techName),
+      warning: rWarnHtml, terms: rTermsHtml, footer: rFooter
+    };
+    var subst = function(tpl){ return String(tpl).replace(/\{\{(\w+)\}\}/g, function(m,k){ return (map[k]!==undefined) ? map[k] : m; }); };
+
+    var inner;
+    if (R.useCustom && R.customHtml && R.customHtml.trim()) {
+      inner = subst(R.customHtml);
+    } else {
+      var rows = '';
+      rows += '<tr><td class="sec" colspan="4">'+esc(secC)+'</td></tr>';
+      rows += '<tr><td class="lb">Khách hàng</td><td class="vl">'+v(d.customerName)+'</td><td class="lb">SĐT</td><td class="vl">'+v(d.phone)+'</td></tr>';
+      if (on('showAddress')) rows += '<tr><td class="lb">Địa chỉ</td><td class="vl" colspan="3">'+v(d.address)+'</td></tr>';
+      rows += '<tr><td class="sec" colspan="4">'+esc(secD)+'</td></tr>';
+      if (on('showSerial')) rows += '<tr><td class="lb">Thiết bị</td><td class="vl">'+v(d.device)+'</td><td class="lb">Serial</td><td class="vl">'+v(d.serial)+'</td></tr>';
+      else rows += '<tr><td class="lb">Thiết bị</td><td class="vl" colspan="3">'+v(d.device)+'</td></tr>';
+      if (on('showConfig')) rows += '<tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">'+(cfg?esc(cfg):'—')+'</td></tr>';
+      if (on('showPassword') && on('showAccessories')) rows += '<tr><td class="lb">Mật khẩu</td><td class="vl">'+v(d.password)+'</td><td class="lb">Phụ kiện</td><td class="vl">'+v(d.accessories)+'</td></tr>';
+      else if (on('showPassword')) rows += '<tr><td class="lb">Mật khẩu</td><td class="vl" colspan="3">'+v(d.password)+'</td></tr>';
+      else if (on('showAccessories')) rows += '<tr><td class="lb">Phụ kiện</td><td class="vl" colspan="3">'+v(d.accessories)+'</td></tr>';
+      if (on('showInitial') || on('showRequest')) {
+        rows += '<tr><td class="sec" colspan="4">'+esc(secS)+'</td></tr>';
+        if (on('showInitial')) rows += '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>';
+        if (on('showRequest')) rows += '<tr><td class="lb">Yêu cầu sửa chữa</td><td class="vl" colspan="3">'+v(d.repairRequest)+'</td></tr>';
+      }
+      var cC=on('showCost'), cD=on('showDeposit'), cL=on('showDelivered'), cT=on('showTech');
+      if (cC||cD||cL||cT) {
+        rows += '<tr><td class="sec" colspan="4">'+esc(secP)+'</td></tr>';
+        if (cC && cD) rows += '<tr><td class="lb">Chi phí ước tính</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>';
+        else if (cC) rows += '<tr><td class="lb">Chi phí ước tính</td><td class="vl" colspan="3">'+money(d.cost)+'</td></tr>';
+        else if (cD) rows += '<tr><td class="lb">Đặt cọc</td><td class="vl" colspan="3">'+money(d.deposit)+'</td></tr>';
+        if (cL && cT) rows += '<tr><td class="lb">Ngày trả dự kiến</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>';
+        else if (cL) rows += '<tr><td class="lb">Ngày trả dự kiến</td><td class="vl" colspan="3">'+v(d.deliveredDate)+'</td></tr>';
+        else if (cT) rows += '<tr><td class="lb">KTV</td><td class="vl" colspan="3">'+v(d.techName)+'</td></tr>';
+      }
+      inner = '<div class="head">' +
           (shopLogo ? '<img class="logo" src="'+shopLogo+'" alt="">' : '') +
           '<div class="shop">' +
             (shopLogo ? '' : '<div class="sn">'+esc(shopName)+'</div>') +
-            (shopAddr ? '<div class="si">📍 '+esc(shopAddr)+'</div>' : '') +
-            (shopHot ? '<div class="si">📞 Hotline: '+esc(shopHot)+'</div>' : '') +
+            (shopAddr ? '<div class="si">\u{1F4CD} '+esc(shopAddr)+'</div>' : '') +
+            (shopHot ? '<div class="si">\u{1F4DE} Hotline: '+esc(shopHot)+'</div>' : '') +
           '</div>' +
-          '<div class="doc"><div class="dt">'+esc(rTitle)+'</div>' +
-            '<div class="dd">Ngày nhận: '+esc(d.receivedDate||'')+'</div></div>' +
+          '<div class="doc"><div class="dt">'+esc(rTitle)+'</div><div class="dd">Ngày nhận: '+esc(d.receivedDate||'')+'</div></div>' +
         '</div>' +
-        '<table class="info">' +
-          '<tr><td class="sec" colspan="4">THÔNG TIN KHÁCH HÀNG</td></tr>' +
-          '<tr><td class="lb">Khách hàng</td><td class="vl">'+v(d.customerName)+'</td><td class="lb">SĐT</td><td class="vl">'+v(d.phone)+'</td></tr>' +
-          '<tr><td class="lb">Địa chỉ</td><td class="vl" colspan="3">'+v(d.address)+'</td></tr>' +
-          '<tr><td class="sec" colspan="4">THÔNG TIN THIẾT BỊ</td></tr>' +
-          '<tr><td class="lb">Thiết bị</td><td class="vl">'+v(d.device)+'</td><td class="lb">Serial</td><td class="vl">'+v(d.serial)+'</td></tr>' +
-          '<tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">'+(cfg?esc(cfg):'—')+'</td></tr>' +
-          '<tr><td class="lb">Mật khẩu</td><td class="vl">'+v(d.password)+'</td><td class="lb">Phụ kiện</td><td class="vl">'+v(d.accessories)+'</td></tr>' +
-          '<tr><td class="sec" colspan="4">TÌNH TRẠNG &amp; YÊU CẦU</td></tr>' +
-          '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>' +
-          '<tr><td class="lb">Yêu cầu sửa chữa</td><td class="vl" colspan="3">'+v(d.repairRequest)+'</td></tr>' +
-          '<tr><td class="sec" colspan="4">CHI PHÍ &amp; HẸN TRẢ</td></tr>' +
-          '<tr><td class="lb">Chi phí ước tính</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>' +
-          '<tr><td class="lb">Ngày trả dự kiến</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>' +
-        '</table>' +
-        '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: '+rWarnHtml+'</div>' +
-        '<div class="terms"><b>Điều khoản:</b><br>'+rTermsHtml+'</div>' +
-        '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div>' +
-          '<div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' +
-      '</div>';
-    };
+        '<table class="info">'+rows+'</table>' +
+        (on('showWarn') ? '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: '+rWarnHtml+'</div>' : '') +
+        (on('showTerms') ? '<div class="terms"><b>Điều khoản:</b><br>'+rTermsHtml+'</div>' : '') +
+        (on('showSign') ? '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div><div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' : '') +
+        (rFooter ? '<div class="ft">'+rFooter+'</div>' : '');
+    }
 
+    var fs = function(px){ return (px*scale).toFixed(1)+'px'; };
     var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
-      'body{font-family:Arial,sans-serif;color:#1f2937;font-size:11px;width:' + (rPaper==='A4'?194:132) + 'mm;margin:0 auto}' +
+      'body{font-family:Arial,sans-serif;color:#1f2937;font-size:'+fs(11)+';width:' + (rPaper==='A4'?194:132) + 'mm;margin:0 auto}' +
       '.lien{padding:4px 0 6px}' +
       '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #000;padding-bottom:7px;margin-bottom:8px}' +
-      '.logo{height:42px;width:auto;object-fit:contain}' +
-      '.shop{flex:1}.sn{font-size:18px;font-weight:bold;color:#000;line-height:1.2;margin-bottom:1px}.si{font-size:10px;color:#222;line-height:1.5}' +
-      '.doc{text-align:right}.dt{font-size:14px;font-weight:bold;letter-spacing:.5px;color:#000}.dl{font-size:11px;font-weight:bold;color:#000;border:1.5px solid #000;border-radius:4px;padding:1px 6px;display:inline-block;margin:2px 0}.dd{font-size:9.5px;color:#333;margin-top:1px}' +
+      '.logo{height:'+fs(42)+';width:auto;object-fit:contain}' +
+      '.shop{flex:1}.sn{font-size:'+fs(18)+';font-weight:bold;color:#000;line-height:1.2;margin-bottom:1px}.si{font-size:'+fs(10)+';color:#222;line-height:1.5}' +
+      '.doc{text-align:right}.dt{font-size:'+fs(14)+';font-weight:bold;letter-spacing:.5px;color:#000}.dd{font-size:'+fs(9.5)+';color:#333;margin-top:1px}' +
       '.info{width:100%;border-collapse:collapse;margin-bottom:8px}' +
-      '.info td{border:1px solid #555;padding:5px 8px;font-size:11px;vertical-align:top;line-height:1.4;color:#000}' +
-      '.info .lb{background:#ededed;color:#000;font-weight:700;width:20%;white-space:nowrap;font-size:9.5px}' +
+      '.info td{border:1px solid #555;padding:5px 8px;font-size:'+fs(11)+';vertical-align:top;line-height:1.4;color:#000}' +
+      '.info .lb{background:#ededed;color:#000;font-weight:700;width:20%;white-space:nowrap;font-size:'+fs(9.5)+'}' +
       '.info .vl{color:#000}' +
-      '.info .sec{background:#d6d6d6;color:#000;font-weight:bold;font-size:10px;letter-spacing:.6px;padding:4px 8px}' +
-      '.warn{border:2px solid #000;background:#f0f0f0;color:#000;font-weight:600;font-size:10px;padding:6px 9px;border-radius:6px;margin-bottom:8px;line-height:1.5}' +
-      '.terms{font-size:9.5px;color:#000;line-height:1.7;margin-bottom:10px}' +
+      '.info .sec{background:#d6d6d6;color:#000;font-weight:bold;font-size:'+fs(10)+';letter-spacing:.6px;padding:4px 8px}' +
+      '.warn{border:2px solid #000;background:#f0f0f0;color:#000;font-weight:600;font-size:'+fs(10)+';padding:6px 9px;border-radius:6px;margin-bottom:8px;line-height:1.5}' +
+      '.terms{font-size:'+fs(9.5)+';color:#000;line-height:1.7;margin-bottom:10px}' +
+      '.ft{text-align:center;font-size:'+fs(9.5)+';color:#333;font-style:italic;margin-top:6px}' +
       '.sign{display:flex;justify-content:space-between;margin-top:8px}' +
       '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:4px;margin-top:34px}' +
-      '.sl{font-weight:bold;font-size:11px;color:#000}.su{font-size:9px;color:#333}' +
+      '.sl{font-weight:bold;font-size:'+fs(11)+';color:#000}.su{font-size:'+fs(9)+';color:#333}' +
       '@media print{.np{display:none}}';
 
+    var blocks = '';
+    for (var ci=0; ci<copies; ci++){ blocks += '<div class="lien"' + (ci<copies-1 ? ' style="page-break-after:always"' : '') + '>' + inner + '</div>'; }
+
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
-      lien('LIÊN KHÁCH GIỮ', true) +
-      lien('LIÊN DÁN LÊN MÁY', false) +
-      '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">🖨 In phiếu</button></div>' +
-      '<script>(function(){var M=96/25.4,PH=' + (rPaper==='A4'?281:194) + '*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();</script>' +
+      blocks +
+      '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">\u{1F5A8} In phiếu</button></div>' +
+      '<script>(function(){var M=96/25.4,PH=' + (rPaper==='A4'?281:194) + '*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();<\/script>' +
       '</body></html>';
 
     var w = window.open('', '_blank', 'width=600,height=860');
     w.document.write(html);
     w.document.close();
 }
+
 
 function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
