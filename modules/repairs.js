@@ -432,6 +432,35 @@ let showTrash = false;
   try { getDB().ref('repairReceiptTpl').on('value', sn => { const v = sn.val(); if (v) { _recTpl = v; try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
   container.addEventListener('unmount', () => unsub && unsub());
 
+  window.__editNote = (key) => {
+    const rec = allData.find(r => r._key === key);
+    if (!rec) return;
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center';
+    ov.innerHTML = `<div style="background:#fff;border-radius:12px;padding:1.2rem;width:min(440px,94vw);box-shadow:0 8px 32px rgba(0,0,0,.25)">
+      <h3 style="margin:0 0 .2rem;font-size:1rem">📝 Ghi chú nội bộ</h3>
+      <p style="margin:0 0 .7rem;font-size:.8rem;color:#94a3b8">${(rec.customerName||'')} — ${(rec.device||'')}</p>
+      <textarea id="qn-text" rows="4" placeholder="VD: Cần hoàn thành gấp, báo giá cho khách sớm..." style="width:100%;box-sizing:border-box;padding:.5rem .7rem;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;font-size:.9rem"></textarea>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.8rem"><button id="qn-cancel" class="btn btn--secondary">Hủy</button><button id="qn-save" class="btn btn--primary">💾 Lưu</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    const ta = ov.querySelector('#qn-text'); ta.value = rec.internalNote || ''; ta.focus();
+    const close = () => ov.remove();
+    ov.querySelector('#qn-cancel').onclick = close;
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    ov.querySelector('#qn-save').onclick = async () => {
+      const note = ta.value.trim();
+      try {
+        const merged = { ...rec, internalNote: note };
+        delete merged._key;
+        await updateItem(COLLECTION, key, merged);
+        logRepairToSheet({ ...merged, key: key }, 'update');
+        toast('Đã lưu ghi chú ✓');
+        close();
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    };
+  };
+
   const editBtn    = container.querySelector('#rep-edit-btn');
   const statusBtn = container.querySelector('#rep-status-btn');
   const delBtn     = container.querySelector('#rep-del-btn');
@@ -525,7 +554,7 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
     ,
       { label: showTrash ? 'Thao tác' : 'Ghi chú', key: r => showTrash
           ? '<button onclick="window.__restoreRepair(\''+r._key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>'
-          : (r.internalNote ? '<span style="display:inline-block;max-width:240px;white-space:normal;line-height:1.35;color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:.82rem;font-weight:600">📝 '+String(r.internalNote).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>' : '') }];
+          : '<span onclick="window.__editNote(\''+r._key+'\')" title="Bấm để sửa ghi chú" style="cursor:pointer;display:inline-block;max-width:240px;white-space:normal;line-height:1.35;'+(r.internalNote ? 'color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:.82rem;font-weight:600' : 'color:#cbd5e1;font-size:.8rem;border:1px dashed #e2e8f0;border-radius:6px;padding:3px 8px')+'">'+(r.internalNote ? '📝 '+String(r.internalNote).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '＋ ghi chú')+'</span>' }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const total = data.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
