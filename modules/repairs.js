@@ -1003,31 +1003,47 @@ function openForm(record) {
     _searchEl.addEventListener("focus", function(){ renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
     _searchEl.addEventListener("input", function(){ _partSel=null; renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
     _searchEl.addEventListener("blur", function(){ setTimeout(function(){ if(_dropEl) _dropEl.style.display="none"; },160); });
+    _searchEl.addEventListener("keydown", function(e){
+      if(e.key==="Enter"){
+        e.preventDefault();
+        var q=(_searchEl.value||"").toLowerCase().trim();
+        var first=_partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
+        if(first) addPart(first);
+      }
+    });
   }
   if (_dropEl) {
     _dropEl.addEventListener("mousedown", function(e){
       var it = e.target.closest(".part-opt"); if(!it) return;
       e.preventDefault();
       var p = _partsPool.find(function(x){return x._key===it.dataset.key;});
-      if(p){ _partSel=p; if(_searchEl) _searchEl.value=p.name||""; }
-      _dropEl.style.display="none";
+      if(p) addPart(p);
     });
+  }
+
+  // Th\u00eam 1 linh ki\u1ec7n v\u00e0o danh s\u00e1ch (d\u00f9ng chung cho click g\u1ee3i \u00fd / Enter / n\u00fat +Th\u00eam)
+  function addPart(p){
+    if(!p) return;
+    var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
+    var ei  = _partsArr.findIndex(function(x){return x.invKey===p._key;});
+    if(ei>=0){ _partsArr[ei].qty += qty; } else {
+      _partsArr.push({invKey:p._key, name:p.name, qty:qty,
+        salePrice:(Number(p.price)||Number(p.cost)||0), costPrice:Number(p.cost)||0});
+    }
+    _partSel=null;
+    if(_searchEl){ _searchEl.value=""; _searchEl.focus(); }
+    if(_dropEl) _dropEl.style.display="none";
+    renderPartsList();
+    recalcTotals();
   }
 
   renderPartsList();
 
   formWrap.querySelector("#f-parts-add").addEventListener("click", function(){
-    if(!_partSel){ toast("G\u00f5 v\u00e0 ch\u1ecdn linh ki\u1ec7n tr\u01b0\u1edbc","error"); return; }
-    var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
-    var ei  = _partsArr.findIndex(function(p){return p.invKey===_partSel._key;});
-    if(ei>=0){ _partsArr[ei].qty += qty; } else {
-      _partsArr.push({invKey:_partSel._key, name:_partSel.name, qty:qty,
-        salePrice:(Number(_partSel.price)||Number(_partSel.cost)||0), costPrice:Number(_partSel.cost)||0});
-    }
-    _partSel=null;
-    if(_searchEl) _searchEl.value="";
-    renderPartsList();
-    recalcTotals();
+    var q=(_searchEl&&_searchEl.value||"").toLowerCase().trim();
+    var pick = _partSel || _partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
+    if(!pick){ toast("G\u00f5 v\u00e0 ch\u1ecdn linh ki\u1ec7n tr\u01b0\u1edbc","error"); return; }
+    addPart(pick);
   });
   formWrap.querySelector("#f-parts-list").addEventListener("click", function(e){
     var btn = e.target.closest(".rm-part");
