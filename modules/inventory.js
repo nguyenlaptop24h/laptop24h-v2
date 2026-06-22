@@ -389,8 +389,11 @@ export async function mount(container) {
             ${cat
               ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
               : '<span style="color:#d1d5db;font-size:.73rem">Chưa phân loại</span>'}
+            <button class="pool-edit" data-key="${p._key}" title="Sửa sản phẩm" style="background:#f59e0b;color:#fff;border:none;border-radius:5px;padding:.15rem .55rem;cursor:pointer;font-size:.74rem;white-space:nowrap">✎ Sửa</button>
           </div>`;
         }).join('');
+    list.querySelectorAll('.pool-edit').forEach(btn =>
+      btn.addEventListener('click', e => { e.stopPropagation(); openProductForm(btn.dataset.key); }));
     const pca = container.querySelector('#pool-check-all');
     if (pca) pca.checked = false;
   }
