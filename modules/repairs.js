@@ -594,10 +594,17 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
     // Row click — toggle checkbox
     wrap.querySelectorAll('.rep-row').forEach(tr => {
       tr.style.cursor = 'pointer';
+      tr.title = 'Bấm đúp để sửa phiếu';
       tr.addEventListener('click', e => {
         if (e.target.classList.contains('rep-chk') || e.target.tagName === 'BUTTON') return;
         const chk = tr.querySelector('.rep-chk');
         if (chk) { chk.checked = !chk.checked; chk.dispatchEvent(new Event('change')); }
+      });
+      tr.addEventListener('dblclick', e => {
+        if (e.target.classList.contains('rep-chk') || e.target.tagName === 'BUTTON' || e.target.closest('[onclick]')) return;
+        if (showTrash) return;
+        const rec = allData.find(r => r._key === tr.dataset.key);
+        if (rec) openForm(rec);
       });
     });
   }
