@@ -978,8 +978,7 @@ function openForm(record) {
 <div class="rfm-ov"><div class="rfm-card">
 <div class="rfm-head"><h2>🔧 Phiếu Nhận Máy Sửa</h2><button class="rfm-x" onclick="document.getElementById('f-cancel').click()">✕</button></div>
 <div class="rfm-body">
-<div class="rfm-r" style="margin-bottom:6px"><div class="rfm-f" style="position:relative;flex:1"><label style="color:#0891b2;font-weight:700">🔍 TÌM KHÁCH HÀNG</label><input id="f-cust-search" type="text" placeholder="Nhập tên hoặc số điện thoại..." autocomplete="off" style="width:100%;box-sizing:border-box"><div id="f-cust-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div></div>
-<div class="rfm-r rfm-r3"><div class="rfm-f"><label>TÊN KHÁCH HÀNG *</label><input id="f-customerName" type="text" placeholder="Tên KH..." value="${record?.customerName||''}"></div><div class="rfm-f"><label>SỐ ĐIỆN THOẠI *</label><input id="f-phone" type="text" placeholder="0xxx..." value="${record?.phone||''}"></div><div class="rfm-f"><label>ĐỊA CHỈ</label><input id="f-address" type="text" placeholder="Địa chỉ..." value="${record?.address||''}"></div></div>
+<div class="rfm-r rfm-r3"><div class="rfm-f" style="position:relative"><label style="color:#0891b2">🔍 TÊN KHÁCH HÀNG * <span style="color:#94a3b8;font-weight:400;text-transform:none">(gõ để tìm)</span></label><input id="f-customerName" type="text" placeholder="Gõ tên để tìm hoặc nhập mới..." autocomplete="off" value="${record?.customerName||''}"><div id="f-cust-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><div class="rfm-f"><label>SỐ ĐIỆN THOẠI *</label><input id="f-phone" type="text" placeholder="0xxx..." value="${record?.phone||''}"></div><div class="rfm-f"><label>ĐỊA CHỈ</label><input id="f-address" type="text" placeholder="Địa chỉ..." value="${record?.address||''}"></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>THIẾT BỊ *</label><input id="f-device" type="text" placeholder="Dell Inspiron 15 3520" value="${record?.device||''}"></div><div class="rfm-f"><label>SERIAL / IMEI</label><input id="f-serial" type="text" placeholder="SN12345..." value="${record?.serial||''}"></div><div class="rfm-f"><label>MẬT KHẨU MÁY</label><input id="f-password" type="text" placeholder="Password..." value="${record?.password||''}"></div></div>
 <div class="rfm-r rfm-r4">
 <div class="rfm-f"><label>CPU</label><input id="f-cpu" placeholder="Intel i5-..." value="${record?.cpu||''}"></div>
@@ -1190,7 +1189,7 @@ function openForm(record) {
   formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
 
   // Customer search autocomplete
-  var _searchInp = formWrap.querySelector('#f-cust-search');
+  var _searchInp = formWrap.querySelector('#f-customerName');
   var _searchDrop = formWrap.querySelector('#f-cust-drop');
   if (_searchInp) {
     _searchInp.addEventListener('input', function() {
