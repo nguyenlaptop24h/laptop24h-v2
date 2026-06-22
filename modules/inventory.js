@@ -187,11 +187,12 @@ export async function mount(container) {
   }
 
   // ─── PRODUCT FORM ────────────────────────────────────────────────
-  function openProductForm(key) {
+  function openProductForm(key, presetCat) {
     const p       = key ? (allProducts.find(x => x._key === key) || {}) : {};
     const catOpts = '<option value="">— Không có —</option>' + buildCatOptions(null, 0);
-    const catSel  = p.categoryKey
-      ? catOpts.replace(`value="${p.categoryKey}"`, `value="${p.categoryKey}" selected`)
+    const effCat  = p.categoryKey || presetCat || null;
+    const catSel  = effCat
+      ? catOpts.replace(`value="${effCat}"`, `value="${effCat}" selected`)
       : catOpts;
 
     showModal({
@@ -367,7 +368,8 @@ export async function mount(container) {
       if (selectedCatKey) {
         const sc = allCategories.find(c => c._key === selectedCatKey);
         catLabel.style.display = 'flex';
-        catLabel.innerHTML = `<span>🗂 Đang xem: <b>${sc ? sc.name : '?'}</b></span><button id="pool-clear-cat" style="margin-left:auto;font-size:.75rem;color:#64748b;background:#e2e8f0;border:none;border-radius:4px;padding:1px 7px;cursor:pointer">✕ xóa lọc</button>`;
+        catLabel.innerHTML = `<span>🗂 Đang xem: <b>${sc ? sc.name : '?'}</b></span><button id="pool-add-prod" style="margin-left:auto;font-size:.75rem;color:#fff;background:#16a34a;border:none;border-radius:4px;padding:2px 9px;cursor:pointer;font-weight:600">+ Thêm SP vào đây</button><button id="pool-clear-cat" style="margin-left:6px;font-size:.75rem;color:#64748b;background:#e2e8f0;border:none;border-radius:4px;padding:1px 7px;cursor:pointer">✕ xóa lọc</button>`;
+        catLabel.querySelector('#pool-add-prod')?.addEventListener('click', () => openProductForm(null, selectedCatKey));
         catLabel.querySelector('#pool-clear-cat')?.addEventListener('click', () => { selectedCatKey = null; renderFolders(); renderProductPool(); });
       } else {
         catLabel.style.display = 'none';
