@@ -867,19 +867,18 @@ function printWarrantySlip(d) {
     var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
     var scale = (Number(R.fontScale)||100)/100; if (scale < 0.5) scale = 0.5; if (scale > 2) scale = 2;
 
-    // Tính ngày hết bảo hành = (ngày trả || ngày nhận) + thời hạn
     function warrEnd(){
       var w = String(d.warranty||'').toLowerCase();
       if (/kh[ôo]ng/.test(w)) return 'Không bảo hành';
-      var months = 0, m = w.match(/(\d+)\s*th[áa]ng/);
-      if (m) months = parseInt(m[1]);
+      var months = 0, mm0 = w.match(/(\d+)\s*th[áa]ng/);
+      if (mm0) months = parseInt(mm0[1]);
       else { var y = w.match(/(\d+)\s*n[ăa]m/); if (/n[ăa]m/.test(w)) months = (y?parseInt(y[1]):1)*12; }
       var base = d.deliveredDate || d.receivedDate || '';
       if (!base || !months) return d.warranty || '—';
       var dt = new Date(base + 'T00:00:00'); if (isNaN(dt.getTime())) return d.warranty || '—';
       dt.setMonth(dt.getMonth() + months);
-      var dd=('0'+dt.getDate()).slice(-2), mm=('0'+(dt.getMonth()+1)).slice(-2);
-      return dd+'/'+mm+'/'+dt.getFullYear() + (d.warranty?(' ('+d.warranty+')'):'');
+      var dd=('0'+dt.getDate()).slice(-2), mo=('0'+(dt.getMonth()+1)).slice(-2);
+      return dd+'/'+mo+'/'+dt.getFullYear() + (d.warranty?(' ('+d.warranty+')'):'');
     }
     var docDate = d.deliveredDate || todayStr();
 
@@ -1014,4 +1013,249 @@ function openForm(record) {
               serviceFee:    parseFloat((formWrap.querySelector('#f-serviceFee').value||'').replace(/\./g,'')) || 0,
               partsUsed:     _partsArr,
               partsCost:     parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,'')) || 0,
-        profit:        (parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,''))||0) - (parseFloat((formWrap.querySelector('#f-partsCo
+        profit:        (parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,''))||0) - (parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,''))||0),
+              warranty:      formWrap.querySelector('#f-warranty')?.value || '',
+              internalNote:  formWrap.querySelector('#f-internalNote')?.value || '',
+        paymentType:    formWrap.querySelector('#f-paymentType').value,
+        status:         formWrap.querySelector('#f-status').value,
+        cpu:            formWrap.querySelector('#f-cpu').value.trim(),
+        ram:            formWrap.querySelector('#f-ram').value.trim(),
+        ssd:            formWrap.querySelector('#f-ssd').value.trim(),
+        vga:            formWrap.querySelector('#f-vga').value.trim(),
+        initialCondition: formWrap.querySelector('#f-initialCondition').value.trim(),
+        repairRequest:  formWrap.querySelector('#f-repairRequest').value.trim(),
+        ts: record?.ts || Date.now()
+      };
+      try {
+        if (record) { await updateItem(COLLECTION, record._key, data); logRepairToSheet({...data, key:record._key}, 'update'); toast('Đã cập nhật phiếu'); }
+        else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('Đã thêm phiếu mới'); }
+        if (record && record.partsUsed && record.partsUsed.length) { await restorePartsStock(record.partsUsed); }
+        await deductPartsStock(_partsArr);
+        formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); selectedKeys = new Set(); updateBtnStates();
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    });
+    
+  // ── Parts Picker ──────────────────────────
+  var _partsArr = (record && Array.isArray(record.partsUsed)) ? record.partsUsed.map(function(p){return Object.assign({},p);}) : [];
+  var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,"."); };
+
+  function renderPartsList() {
+    var list = formWrap.querySelector("#f-parts-list");
+    var tot  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
+    var von  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
+    formWrap.querySelector("#f-parts-total").textContent = fmtN(tot);
+    formWrap.querySelector("#f-parts-vcost").textContent = fmtN(von);
+    list.innerHTML = _partsArr.length ? _partsArr.map(function(p,i){
+      return "<div style=\"display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #e0e8f4\">"
+           + "<span style=\"flex:1;font-size:13px\">" + p.name + "</span>"
+           + "<span style=\"font-size:12px;color:#666\">x" + p.qty + "</span>"
+           + "<input type=\"text\" class=\"part-von-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.costPrice) + "\" style=\"width:62px;font-size:11px;border:1px solid #d0d7e5;border-radius:3px;padding:1px 4px;text-align:right;color:#888\" placeholder=\"V\u1ed1n\">"
+           + "<span style=\"font-size:13px;font-weight:600;color:#1d4ed8;min-width:68px;text-align:right\">" + fmtN(p.salePrice*p.qty) + "\u20ab</span>"
+           + "<button type=\"button\" data-idx=\"" + i + "\" class=\"rm-part\" style=\"border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px\">\u00d7</button>"
+           + "</div>";
+    }).join("") : "<div style=\"color:#aaa;font-size:12px;padding:2px 0\">Ch\u01b0a c\u00f3 linh ki\u1ec7n</div>";
+    recalcTotals();
+  }
+
+  function recalcTotals() {
+    var svc = parseFloat((formWrap.querySelector("#f-serviceFee").value||"").replace(/\./g,""))||0;
+    var pT  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
+    var vT  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
+    formWrap.querySelector("#f-cost").value      = fmtN(svc+pT);
+    if (vT > 0) formWrap.querySelector("#f-partsCost").value = fmtN(vT);
+  }
+
+  var _partsPool = [];
+  var _partSel = null;
+  var _searchEl = formWrap.querySelector("#f-parts-search");
+  var _dropEl = formWrap.querySelector("#f-parts-drop");
+
+  function renderPartDrop(q){
+    if(!_dropEl) return;
+    q = (q||"").toLowerCase().trim();
+    var list = _partsPool.filter(function(p){
+      return !q || (p.name||"").toLowerCase().indexOf(q)>=0 || (p.id||"").toLowerCase().indexOf(q)>=0;
+    }).slice(0,60);
+    if(!list.length){ _dropEl.innerHTML = '<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Kh\u00f4ng c\u00f3 linh ki\u1ec7n ph\u00f9 h\u1ee3p</div>'; return; }
+    _dropEl.innerHTML = list.map(function(p){
+      return '<div class="part-opt" data-key="'+p._key+'" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'+
+        (p.name||"?")+' <span style="color:#16a34a">'+fmtN(p.price||p.cost||0)+'\u20ab</span> <span style="color:#64748b">(kho:'+(p.stock||0)+')</span></div>';
+    }).join('');
+  }
+
+  (async function loadProds(){
+    try {
+      var custs = await getAll("customers"); window._repCusts = custs;
+      var prods = await getAll("products");
+      var cats = [];
+      try { cats = await getAll("categories"); } catch(e){ cats = []; }
+      // T\u00ecm danh m\u1ee5c g\u1ed1c "Linh ki\u1ec7n" + m\u1ecdi danh m\u1ee5c con
+      var allow = null;
+      var root = cats.find(function(c){ return !c.deletedAt && /linh\s*ki\u1ec7n/i.test(c.name||"") && !c.parentKey; })
+              || cats.find(function(c){ return !c.deletedAt && /linh\s*ki\u1ec7n/i.test(c.name||""); });
+      if (root) {
+        allow = {}; allow[root._key] = 1;
+        var queue = [root._key];
+        while (queue.length) {
+          var k = queue.shift();
+          cats.filter(function(c){ return c.parentKey === k; }).forEach(function(c){ allow[c._key]=1; queue.push(c._key); });
+        }
+      }
+      _partsPool = prods.filter(function(p){
+        return !p.deletedAt && (p.stock||0)>0 && (!allow || allow[p.categoryKey]);
+      }).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");});
+      renderPartDrop("");
+    } catch(e){ console.warn("loadProds",e); }
+  })();
+
+  if (_searchEl) {
+    _searchEl.addEventListener("focus", function(){ renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
+    _searchEl.addEventListener("input", function(){ _partSel=null; renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
+    _searchEl.addEventListener("blur", function(){ setTimeout(function(){ if(_dropEl) _dropEl.style.display="none"; },160); });
+    _searchEl.addEventListener("keydown", function(e){
+      if(e.key==="Enter"){
+        e.preventDefault();
+        var q=(_searchEl.value||"").toLowerCase().trim();
+        var first=_partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
+        if(first) addPart(first);
+      }
+    });
+  }
+  if (_dropEl) {
+    _dropEl.addEventListener("mousedown", function(e){
+      var it = e.target.closest(".part-opt"); if(!it) return;
+      e.preventDefault();
+      var p = _partsPool.find(function(x){return x._key===it.dataset.key;});
+      if(p) addPart(p);
+    });
+  }
+
+  // Th\u00eam 1 linh ki\u1ec7n v\u00e0o danh s\u00e1ch (d\u00f9ng chung cho click g\u1ee3i \u00fd / Enter / n\u00fat +Th\u00eam)
+  function addPart(p){
+    if(!p) return;
+    var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
+    var ei  = _partsArr.findIndex(function(x){return x.invKey===p._key;});
+    if(ei>=0){ _partsArr[ei].qty += qty; } else {
+      _partsArr.push({invKey:p._key, name:p.name, qty:qty,
+        salePrice:(Number(p.price)||Number(p.cost)||0), costPrice:Number(p.cost)||0});
+    }
+    _partSel=null;
+    if(_searchEl){ _searchEl.value=""; _searchEl.focus(); }
+    if(_dropEl) _dropEl.style.display="none";
+    renderPartsList();
+    recalcTotals();
+  }
+
+  renderPartsList();
+
+  formWrap.querySelector("#f-parts-add").addEventListener("click", function(){
+    var q=(_searchEl&&_searchEl.value||"").toLowerCase().trim();
+    var pick = _partSel || _partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
+    if(!pick){ toast("G\u00f5 v\u00e0 ch\u1ecdn linh ki\u1ec7n tr\u01b0\u1edbc","error"); return; }
+    addPart(pick);
+  });
+  formWrap.querySelector("#f-parts-list").addEventListener("click", function(e){
+    var btn = e.target.closest(".rm-part");
+    if(!btn) return;
+    _partsArr.splice(Number(btn.dataset.idx),1);
+    renderPartsList();
+  });
+  formWrap.querySelector("#f-parts-list").addEventListener("input", function(e){
+    var vi = e.target.classList.contains("part-von-inp") ? e.target : null;
+    if(!vi) return;
+    _partsArr[Number(vi.dataset.idx)].costPrice = parseFloat((vi.value||"").replace(/\./g,""))||0;
+    recalcTotals();
+  });
+  formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
+
+  // Customer search autocomplete
+  var _searchInp = formWrap.querySelector('#f-cust-search');
+  var _searchDrop = formWrap.querySelector('#f-cust-drop');
+  if (_searchInp) {
+    _searchInp.addEventListener('input', function() {
+      var q = (_searchInp.value||'').trim().toLowerCase();
+      _searchDrop.innerHTML = '';
+      if (!q || !window._repCusts) { _searchDrop.style.display='none'; return; }
+      var matches = window._repCusts.filter(function(x){ return (x.name||'').toLowerCase().includes(q)||(x.phone||'').includes(q); }).slice(0,10);
+      if (!matches.length) { _searchDrop.style.display='none'; return; }
+      matches.forEach(function(x){
+        var item = document.createElement('div');
+        item.style.cssText='padding:8px 10px;cursor:pointer;border-bottom:1px solid #eee;font-size:13px';
+        item.innerHTML='<strong>'+x.name+'</strong> <span style="color:#888;font-size:12px">'+x.phone+'</span>';
+        item.onmouseenter=function(){item.style.background='#f0f9ff';};
+        item.onmouseleave=function(){item.style.background='';};
+        item.onclick=function(){
+          formWrap.querySelector('#f-customerName').value=x.name||'';
+          formWrap.querySelector('#f-phone').value=x.phone||'';
+          var addrF=formWrap.querySelector('#f-address'); if(addrF&&x.address) addrF.value=x.address;
+          _searchInp.value=x.name||''; _searchDrop.style.display='none';
+        };
+        _searchDrop.appendChild(item);
+      });
+      _searchDrop.style.display='block';
+    });
+    document.addEventListener('click', function(e){ if(!_searchInp.contains(e.target)&&!_searchDrop.contains(e.target)) _searchDrop.style.display='none'; }, {once:false});
+  }
+
+formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function restoreRepair(key) {
+  const item = allData.find(r => r._key === key);
+  if (!item) return;
+  const {deletedAt, _key: rk2, ...rest} = item;
+  try { await updateItem(COLLECTION, key, {...rest, deletedAt: null}); logRepairToSheet({...rest, key: key}, 'add'); toast('Khôi phục thành công'); filterData(); }
+  catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+}
+window.__restoreRepair = k => restoreRepair(k);
+
+async function confirmDeleteKeys(keys) {
+    if (!keys || !keys.length) return;
+    const names = keys.map(k => { const r = allData.find(x => x._key === k); return r ? (r.customerName||k) : k; }).join(', ');
+    const perm = showTrash;
+    showModal({
+      title: (perm ? 'Xóa vĩnh viễn ' : 'Xác nhận xóa ') + keys.length + ' phiếu',
+      body: 'Xóa phiếu của: <strong>' + names + '</strong>?',
+      danger: true,
+      confirmText: (perm ? 'Xóa vĩnh viễn ' : 'Xóa ') + keys.length + ' phiếu',
+      onConfirm: async () => {
+        let ok = 0, fail = 0;
+        for (const key of keys) {
+          try {
+            if (perm) {
+              await deleteItem(COLLECTION, key);
+              allData = allData.filter(r => r._key !== key);
+            } else {
+              const item = allData.find(r => r._key === key);
+              if (!item) { fail++; continue; }
+              const { _key: rk, ...ci } = item;
+                 const _dr = allData.find(function(r){return r._key===key;});
+              if(_dr && _dr.partsUsed && _dr.partsUsed.length) await restorePartsStock(_dr.partsUsed);
+              await updateItem(COLLECTION, key, {...ci, deletedAt: Date.now()});
+              allData = allData.map(r => r._key === key ? {...r, deletedAt: Date.now()} : r);
+            }
+            logRepairToSheet({ key: key }, 'delete');
+            ok++;
+          } catch(e) { fail++; }
+        }
+        filterData();
+        selectedKeys = new Set(); updateBtnStates();
+        toast(ok + ' phiếu đã ' + (perm ? 'xóa vĩnh viễn' : 'xóa') + (fail ? ', ' + fail + ' lỗi' : ''));
+      }
+    });
+  }
+  async function confirmDelete(key) { confirmDeleteKeys([key]); }
+}
+async function restorePartsStock(partsUsed) {
+  if (!partsUsed || !partsUsed.length) return;
+  for (const p of partsUsed) {
+    try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: (prod.stock||0) + p.qty }); } catch(e) {}
+  }
+}
+async function deductPartsStock(partsUsed) {
+  if (!partsUsed || !partsUsed.length) return;
+  for (const p of partsUsed) {
+    try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: Math.max(0, (prod.stock||0) - p.qty) }); } catch(e) {}
+  }
+}
+
