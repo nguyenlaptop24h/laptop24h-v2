@@ -382,18 +382,20 @@ export async function mount(container) {
       ? '<div style="color:#9ca3af;font-size:.85rem;padding:.5rem">Không có sản phẩm.</div>'
       : filtered.map(p => {
           const cat = p.categoryKey ? allCategories.find(c => c._key === p.categoryKey) : null;
-          return `<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f3f4f6;font-size:.84rem">
+          return `<div class="pool-row" data-key="${p._key}" title="Bấm đúp để sửa" style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-bottom:1px solid #f3f4f6;font-size:.84rem;cursor:pointer">
             <input type="checkbox" class="pool-cb" data-key="${p._key}" />
             <span style="flex:1">${p.name}</span>
             <span style="color:#6b7280;font-size:.75rem">${p.id||''}</span>
             ${cat
               ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
               : '<span style="color:#d1d5db;font-size:.73rem">Chưa phân loại</span>'}
-            <button class="pool-edit" data-key="${p._key}" title="Sửa sản phẩm" style="background:#f59e0b;color:#fff;border:none;border-radius:5px;padding:.15rem .55rem;cursor:pointer;font-size:.74rem;white-space:nowrap">✎ Sửa</button>
           </div>`;
         }).join('');
-    list.querySelectorAll('.pool-edit').forEach(btn =>
-      btn.addEventListener('click', e => { e.stopPropagation(); openProductForm(btn.dataset.key); }));
+    list.querySelectorAll('.pool-row').forEach(row =>
+      row.addEventListener('dblclick', e => {
+        if (e.target.classList.contains('pool-cb')) return;
+        openProductForm(row.dataset.key);
+      }));
     const pca = container.querySelector('#pool-check-all');
     if (pca) pca.checked = false;
   }
