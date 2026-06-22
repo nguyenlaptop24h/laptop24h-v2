@@ -675,6 +675,7 @@ function quickChangeStatus(record) {
       btn.addEventListener('click', async () => {
         const ns = btn.dataset.status;
         const remaining = (record.cost || 0) - (record.deposit || 0) - (record.discount || 0);
+        if (ns === 'Hoàn thành') { askRepairContent(record, formWrap); return; }
         if (ns === 'Đã giao' && remaining > 0) { askDeliverPayment(record, remaining, formWrap); return; }
         const update = { ...record, status: ns };
         if (ns === 'Đã giao' && !record.deliveredDate) update.deliveredDate = todayStr();
@@ -683,6 +684,31 @@ function quickChangeStatus(record) {
       });
     });
     formWrap.querySelector('#qs-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); });
+    formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function askRepairContent(record, formWrap) {
+    formWrap.innerHTML = '<div class="form-card" style="max-width:460px;margin:1rem auto;padding:1.2rem">' +
+      '<h3 style="margin:0 0 .4rem">📝 Nội dung sửa chữa</h3>' +
+      '<p style="color:#555;margin:0 0 .5rem;font-size:.88rem"><strong>' + (record.customerName||'') + '</strong> — ' + (record.device||'') + '</p>' +
+      '<p style="color:#0891b2;margin:0 0 .55rem;font-size:.8rem">Nội dung này sẽ được in vào <b>Phiếu bảo hành</b>.</p>' +
+      '<textarea id="rc-text" rows="4" placeholder="VD: Thay màn hình, vệ sinh máy, tra keo tản nhiệt..." style="width:100%;box-sizing:border-box;padding:.55rem .7rem;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;font-size:.95rem"></textarea>' +
+      '<div style="display:flex;gap:.5rem;margin-top:.7rem"><button id="rc-cancel" class="btn btn--secondary" style="flex:1">Hủy</button><button id="rc-save" class="btn btn--primary" style="flex:1">💾 Lưu & Hoàn thành</button></div></div>';
+    const ta = formWrap.querySelector('#rc-text');
+    ta.value = record.repairRequest || '';
+    ta.focus();
+    const done = () => { formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); };
+    formWrap.querySelector('#rc-cancel').addEventListener('click', done);
+    formWrap.querySelector('#rc-save').addEventListener('click', async () => {
+      const rq = ta.value.trim();
+      try {
+        const update = { ...record, status: 'Hoàn thành', repairRequest: rq };
+        await updateItem(COLLECTION, record._key, update);
+        logRepairToSheet({ ...update, key: record._key }, 'update');
+        toast('✅ Hoàn thành');
+        done();
+      } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
+    });
     formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
