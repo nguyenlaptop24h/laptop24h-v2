@@ -47,7 +47,6 @@ export function showModal({ title, body, onConfirm, confirmText = 'Xác nhận',
   overlay.querySelector('.modal-close').onclick = close;
   overlay.querySelector('.modal-cancel').onclick = close;
   overlay.querySelector('.modal-confirm').onclick = () => { close(); onConfirm && onConfirm(); };
-  overlay.onclick = (e) => { if (e.target === overlay) close(); };
   return { close };
 }
 
