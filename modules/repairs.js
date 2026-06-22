@@ -756,7 +756,7 @@ function quickChangeStatus(record) {
     try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
     var LOGO24H = REP_LOGO24H;
     var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
+    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'đ'; };
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
     var v = function(x){ return esc(x||'—'); };
     var R = getReceiptTpl();
@@ -882,7 +882,7 @@ function printWarrantySlip(d) {
     var R = getReceiptTpl();
     var LOGO24H = REP_LOGO24H;
     var esc = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'd'; };
+    var money = function(n){ var x = Number(String(n==null?0:n).replace(/[^0-9]/g,''))||0; return x.toLocaleString('vi-VN') + 'đ'; };
     var v = function(x){ return esc(x||'—'); };
     var cfg = [d.cpu&&('CPU '+d.cpu), d.ram&&('RAM '+d.ram), d.ssd&&('SSD '+d.ssd), d.vga&&('VGA '+d.vga)].filter(Boolean).join('  /  ');
     var shopName = (R.shopName && R.shopName.trim()) ? R.shopName : (T.shopName || 'LAPTOP 24H');
