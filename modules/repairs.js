@@ -914,8 +914,7 @@ function printWarrantySlip(d) {
       '</div>' +
       '<table class="info">'+rows+'</table>' +
       '<div class="terms"><b>Điều khoản bảo hành:</b><br>'+termsHtml+'</div>' +
-      '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div><div><div class="sl">Người lập phiếu</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' +
-      '<div class="ft">Cảm ơn quý khách!</div>';
+      '<div class="note">⚠️ Lưu ý: Quý khách vui lòng kiểm tra lại cấu hình máy trước khi ra về. Xin cảm ơn quý khách!</div>';
 
     var fs = function(px){ return (px*scale).toFixed(1)+'px'; };
     var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
@@ -932,10 +931,7 @@ function printWarrantySlip(d) {
       '.info .vl{color:#000}' +
       '.info .sec{background:#d6d6d6;color:#000;font-weight:bold;font-size:'+fs(10)+';letter-spacing:.6px;padding:4px 8px}' +
       '.terms{font-size:'+fs(9.5)+';color:#000;line-height:1.7;margin:6px 0 10px}' +
-      '.ft{text-align:center;font-size:'+fs(10)+';color:#000;font-weight:bold;margin-top:8px}' +
-      '.sign{display:flex;justify-content:space-between;margin-top:8px}' +
-      '.sign>div{width:46%;text-align:center;border-top:1px solid #333;padding-top:4px;margin-top:34px}' +
-      '.sl{font-weight:bold;font-size:'+fs(11)+';color:#000}.su{font-size:'+fs(9)+';color:#333}' +
+      '.note{border:2px solid #000;background:#f0f0f0;color:#000;font-weight:bold;font-size:'+fs(10)+';text-align:center;padding:7px 9px;border-radius:6px;margin-top:10px;line-height:1.5}' +
       '@media print{.np{display:none}}';
 
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu bảo hành sửa chữa</title><style>'+css+'</style></head><body>' +
