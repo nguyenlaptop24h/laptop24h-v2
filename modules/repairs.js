@@ -970,7 +970,7 @@ function openForm(record) {
     if(!list.length){ _dropEl.innerHTML = '<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Kh\u00f4ng c\u00f3 linh ki\u1ec7n ph\u00f9 h\u1ee3p</div>'; return; }
     _dropEl.innerHTML = list.map(function(p){
       return '<div class="part-opt" data-key="'+p._key+'" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'+
-        (p.name||"?")+' <span style="color:#16a34a">'+fmtN(p.price||0)+'\u20ab</span> <span style="color:#64748b">(kho:'+(p.stock||0)+')</span></div>';
+        (p.name||"?")+' <span style="color:#16a34a">'+fmtN(p.price||p.cost||0)+'\u20ab</span> <span style="color:#64748b">(kho:'+(p.stock||0)+')</span></div>';
     }).join('');
   }
 
@@ -1022,7 +1022,7 @@ function openForm(record) {
     var ei  = _partsArr.findIndex(function(p){return p.invKey===_partSel._key;});
     if(ei>=0){ _partsArr[ei].qty += qty; } else {
       _partsArr.push({invKey:_partSel._key, name:_partSel.name, qty:qty,
-        salePrice:Number(_partSel.price)||0, costPrice:Number(_partSel.cost)||0});
+        salePrice:(Number(_partSel.price)||Number(_partSel.cost)||0), costPrice:Number(_partSel.cost)||0});
     }
     _partSel=null;
     if(_searchEl) _searchEl.value="";
