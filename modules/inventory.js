@@ -388,6 +388,8 @@ export async function mount(container) {
             <input type="checkbox" class="pool-cb" data-key="${p._key}" />
             <span style="flex:1">${p.name}</span>
             <span style="color:#6b7280;font-size:.75rem">${p.id||''}</span>
+            <span style="color:#16a34a;font-weight:600;font-size:.78rem;white-space:nowrap">${(p.price||0).toLocaleString('vi-VN')}đ</span>
+            <span style="background:#f1f5f9;color:#334155;border-radius:4px;padding:.1rem .4rem;font-size:.74rem;white-space:nowrap">SL: <b>${p.stock||0}</b></span>
             ${cat
               ? `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.1rem .35rem;font-size:.73rem">${getCatFullName(cat)}</span>`
               : '<span style="color:#d1d5db;font-size:.73rem">Chưa phân loại</span>'}
