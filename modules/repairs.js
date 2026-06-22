@@ -447,7 +447,6 @@ let showTrash = false;
     const ta = ov.querySelector('#qn-text'); ta.value = rec.internalNote || ''; ta.focus();
     const close = () => ov.remove();
     ov.querySelector('#qn-cancel').onclick = close;
-    ov.addEventListener('click', e => { if (e.target === ov) close(); });
     ov.querySelector('#qn-save').onclick = async () => {
       const note = ta.value.trim();
       try {
