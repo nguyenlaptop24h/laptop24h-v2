@@ -914,7 +914,7 @@ function printWarrantySlip(d) {
     if (d.address) rows += '<tr><td class="lb">Địa chỉ</td><td class="vl" colspan="3">'+v(d.address)+'</td></tr>';
     rows += '<tr><td class="sec" colspan="4">THÔNG TIN THIẾT BỊ</td></tr>';
     rows += '<tr><td class="lb">Thiết bị</td><td class="vl">'+v(d.device)+'</td><td class="lb">Serial</td><td class="vl">'+v(d.serial)+'</td></tr>';
-    if (cfg) rows += '<tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">'+esc(cfg)+'</td></tr>';
+    rows += '<tr><td class="lb">Cấu hình</td><td class="vl" colspan="3">'+(cfg?esc(cfg):'—')+'</td></tr>';
     rows += '<tr><td class="sec" colspan="4">TÌNH TRẠNG &amp; YÊU CẦU</td></tr>';
     if (d.initialCondition) rows += '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>';
     rows += '<tr><td class="lb">Nội dung sửa chữa</td><td class="vl" colspan="3">'+v(d.repairRequest)+'</td></tr>';
