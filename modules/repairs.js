@@ -858,7 +858,7 @@ function openForm(record) {
 </div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>TÌNH TRẠNG KHI NHẬN (MÔ TẢ LỖI)</label><textarea id="f-initialCondition" placeholder="Không lên nguồn, màn hình trắng, bàn phím liệt...">${record?.initialCondition||''}</textarea></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>PHỤ KIỆN KÈM THEO</label><input id="f-accessories" type="text" placeholder="Sạc, túi, chuột..." value="${record?.accessories||''}"></div></div>
-<div class="rfm-r" style="display:block"><div style="background:#eef4ff;border:1px solid #c7d9f0;border-radius:8px;padding:10px;margin:0 0 4px"><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-bottom:8px">LINH KIỆN Sử DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><select id="f-parts-select" style="flex:1;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><option value="">-- Chọn sản phẩm từ kho --</option></select><input id="f-parts-qty" type="number" min="1" value="1" style="width:52px;padding:7px 5px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center"><button type="button" id="f-parts-add" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-parts-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng LK: <b id="f-parts-total">0</b>₫ &nbsp;|&nbsp; Vốn LK: <b id="f-parts-vcost">0</b>₫</div></div></div>
+<div class="rfm-r" style="display:block"><div style="background:#eef4ff;border:1px solid #c7d9f0;border-radius:8px;padding:10px;margin:0 0 4px"><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-bottom:8px">LINH KIỆN Sử DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div id="f-parts-combo" style="flex:1;position:relative"><input id="f-parts-search" type="text" autocomplete="off" placeholder="Gõ tên linh kiện để tìm..." style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><div id="f-parts-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><input id="f-parts-qty" type="number" min="1" value="1" style="width:52px;padding:7px 5px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center"><button type="button" id="f-parts-add" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-parts-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng LK: <b id="f-parts-total">0</b>₫ &nbsp;|&nbsp; Vốn LK: <b id="f-parts-vcost">0</b>₫</div></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>NGÀY NHẬN *</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||new Date().toISOString().slice(0,10)}"></div><div class="rfm-f"><label>CÔNG SỬa (₫)</label><input id="f-serviceFee" type="text" data-fmt="number" value="${String(record?.serviceFee??record?.cost??0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>TIỀN CỌC (Đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
 <div class="rfm-r rfm-r2"><div class="rfm-f"><label>TỔNG TIỀN SỬa (₫)</label><input id="f-cost" type="text" data-fmt="number" readonly style="background:#eef4ff;font-weight:700;color:#1e40af" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LINH KIỆN (₫)</label><input id="f-partsCost" type="text" data-fmt="number" style="background:#fff" value="${String(record?.partsCost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
 <div class="rfm-r rfm-r2"><div class="rfm-f"><label>BẢO HÀNH SỬA CHỮA</label><select id="f-warranty"><option value="3 tháng" ${(record?.warranty||'3 tháng')==='3 tháng'?'selected':''}>3 tháng</option><option value="6 tháng" ${record?.warranty==='6 tháng'?'selected':''}>6 tháng</option><option value="1 năm" ${record?.warranty==='1 năm'?'selected':''}>1 năm</option><option value="Không bảo hành" ${record?.warranty==='Không bảo hành'?'selected':''}>Không bảo hành</option></select></div><div class="rfm-f"><label>KỸ THUẬT VIÊN</label><input id="f-techName" type="text" placeholder="Tên KTV..." value="${record?.techName||''}"></div></div>
@@ -956,38 +956,76 @@ function openForm(record) {
     if (vT > 0) formWrap.querySelector("#f-partsCost").value = fmtN(vT);
   }
 
+  var _partsPool = [];
+  var _partSel = null;
+  var _searchEl = formWrap.querySelector("#f-parts-search");
+  var _dropEl = formWrap.querySelector("#f-parts-drop");
+
+  function renderPartDrop(q){
+    if(!_dropEl) return;
+    q = (q||"").toLowerCase().trim();
+    var list = _partsPool.filter(function(p){
+      return !q || (p.name||"").toLowerCase().indexOf(q)>=0 || (p.id||"").toLowerCase().indexOf(q)>=0;
+    }).slice(0,60);
+    if(!list.length){ _dropEl.innerHTML = '<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Kh\u00f4ng c\u00f3 linh ki\u1ec7n ph\u00f9 h\u1ee3p</div>'; return; }
+    _dropEl.innerHTML = list.map(function(p){
+      return '<div class="part-opt" data-key="'+p._key+'" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'+
+        (p.name||"?")+' <span style="color:#16a34a">'+fmtN(p.price||0)+'\u20ab</span> <span style="color:#64748b">(kho:'+(p.stock||0)+')</span></div>';
+    }).join('');
+  }
+
   (async function loadProds(){
     try {
       var custs = await getAll("customers"); window._repCusts = custs;
       var prods = await getAll("products");
-      var sel = formWrap.querySelector("#f-parts-select");
-      sel.innerHTML = "<option value=\"\">" + "-- Ch\u1ecdn s\u1ea3n ph\u1ea9m t\u1eeb kho --" + "</option>";
-      prods.filter(function(p){return !p.deletedAt&&(p.stock||0)>0;})
-           .sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");})
-           .forEach(function(p){
-             var o = document.createElement("option");
-             o.value = p._key;
-             o.setAttribute("data-n",  p.name||"");
-             o.setAttribute("data-sp", p.price||0);
-             o.setAttribute("data-cp", p.cost||0);
-             o.textContent = (p.name||"?") + " (kho:" + (p.stock||0) + ") - " + fmtN(p.price||0) + "\u20ab";
-             sel.appendChild(o);
-           });
+      var cats = [];
+      try { cats = await getAll("categories"); } catch(e){ cats = []; }
+      // T\u00ecm danh m\u1ee5c g\u1ed1c "Linh ki\u1ec7n" + m\u1ecdi danh m\u1ee5c con
+      var allow = null;
+      var root = cats.find(function(c){ return !c.deletedAt && /linh\s*ki\u1ec7n/i.test(c.name||"") && !c.parentKey; })
+              || cats.find(function(c){ return !c.deletedAt && /linh\s*ki\u1ec7n/i.test(c.name||""); });
+      if (root) {
+        allow = {}; allow[root._key] = 1;
+        var queue = [root._key];
+        while (queue.length) {
+          var k = queue.shift();
+          cats.filter(function(c){ return c.parentKey === k; }).forEach(function(c){ allow[c._key]=1; queue.push(c._key); });
+        }
+      }
+      _partsPool = prods.filter(function(p){
+        return !p.deletedAt && (p.stock||0)>0 && (!allow || allow[p.categoryKey]);
+      }).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");});
+      renderPartDrop("");
     } catch(e){ console.warn("loadProds",e); }
   })();
+
+  if (_searchEl) {
+    _searchEl.addEventListener("focus", function(){ renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
+    _searchEl.addEventListener("input", function(){ _partSel=null; renderPartDrop(_searchEl.value); _dropEl.style.display="block"; });
+    _searchEl.addEventListener("blur", function(){ setTimeout(function(){ if(_dropEl) _dropEl.style.display="none"; },160); });
+  }
+  if (_dropEl) {
+    _dropEl.addEventListener("mousedown", function(e){
+      var it = e.target.closest(".part-opt"); if(!it) return;
+      e.preventDefault();
+      var p = _partsPool.find(function(x){return x._key===it.dataset.key;});
+      if(p){ _partSel=p; if(_searchEl) _searchEl.value=p.name||""; }
+      _dropEl.style.display="none";
+    });
+  }
 
   renderPartsList();
 
   formWrap.querySelector("#f-parts-add").addEventListener("click", function(){
-    var sel = formWrap.querySelector("#f-parts-select");
-    var o   = sel.options[sel.selectedIndex];
-    if(!o||!o.value){ toast("Ch\u1ecdn s\u1ea3n ph\u1ea9m tr\u01b0\u1edbc","error"); return; }
+    if(!_partSel){ toast("G\u00f5 v\u00e0 ch\u1ecdn linh ki\u1ec7n tr\u01b0\u1edbc","error"); return; }
     var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
-    var ei  = _partsArr.findIndex(function(p){return p.invKey===o.value;});
+    var ei  = _partsArr.findIndex(function(p){return p.invKey===_partSel._key;});
     if(ei>=0){ _partsArr[ei].qty += qty; } else {
-      _partsArr.push({invKey:o.value, name:o.getAttribute("data-n"), qty:qty,
-        salePrice:Number(o.getAttribute("data-sp")), costPrice:Number(o.getAttribute("data-cp"))});
+      _partsArr.push({invKey:_partSel._key, name:_partSel.name, qty:qty,
+        salePrice:Number(_partSel.price)||0, costPrice:Number(_partSel.cost)||0});
     }
+    _partSel=null;
+    if(_searchEl) _searchEl.value="";
     renderPartsList();
     recalcTotals();
   });
