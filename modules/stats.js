@@ -359,10 +359,10 @@ export async function mount(container) {
         </tr>`;
       const invDetail = invGKeys.map(g=>{
         const prows = invGroups[g].list.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'))
-          .map(p=>`<tr><td>${p.id||'&mdash;'}</td><td>${p.name||'&mdash;'}</td><td style="text-align:center">${p.stock||0}</td><td style="text-align:right">${formatVND((p.stock||0)*(p.cost||0))}</td><td style="text-align:right">${formatVND((p.stock||0)*(p.price||0))}</td></tr>`).join('');
+          .map(p=>`<tr><td>${p.id||'&mdash;'}</td><td>${p.name||'&mdash;'}</td><td style="text-align:center">${p.stock||0}</td><td style="text-align:right">${formatVND((p.stock||0)*(p.cost||0))}</td><td style="text-align:right">${formatVND(p.price||0)}</td></tr>`).join('');
         return `<details style="margin:4px 0;border:1px solid #eee;border-radius:6px;padding:4px 8px">
           <summary style="cursor:pointer;font-weight:600">${g} &middot; ${invGroups[g].items} m&#7863;t h&#224;ng &middot; ${invGroups[g].qty} c&#225;i &middot; v&#7889;n ${formatVND(invGroups[g].von)}</summary>
-          <table class="st-tbl" style="margin-top:6px"><thead><tr><th>M&#227;</th><th>T&#234;n</th><th>T&#7891;n</th><th>V&#7889;n</th><th>B&#225;n</th></tr></thead><tbody>${prows}</tbody></table>
+          <table class="st-tbl" style="margin-top:6px"><thead><tr><th>M&#227;</th><th>T&#234;n</th><th>T&#7891;n</th><th>V&#7889;n</th><th>&#272;&#417;n gi&#225; b&#225;n</th></tr></thead><tbody>${prows}</tbody></table>
         </details>`;
       }).join('');
 
