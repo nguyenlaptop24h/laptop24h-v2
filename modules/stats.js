@@ -272,8 +272,8 @@ export async function mount(container) {
     const { from, to } = getPeriodRange(period);
 
     try {
-      const [repairs, sales, products] = await Promise.all([
-        getAll('repairs'), getAll('sales'), getAll('products')
+      const [repairs, sales, products, categories] = await Promise.all([
+        getAll('repairs'), getAll('sales'), getAll('products'), getAll('categories')
       ]);
 
       const repF  = repairs.filter(r => inRange(repMs(r), from, to));
@@ -323,6 +323,48 @@ export async function mount(container) {
       const totalStock = products
         .filter(p=>!p.deletedAt)
         .reduce((s,p)=>s+(p.stock||0)*(p.cost||0),0);
+
+      // ── Hàng còn tồn — phân loại theo danh mục gốc ──
+      const catMap = {}; categories.forEach(c=>{ catMap[c._key]=c; });
+      const rootCatName = (key)=>{
+        let c = catMap[key]; if(!c) return 'Chưa phân loại';
+        let g=0; while(c && c.parentKey && catMap[c.parentKey] && g<20){ c=catMap[c.parentKey]; g++; }
+        return (c && c.name) ? c.name : 'Chưa phân loại';
+      };
+      const inStock = products.filter(p=>!p.deletedAt && (p.stock||0)>0);
+      const invItems = inStock.length;
+      const invQty = inStock.reduce((s,p)=>s+(p.stock||0),0);
+      const invVon = inStock.reduce((s,p)=>s+(p.stock||0)*(p.cost||0),0);
+      const invBan = inStock.reduce((s,p)=>s+(p.stock||0)*(p.price||0),0);
+      const invGroups = {};
+      inStock.forEach(p=>{
+        const g = rootCatName(p.categoryKey);
+        if(!invGroups[g]) invGroups[g]={items:0,qty:0,von:0,ban:0,list:[]};
+        const st=p.stock||0;
+        invGroups[g].items++; invGroups[g].qty+=st;
+        invGroups[g].von+=st*(p.cost||0); invGroups[g].ban+=st*(p.price||0);
+        invGroups[g].list.push(p);
+      });
+      const invGKeys = Object.keys(invGroups).sort((a,b)=>invGroups[b].von-invGroups[a].von);
+      const invCatRows = invGKeys.map(g=>`<tr>
+          <td>${g}</td>
+          <td style="text-align:center">${invGroups[g].items}</td>
+          <td style="text-align:center">${invGroups[g].qty}</td>
+          <td style="text-align:right">${formatVND(invGroups[g].von)}</td>
+          <td style="text-align:right">${formatVND(invGroups[g].ban)}</td>
+        </tr>`).join('') +
+        `<tr style="font-weight:700;border-top:2px solid #bbb;background:#fafafa">
+          <td>T&#7892;NG</td><td style="text-align:center">${invItems}</td><td style="text-align:center">${invQty}</td>
+          <td style="text-align:right">${formatVND(invVon)}</td><td style="text-align:right">${formatVND(invBan)}</td>
+        </tr>`;
+      const invDetail = invGKeys.map(g=>{
+        const prows = invGroups[g].list.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'))
+          .map(p=>`<tr><td>${p.id||'&mdash;'}</td><td>${p.name||'&mdash;'}</td><td style="text-align:center">${p.stock||0}</td><td style="text-align:right">${formatVND((p.stock||0)*(p.cost||0))}</td><td style="text-align:right">${formatVND((p.stock||0)*(p.price||0))}</td></tr>`).join('');
+        return `<details style="margin:4px 0;border:1px solid #eee;border-radius:6px;padding:4px 8px">
+          <summary style="cursor:pointer;font-weight:600">${g} &middot; ${invGroups[g].items} m&#7863;t h&#224;ng &middot; ${invGroups[g].qty} c&#225;i &middot; v&#7889;n ${formatVND(invGroups[g].von)}</summary>
+          <table class="st-tbl" style="margin-top:6px"><thead><tr><th>M&#227;</th><th>T&#234;n</th><th>T&#7891;n</th><th>V&#7889;n</th><th>B&#225;n</th></tr></thead><tbody>${prows}</tbody></table>
+        </details>`;
+      }).join('');
 
       let lbl = periodEl.options[periodEl.selectedIndex]?.text || '';
       if (period==='single' && singleEl.value)
@@ -378,6 +420,23 @@ export async function mount(container) {
               <div class="st-row"><span class="st-label">Gi&#225; tr&#7883; kho (v&#7889;n)</span><span class="st-val">${formatVND(totalStock)}</span></div>
             </div>
             <div id="st-lowstock-wrap"></div>
+          </div>
+
+          <!-- HANG CON TON THEO DANH MUC -->
+          <div class="st-panel st-full">
+            <h3>&#128230; H&#224;ng c&#242;n t&#7891;n &mdash; ph&#226;n lo&#7841;i theo danh m&#7909;c</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">
+              <div class="st-row"><span class="st-label">M&#7863;t h&#224;ng c&#242;n t&#7891;n</span><span class="st-val">${invItems}</span></div>
+              <div class="st-row"><span class="st-label">T&#7893;ng s&#7889; l&#432;&#7907;ng</span><span class="st-val">${invQty}</span></div>
+              <div class="st-row"><span class="st-label">Gi&#225; tr&#7883; v&#7889;n</span><span class="st-val">${formatVND(invVon)}</span></div>
+              <div class="st-row"><span class="st-label">Gi&#225; tr&#7883; b&#225;n</span><span class="st-val blue">${formatVND(invBan)}</span></div>
+            </div>
+            <table class="st-tbl">
+              <thead><tr><th>Danh m&#7909;c</th><th>M&#7863;t h&#224;ng</th><th>SL t&#7891;n</th><th>Gi&#225; tr&#7883; v&#7889;n</th><th>Gi&#225; tr&#7883; b&#225;n</th></tr></thead>
+              <tbody>${invCatRows}</tbody>
+            </table>
+            <div style="margin-top:12px;font-weight:600;color:#555">Chi ti&#7871;t theo danh m&#7909;c (b&#7845;m &#273;&#7875; m&#7903;):</div>
+            ${invDetail || '<p style="color:#888;padding:6px 0">Kh&#244;ng c&#243; h&#224;ng t&#7891;n.</p>'}
           </div>
 
         </div>`;
