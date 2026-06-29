@@ -20,6 +20,7 @@ export async function mount(container) {
           <option value="">Tất cả loại</option>
           ${TYPE_LIST.map(t => `<option>${t}</option>`).join('')}
         </select>
+        <button id="cust-ranking" class="btn" style="background:#f59e0b;color:#fff;border:none">🏆 Xếp hạng LN</button>
         <button id="cust-add" class="btn btn--primary">+ Thêm khách</button>
       </div>
     </div>
@@ -38,6 +39,7 @@ export async function mount(container) {
 
   document.getElementById('cust-search').addEventListener('input', filterData);
   document.getElementById('cust-type-filter').addEventListener('change', filterData);
+  document.getElementById('cust-ranking')?.addEventListener('click', showProfitRanking);
 
   function filterData() {
     const q = (document.getElementById('cust-search')?.value || '').toLowerCase();
@@ -215,5 +217,75 @@ async function showCustStats(name, phone) {
       '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#dbeafe;font-weight:600"><th style="padding:4px 6px;text-align:left">Tháng</th><th style="text-align:center">Số máy</th><th style="text-align:right;white-space:nowrap">Lợi nhuận</th></tr>'+monthRows+'</table></div>'+
   '</div>';
   showModal({ title: 'Thống kê: '+name+' ('+phone+')', body: html, confirmText: 'Đóng' });
+}
+
+async function showProfitRanking() {
+  var reps=[], sales=[], prods=[];
+  try { var r = await Promise.all([getAll('repairs'), getAll('sales'), getAll('products')]); reps=r[0]; sales=r[1]; prods=r[2]; } catch(e){}
+  var costByKey = {}; prods.forEach(function(p){ costByKey[p._key]=Number(p.cost)||0; });
+  var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
+
+  var entries = [];
+  reps.forEach(function(rr){
+    if (rr.deletedAt) return;
+    var nm=(rr.customerName||'').trim(), ph=(rr.phone||'').trim();
+    if(!nm && !ph) return;
+    var pf = (typeof rr.profit==='number') ? rr.profit : ((rr.cost||0)-(rr.partsCost||0));
+    var ds = rr.receivedDate || (rr.ts? new Date(rr.ts).toISOString().slice(0,10):'');
+    entries.push({name:nm, phone:ph, profit:pf, date:ds});
+  });
+  sales.forEach(function(s){
+    var nm=(s.customer||'').trim(), ph=(s.phone||'').trim();
+    if(!nm && !ph) return;
+    var cap=0; (s.items||[]).forEach(function(it){ cap += (Number(it.qty)||1)*(costByKey[it.invkey]||0); });
+    var pf = (Number(s.total)||0) - cap;
+    var ds = s.date || (s.createdAt? new Date(s.createdAt).toISOString().slice(0,10):'');
+    entries.push({name:nm, phone:ph, profit:pf, date:ds});
+  });
+
+  function periodRange(p){
+    var now=new Date(), y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
+    if(p==='week'){ var day=(now.getDay()+6)%7; return [new Date(y,m,d-day), new Date(y,m,d+1)]; }
+    if(p==='month'){ return [new Date(y,m,1), new Date(y,m+1,1)]; }
+    if(p==='year'){ return [new Date(y,0,1), new Date(y+1,0,1)]; }
+    return [new Date(0), new Date(8640000000000000)];
+  }
+  var baseBtn='padding:5px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font-size:13px;margin-right:6px;';
+  var activeBtn='background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600;';
+
+  function render(p){
+    var rng=periodRange(p), groups={};
+    entries.forEach(function(e){
+      if(p!=='all'){
+        if(!e.date) return;
+        var dt=new Date(e.date+'T00:00:00');
+        if(isNaN(dt.getTime()) || dt<rng[0] || dt>=rng[1]) return;
+      }
+      var key=(e.name.toLowerCase()||'?')+'|'+e.phone;
+      if(!groups[key]) groups[key]={name:e.name||'?',phone:e.phone,profit:0,count:0};
+      groups[key].profit+=e.profit; groups[key].count++;
+    });
+    var arr=Object.keys(groups).map(function(k){return groups[k];}).sort(function(a,b){return b.profit-a.profit;});
+    var total=arr.reduce(function(s,g){return s+g.profit;},0);
+    var rows = arr.length ? arr.map(function(g,i){
+      var rk = i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);
+      return '<tr><td style="text-align:center;font-weight:600">'+rk+'</td><td style="padding:4px 8px"><b>'+g.name+'</b></td><td style="font-size:12px;color:#777">'+(g.phone||'')+'</td><td style="text-align:center">'+g.count+'</td><td style="text-align:right;color:#16a34a;font-weight:600;white-space:nowrap">'+fmtN(g.profit)+'đ</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:#888;padding:12px">Không có dữ liệu trong kỳ này</td></tr>';
+    var el=document.getElementById('cpr-list');
+    if(el) el.innerHTML = '<div style="text-align:right;font-size:13px;color:#555;margin-bottom:6px">Tổng lợi nhuận: <b style="color:#16a34a">'+fmtN(total)+'đ</b> · '+arr.length+' khách</div>'+
+      '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#dbeafe;font-weight:600"><th style="padding:5px;width:46px">#</th><th style="text-align:left;padding:5px">Khách hàng</th><th style="text-align:left">SĐT</th><th style="text-align:center">Số GD</th><th style="text-align:right;padding-right:6px">Lợi nhuận</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    ['week','month','year','all'].forEach(function(pp){ var b=document.getElementById('cpr-'+pp); if(b) b.style.cssText = baseBtn + (pp===p?activeBtn:''); });
+  }
+
+  var body='<style>.modal{max-width:660px!important;width:95vw!important}</style>'+
+    '<div style="margin-bottom:10px">'+
+      '<button id="cpr-week">Tuần này</button>'+
+      '<button id="cpr-month">Tháng này</button>'+
+      '<button id="cpr-year">Năm nay</button>'+
+      '<button id="cpr-all">Tất cả</button>'+
+    '</div><div id="cpr-list" style="max-height:62vh;overflow:auto"></div>';
+  showModal({ title:'🏆 Xếp hạng lợi nhuận khách hàng', body: body, confirmText:'Đóng' });
+  ['week','month','year','all'].forEach(function(p){ var b=document.getElementById('cpr-'+p); if(b) b.onclick=function(){ render(p); }; });
+  render('month');
 }
 }
