@@ -52,7 +52,7 @@ export function initRouter() {
     import('../modules/repairs.js?v=88'),
     import('../modules/sales.js?v=69'),
     import('../modules/inventory.js?v=22'),
-    import('../modules/customers.js?v=10'),
+    import('../modules/customers.js?v=11'),
     import('../modules/debts.js?v=4'),
     import('../modules/stats.js?v=12'),
     import('../modules/users.js?v=3'),
