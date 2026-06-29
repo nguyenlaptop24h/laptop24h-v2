@@ -225,22 +225,36 @@ async function showProfitRanking() {
   var costByKey = {}; prods.forEach(function(p){ costByKey[p._key]=Number(p.cost)||0; });
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
 
+  // Chỉ khách hàng ĐÃ LƯU trong module Khách hàng — khớp phiếu theo SĐT hoặc tên
+  var byPhone={}, byName={};
+  allData.forEach(function(c){
+    var ph=(c.phone||'').trim(), nm=(c.name||'').trim().toLowerCase();
+    if(ph && /[0-9]/.test(ph)) byPhone[ph]=c;
+    if(nm) byName[nm]=c;
+  });
+  function matchCust(name, phone){
+    var ph=(phone||'').trim(), nm=(name||'').trim().toLowerCase();
+    if(ph && /[0-9]/.test(ph) && byPhone[ph]) return byPhone[ph];
+    if(nm && byName[nm]) return byName[nm];
+    return null;
+  }
+
   var entries = [];
   reps.forEach(function(rr){
     if (rr.deletedAt) return;
-    var nm=(rr.customerName||'').trim(), ph=(rr.phone||'').trim();
-    if(!nm && !ph) return;
+    var c = matchCust(rr.customerName, rr.phone);
+    if(!c) return;
     var pf = (typeof rr.profit==='number') ? rr.profit : ((rr.cost||0)-(rr.partsCost||0));
     var ds = rr.receivedDate || (rr.ts? new Date(rr.ts).toISOString().slice(0,10):'');
-    entries.push({name:nm, phone:ph, profit:pf, date:ds});
+    entries.push({name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
   });
   sales.forEach(function(s){
-    var nm=(s.customer||'').trim(), ph=(s.phone||'').trim();
-    if(!nm && !ph) return;
+    var c = matchCust(s.customer, s.phone);
+    if(!c) return;
     var cap=0; (s.items||[]).forEach(function(it){ cap += (Number(it.qty)||1)*(costByKey[it.invkey]||0); });
     var pf = (Number(s.total)||0) - cap;
     var ds = s.date || (s.createdAt? new Date(s.createdAt).toISOString().slice(0,10):'');
-    entries.push({name:nm, phone:ph, profit:pf, date:ds});
+    entries.push({name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
   });
 
   function periodRange(p){
@@ -284,7 +298,7 @@ async function showProfitRanking() {
       '<button id="cpr-year">Năm nay</button>'+
       '<button id="cpr-all">Tất cả</button>'+
     '</div><div id="cpr-list" style="max-height:62vh;overflow:auto"></div>';
-  showModal({ title:'🏆 Xếp hạng lợi nhuận khách hàng', body: body, confirmText:'Đóng' });
+  showModal({ title:'🏆 Xếp hạng lợi nhuận khách hàng (đã lưu)', body: body, confirmText:'Đóng' });
   ['week','month','year','all'].forEach(function(p){ var b=document.getElementById('cpr-'+p); if(b) b.onclick=function(){ render(p); }; });
   render('month');
 }
