@@ -96,48 +96,53 @@ export async function mount(container) {
     const wrap = document.getElementById('cust-form-wrap');
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
-      <div class="form-card">
-        <h3>${record ? 'Cập nhật khách hàng' : 'Thêm khách hàng'}</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Mã khách hàng</label>
-            <input id="f-id" type="text" value="${record?.id||''}" placeholder="VD: KH001" />
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.3);padding:1.4rem;box-sizing:border-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h3 style="margin:0">${record ? 'Cập nhật khách hàng' : 'Thêm khách hàng'}</h3>
+            <button id="f-x" type="button" style="background:#f1f5f9;border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;color:#64748b">✕</button>
           </div>
-          <div class="form-group">
-            <label>Tên khách hàng *</label>
-            <input id="f-name" type="text" value="${record?.name||''}" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Mã khách hàng</label>
+              <input id="f-id" type="text" value="${record?.id||''}" placeholder="VD: KH001" />
+            </div>
+            <div class="form-group">
+              <label>Tên khách hàng *</label>
+              <input id="f-name" type="text" value="${record?.name||''}" />
+            </div>
+            <div class="form-group">
+              <label>Số điện thoại</label>
+              <input id="f-phone" type="text" value="${record?.phone||''}" />
+            </div>
+            <div class="form-group">
+              <label>Địa chỉ</label>
+              <input id="f-address" type="text" value="${record?.address||''}" />
+            </div>
+            <div class="form-group">
+              <label>Loại khách hàng</label>
+              <select id="f-type">
+                <option value="">-- Chọn loại --</option>
+                ${TYPE_LIST.map(t => `<option ${record?.type===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ghi chú</label>
+              <input id="f-note" type="text" value="${record?.note||''}" />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Số điện thoại</label>
-            <input id="f-phone" type="text" value="${record?.phone||''}" />
+          <div class="form-actions" style="margin-top:1.1rem;display:flex;gap:.5rem;justify-content:flex-end">
+            <button id="f-cancel" class="btn btn--secondary">Hủy</button>
+            <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu'}</button>
           </div>
-          <div class="form-group">
-            <label>Địa chỉ</label>
-            <input id="f-address" type="text" value="${record?.address||''}" />
-          </div>
-          <div class="form-group">
-            <label>Loại khách hàng</label>
-            <select id="f-type">
-              <option value="">-- Chọn loại --</option>
-              ${TYPE_LIST.map(t => `<option ${record?.type===t?'selected':''}>${t}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Ghi chú</label>
-            <input id="f-note" type="text" value="${record?.note||''}" />
-          </div>
-        </div>
-        <div class="form-actions">
-          <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Lưu'}</button>
-          <button id="f-cancel" class="btn btn--secondary">Hủy</button>
         </div>
       </div>
     `;
 
-    document.getElementById('f-cancel').addEventListener('click', () => {
-      wrap.classList.add('hidden');
-      wrap.innerHTML = '';
-    });
+    const closeForm = () => { wrap.classList.add('hidden'); wrap.innerHTML = ''; };
+    document.getElementById('f-cancel').addEventListener('click', closeForm);
+    document.getElementById('f-x').addEventListener('click', closeForm);
+    setTimeout(() => { const nm = document.getElementById('f-name'); if (nm) nm.focus(); }, 30);
 
     document.getElementById('f-save').addEventListener('click', async () => {
       const name = document.getElementById('f-name').value.trim();
