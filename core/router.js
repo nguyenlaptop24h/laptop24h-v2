@@ -53,7 +53,7 @@ export function initRouter() {
     import('../modules/sales.js?v=69'),
     import('../modules/inventory.js?v=22'),
     import('../modules/customers.js?v=9'),
-    import('../modules/debts.js?v=3'),
+    import('../modules/debts.js?v=4'),
     import('../modules/stats.js?v=12'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=3'),
