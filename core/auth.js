@@ -39,6 +39,12 @@ export async function initAuth() {
     document.getElementById('auth-btn').addEventListener('click', handleLogin);
     document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    const _showBtn = document.getElementById('auth-show');
+    if (_showBtn) _showBtn.addEventListener('click', () => {
+      const p = document.getElementById('auth-pass'); if (!p) return;
+      p.type = (p.type === 'password') ? 'text' : 'password';
+      _showBtn.textContent = (p.type === 'text') ? '🙈' : '👁';
+    });
 
     const auth = fbAuth();
     if (auth) {
@@ -76,6 +82,12 @@ async function handleLogin() {
   errEl.textContent = '';
   if (!username || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin'; return; }
   sessionStorage.setItem('laptop24h_branch', branch);
+  try {
+    if (document.getElementById('auth-remember')?.checked)
+      localStorage.setItem('laptop24h_remember', JSON.stringify({ u: username, p: password, b: branch }));
+    else
+      localStorage.removeItem('laptop24h_remember');
+  } catch (e) {}
 
   const auth = fbAuth();
   if (auth) {
@@ -137,7 +149,21 @@ function showApp() {
 function showAuth() {
   document.getElementById('app').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
-  const p = document.getElementById('auth-pass'); if (p) p.value = '';
+  try {
+    const rem = JSON.parse(localStorage.getItem('laptop24h_remember') || 'null');
+    const e = document.getElementById('auth-email');
+    const p = document.getElementById('auth-pass');
+    const b = document.getElementById('auth-branch');
+    const c = document.getElementById('auth-remember');
+    if (rem) {
+      if (e) e.value = rem.u || '';
+      if (p) p.value = rem.p || '';
+      if (b && rem.b) b.value = rem.b;
+      if (c) c.checked = true;
+    } else {
+      if (p) p.value = '';
+    }
+  } catch (err) { const p = document.getElementById('auth-pass'); if (p) p.value = ''; }
 }
 
 export function getCurrentUser() { return currentUser; }
