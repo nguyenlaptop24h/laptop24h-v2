@@ -373,8 +373,9 @@ function openRepBillTplModal() {
   };
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
+let _sheetToken = '';
 function logRepairToSheet(data, action) {
-    try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...data})}).catch(()=>{}); } catch(e){}
+    try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:_sheetToken,...data})}).catch(()=>{}); } catch(e){}
 }
 
 export async function mount(container) {
@@ -431,6 +432,7 @@ let showTrash = false;
     filterData();
   });
   try { getDB().ref('repairReceiptTpl').on('value', sn => { const v = sn.val(); if (v) { _recTpl = v; try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
+  try { getDB().ref('config/sheetToken').once('value').then(function(s){ _sheetToken = s.val() || ''; }).catch(function(){}); } catch(e) {}
   container.addEventListener('unmount', () => unsub && unsub());
 
   window.__editNote = (key) => {
