@@ -73,7 +73,7 @@ export async function mount(container) {
       { label: 'Ghi chú',    key: c => c.note || '' },
       { label: 'Ngày tạo',   key: c => c.ts ? formatDate(c.ts) : '' },
       { label: '',           key: c => `
-        <button class="btn btn--sm btn--secondary cust-edit" data-key="${c._key}">Sửa</button>
+        ${isAdmin() ? `<button class="btn btn--sm btn--secondary cust-edit" data-key="${c._key}">Sửa</button>` : ''}
         ${isAdmin() ? `<button class="btn btn--sm btn--danger cust-del" data-key="${c._key}">Xóa</button>` : ''}
         <button class='btn btn--sm cust-stats' data-key='${c._key}' data-n='${c.name||String.fromCharCode(32)}' data-p='${c.phone||String.fromCharCode(32)}' style='background:#0891b2;color:#fff;border:none;cursor:pointer;padding:2px 8px;border-radius:3px;font-size:12px' title='Thống kê sửa chửa'>📊</button>
       `}
@@ -91,8 +91,10 @@ export async function mount(container) {
   }
 
   document.getElementById('cust-add').addEventListener('click', () => openForm(null));
+  if (!isAdmin()) { const _addBtn = document.getElementById('cust-add'); if (_addBtn) _addBtn.style.display = 'none'; }
 
   function openForm(record) {
+    if (!isAdmin()) { toast('Chỉ quản trị viên mới được thêm/sửa khách hàng', 'error'); return; }
     const wrap = document.getElementById('cust-form-wrap');
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
