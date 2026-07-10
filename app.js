@@ -1,6 +1,6 @@
 // app.js - Bootstrap entry point
 import { initDB } from './core/db.js';
-import { initAuth } from './core/auth.js?v=3';
+import { initAuth } from './core/auth.js';
 import { initRouter } from './core/router.js?v=124';
 
 // Runtime fix: repair garbled UTF-8 text nodes in DOM (caused by CM6 encoding issue)
