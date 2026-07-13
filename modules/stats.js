@@ -296,8 +296,11 @@ export async function mount(container) {
       products.forEach(p=>{ productByKey[p._key] = p; });
 
       const saleRevenue = saleF.reduce((s,sl)=>s+(sl.total||0),0);
-      const salePaid    = saleF.reduce((s,sl)=>s+(sl.paid||0),0);
-      const saleDebt    = saleRevenue - salePaid;
+      // Chỉ đơn "Chờ TT" (pending) mới tính công nợ; đơn "Hoàn thành" coi như đã thu đủ
+      const saleDebt    = saleF
+        .filter(sl => (sl.status || 'done') === 'pending')
+        .reduce((s,sl)=> s + Math.max(0, (sl.total||0) - (sl.paid||0)), 0);
+      const salePaid    = saleRevenue - saleDebt;
 
       let saleCapital = 0;
       for (const sl of saleF) {
