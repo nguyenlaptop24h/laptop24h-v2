@@ -13,6 +13,11 @@ function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Số tiền: thêm dấu "." ngăn cách hàng nghìn để dễ đọc
+function _dot(n) { const s = String(Math.round(Number(n) || 0)); return s.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+// Đọc số từ ô có dấu "." (bỏ mọi ký tự không phải chữ số)
+function _num(v) { return parseFloat(String(v == null ? '' : (v.value != null ? v.value : v)).replace(/[^0-9]/g, '')) || 0; }
+
 function logToSheet(data, action) {
   try {
     fetch(SALES_SHEET_URL, {
@@ -766,7 +771,7 @@ export async function mount(container) {
         </div>
         <div class="sl-total-row">
           <label for="sf-extra-disc" style="cursor:pointer;color:#555">Giảm thêm:</label>
-          <input id="sf-extra-disc" type="number" min="0" value="0" placeholder="0">
+          <input id="sf-extra-disc" type="text" inputmode="numeric" data-fmt="number" value="0" placeholder="0">
         </div>
         <div class="sl-total-row sl-total-final">
           <span style="font-weight:700;font-size:13px">Tổng cộng:</span>
@@ -774,7 +779,7 @@ export async function mount(container) {
         </div>
         <div class="sl-total-row">
           <label for="sf-paid" style="cursor:pointer;color:#555">Đã trả:</label>
-          <input id="sf-paid" type="number" min="0" value="0" placeholder="0">
+          <input id="sf-paid" type="text" inputmode="numeric" data-fmt="number" value="0" placeholder="0">
         </div>
       </div>
     </div>
@@ -792,8 +797,8 @@ export async function mount(container) {
     modal.querySelector('#sf-pay').value      = ex?.payMethod || 'cash';
     modal.querySelector('#sf-status').value   = ex?.status   || 'done';
     modal.querySelector('#sf-note').value     = ex?.note     || '';
-    modal.querySelector('#sf-extra-disc').value = ex?.extraDiscount || 0;
-    modal.querySelector('#sf-paid').value     = ex?.paid     || 0;
+    modal.querySelector('#sf-extra-disc').value = _dot(ex?.extraDiscount || 0);
+    modal.querySelector('#sf-paid').value     = _dot(ex?.paid     || 0);
 
     overlay.style.display = 'flex';
 
@@ -837,9 +842,9 @@ export async function mount(container) {
     row.innerHTML = `
       <input class="sf-name"  placeholder="Tên sản phẩm..." autocomplete="off" style="flex:1;min-width:0">
       <input class="sf-qty"   type="number" min="1"  title="Số lượng">
-      <input class="sf-price" type="number" min="0"  title="Đơn giá" style="width:110px">
-      <input class="sf-cost"  type="number" min="0"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Vốn" style="width:100px">
-      <input class="sf-disc"    type="number" min="0"  title="Giảm giá" style="width:80px">
+      <input class="sf-price" type="text" inputmode="numeric" data-fmt="number"  title="Đơn giá" style="width:110px">
+      <input class="sf-cost"  type="text" inputmode="numeric" data-fmt="number"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Vốn" style="width:100px">
+      <input class="sf-disc"    type="text" inputmode="numeric" data-fmt="number"  title="Giảm giá" style="width:80px">
       <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
       <span class="sf-line-total">0đ</span>
       <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>`;
@@ -848,9 +853,9 @@ export async function mount(container) {
     // Set values programmatically
     row.querySelector('.sf-name').value  = data.name     || '';
     row.querySelector('.sf-qty').value   = data.qty      || 1;
-    row.querySelector('.sf-price').value = data.price    || 0;
-    row.querySelector('.sf-cost').value  = data.cost     || 0;
-    row.querySelector('.sf-disc').value  = data.discount || 0;
+    row.querySelector('.sf-price').value = _dot(data.price    || 0);
+    row.querySelector('.sf-cost').value  = _dot(data.cost     || 0);
+    row.querySelector('.sf-disc').value  = _dot(data.discount || 0);
     row.querySelector('.sf-bh-date').value = data.bhDate || '';
 
     const nameInput = row.querySelector('.sf-name');
@@ -884,7 +889,7 @@ export async function mount(container) {
         opt.onmousedown = e => {
           e.preventDefault();
           const p = invItems.find(x => x._key === opt.dataset.key);
-          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = p.price || 0; row.querySelector('.sf-cost').value = p.cost || 0; row.dataset.invkey = p['_key'] || ''; }
+          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = _dot(p.price || 0); row.querySelector('.sf-cost').value = _dot(p.cost || 0); row.dataset.invkey = p['_key'] || ''; }
           hideDrop(); recalc();
         };
       });
@@ -905,13 +910,13 @@ export async function mount(container) {
     let sub = 0;
     modal.querySelectorAll('.sf-item-row').forEach(row => {
       const qty   = parseFloat(row.querySelector('.sf-qty').value)   || 0;
-      const price = parseFloat(row.querySelector('.sf-price').value) || 0;
-      const disc  = parseFloat(row.querySelector('.sf-disc').value)  || 0;
+      const price = _num(row.querySelector('.sf-price'));
+      const disc  = _num(row.querySelector('.sf-disc'));
       const line  = Math.max(0, qty * price - disc);
       row.querySelector('.sf-line-total').textContent = formatVND(line);
       sub += line;
     });
-    const extra = parseFloat(modal.querySelector('#sf-extra-disc')?.value) || 0;
+    const extra = _num(modal.querySelector('#sf-extra-disc'));
     const total = Math.max(0, sub - extra);
     if (modal.querySelector('#sf-subtotal')) modal.querySelector('#sf-subtotal').textContent = formatVND(sub);
     if (modal.querySelector('#sf-total'))    modal.querySelector('#sf-total').textContent    = formatVND(total);
@@ -928,8 +933,8 @@ export async function mount(container) {
     const payMethod     = modal.querySelector('#sf-pay').value;
     const status        = modal.querySelector('#sf-status').value;
     const note          = modal.querySelector('#sf-note').value.trim();
-    const extraDiscount = parseFloat(modal.querySelector('#sf-extra-disc').value) || 0;
-    const paid          = parseFloat(modal.querySelector('#sf-paid').value) || 0;
+    const extraDiscount = _num(modal.querySelector('#sf-extra-disc'));
+    const paid          = _num(modal.querySelector('#sf-paid'));
 
     const items = [];
     modal.querySelectorAll('.sf-item-row').forEach(row => {
@@ -938,9 +943,9 @@ export async function mount(container) {
       items.push({
         name,
         qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
-        price:    parseFloat(row.querySelector('.sf-price').value) || 0,
-        cost:     parseFloat(row.querySelector('.sf-cost').value)  || 0,
-        discount: parseFloat(row.querySelector('.sf-disc').value)  || 0,
+        price:    _num(row.querySelector('.sf-price')),
+        cost:     _num(row.querySelector('.sf-cost')),
+        discount: _num(row.querySelector('.sf-disc')),
         bhDate:   row.querySelector('.sf-bh-date').value || null,
         invkey: row.dataset.invkey || '',
       });
