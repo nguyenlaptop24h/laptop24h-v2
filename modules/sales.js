@@ -61,7 +61,7 @@ export async function mount(container) {
       const p = it.invkey ? invItems.find(x => x._key === it.invkey) : null;
       const nm = it.name || '—';
       const q = it.qty || it.quantity || 1;
-      if (!p) return '• ' + nm + ' (x' + q + ') — không có trong kho';
+      if (!p) return '• ' + nm + ' (x' + q + ')\n   Giá vốn: ' + formatVND(it.cost || 0) + '\n   (bán ngoài kho)';
       return '• ' + nm + ' (x' + q + ')\n   Giá vốn: ' + formatVND(p.cost || 0) + '\n   Danh mục: ' + catPath(p.categoryKey) + '\n   Tồn kho: ' + (p.stock || 0);
     }).join('\n');
   }
@@ -750,6 +750,7 @@ export async function mount(container) {
         <div style="flex:1">Tên sản phẩm</div>
         <div style="width:56px;text-align:center">SL</div>
         <div style="width:110px;text-align:right">Đơn giá</div>
+        <div style="width:100px;text-align:right">Giá vốn</div>
         <div style="width:80px;text-align:right">Giảm</div>
         <div style="width:120px;text-align:center">Hết BH</div>
         <div style="width:90px;text-align:right">Thành tiền</div>
@@ -837,6 +838,7 @@ export async function mount(container) {
       <input class="sf-name"  placeholder="Tên sản phẩm..." autocomplete="off" style="flex:1;min-width:0">
       <input class="sf-qty"   type="number" min="1"  title="Số lượng">
       <input class="sf-price" type="number" min="0"  title="Đơn giá" style="width:110px">
+      <input class="sf-cost"  type="number" min="0"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Vốn" style="width:100px">
       <input class="sf-disc"    type="number" min="0"  title="Giảm giá" style="width:80px">
       <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
       <span class="sf-line-total">0đ</span>
@@ -847,6 +849,7 @@ export async function mount(container) {
     row.querySelector('.sf-name').value  = data.name     || '';
     row.querySelector('.sf-qty').value   = data.qty      || 1;
     row.querySelector('.sf-price').value = data.price    || 0;
+    row.querySelector('.sf-cost').value  = data.cost     || 0;
     row.querySelector('.sf-disc').value  = data.discount || 0;
     row.querySelector('.sf-bh-date').value = data.bhDate || '';
 
@@ -881,7 +884,7 @@ export async function mount(container) {
         opt.onmousedown = e => {
           e.preventDefault();
           const p = invItems.find(x => x._key === opt.dataset.key);
-          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = p.price || 0; row.dataset.invkey = p['_key'] || ''; }
+          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = p.price || 0; row.querySelector('.sf-cost').value = p.cost || 0; row.dataset.invkey = p['_key'] || ''; }
           hideDrop(); recalc();
         };
       });
@@ -936,6 +939,7 @@ export async function mount(container) {
         name,
         qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
         price:    parseFloat(row.querySelector('.sf-price').value) || 0,
+        cost:     parseFloat(row.querySelector('.sf-cost').value)  || 0,
         discount: parseFloat(row.querySelector('.sf-disc').value)  || 0,
         bhDate:   row.querySelector('.sf-bh-date').value || null,
         invkey: row.dataset.invkey || '',
