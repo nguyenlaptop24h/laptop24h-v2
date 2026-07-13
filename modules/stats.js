@@ -291,8 +291,9 @@ export async function mount(container) {
       repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
 
       // ── Sales ──
-      const productMap = {};
-      products.forEach(p=>{ if(p.id) productMap[p.id]=p; });
+      // Đơn bán lưu sản phẩm theo 'invkey' (= _key của product) → map theo _key
+      const productByKey = {};
+      products.forEach(p=>{ productByKey[p._key] = p; });
 
       const saleRevenue = saleF.reduce((s,sl)=>s+(sl.total||0),0);
       const salePaid    = saleF.reduce((s,sl)=>s+(sl.paid||0),0);
@@ -301,10 +302,9 @@ export async function mount(container) {
       let saleCapital = 0;
       for (const sl of saleF) {
         for (const it of (sl.items||[])) {
-          const prodId = it.id||it.prodId||it.productId;
-          const prod   = prodId ? productMap[prodId] : null;
-          const cost   = prod?.cost ?? it.cost ?? 0;
-          saleCapital += (it.qty||it.quantity||1) * cost;
+          const prod = it.invkey ? productByKey[it.invkey] : null;
+          const cost = (prod && prod.cost != null) ? prod.cost : (it.cost || 0);
+          saleCapital += (it.qty || it.quantity || 1) * cost;
         }
       }
       const saleProfit = saleRevenue - saleCapital;
