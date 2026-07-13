@@ -164,7 +164,8 @@ export async function mount(container) {
     _chartInstance = null;
 
     const diffDays = Math.ceil((to - from) / 86400000);
-    const labels = [], repData = [], saleData = [];
+    const labels = [], repData = [], saleData = [], buckets = [];
+    const _ld = dt => { const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,'0'), da=String(dt.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; };
 
     if (diffDays <= 1) {
       // Hourly
@@ -173,6 +174,7 @@ export async function mount(container) {
         labels.push(h + ':00');
         const hS = new Date(baseDay); hS.setHours(h,0,0,0);
         const hE = new Date(baseDay); hE.setHours(h,59,59,999);
+        buckets.push({ type:'hour', date:_ld(baseDay), from:hS.getTime(), to:hE.getTime() });
         repData.push( repF.filter(r=>inRange(repMs(r), hS.getTime(), hE.getTime())).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+(sl.total||0),0));
       }
@@ -182,6 +184,7 @@ export async function mount(container) {
       for (let d = new Date(d0); d.getTime() <= to; d.setDate(d.getDate()+1)) {
         labels.push(d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}));
         const dS = d.getTime(), dE = dS + 86399999;
+        buckets.push({ type:'day', date:_ld(d), from:dS, to:dE });
         repData.push( repF.filter(r=>inRange(repMs(r),dS,dE)).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+(sl.total||0),0));
       }
@@ -194,6 +197,7 @@ export async function mount(container) {
         const mS = cur.getTime();
         const nx = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
         const mE = nx.getTime()-1;
+        buckets.push({ type:'month', from:mS, to:mE });
         repData.push( repF.filter(r=>inRange(repMs(r),mS,mE)).reduce((s,r)=>s+(r.cost||0),0));
         saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+(sl.total||0),0));
         cur = nx;
@@ -211,6 +215,24 @@ export async function mount(container) {
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: (evt) => {
+          if (!_chartInstance) return;
+          const pts = _chartInstance.getElementsAtEventForMode(evt, 'index', { intersect:false }, true);
+          if (!pts.length) return;
+          const b = buckets[pts[0].index];
+          if (!b) return;
+          if (b.type === 'month') {
+            periodEl.value = 'custom';
+            customWrap.classList.add('show'); singleWrap.classList.remove('show');
+            fromEl.value = _ld(new Date(b.from)); toEl.value = _ld(new Date(b.to));
+          } else {
+            periodEl.value = 'single';
+            singleWrap.classList.add('show'); customWrap.classList.remove('show');
+            singleEl.value = b.date || _ld(new Date(b.from));
+          }
+          loadStats();
+        },
+        onHover: (evt, els) => { if (evt.native && evt.native.target) evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
         plugins: {
           legend: { position: 'top' },
           tooltip: { callbacks: { label: ctx => ctx.dataset.label+': '+formatVND(ctx.parsed.y) } }
@@ -378,7 +400,7 @@ export async function mount(container) {
 
           <!-- BIEU DO -->
           <div class="st-panel st-full">
-            <h3>&#128200; Bi&#7875;u &#273;&#7891; doanh thu &mdash; ${lbl}</h3>
+            <h3>&#128200; Bi&#7875;u &#273;&#7891; doanh thu &mdash; ${lbl} <span style="font-weight:400;font-size:11px;color:#888">(b&#7845;m v&#224;o c&#7897;t &#273;&#7875; xem chi ti&#7871;t ng&#224;y &#273;&#243;)</span></h3>
             <div class="st-chart-wrap"><canvas id="st-chart"></canvas></div>
           </div>
 
