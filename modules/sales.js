@@ -47,6 +47,24 @@ export async function mount(container) {
 
   // Load sản phẩm từ Firestore (collection 'products' giống inventory.js)
   const unsubProducts = onSnapshot('products', items => { invItems = items; });
+  let catItems = [];
+  const unsubCats = onSnapshot('categories', items => { catItems = items; });
+  function catPath(key) {
+    if (!key) return 'Chưa phân loại';
+    const names = []; let c = catItems.find(x => x._key === key), g = 0;
+    while (c && g < 20) { names.unshift(c.name || '?'); c = c.parentKey ? catItems.find(x => x._key === c.parentKey) : null; g++; }
+    return names.length ? names.join(' > ') : 'Chưa phân loại';
+  }
+  function itemsTooltip(items) {
+    if (!items || !items.length) return '';
+    return items.map(it => {
+      const p = it.invkey ? invItems.find(x => x._key === it.invkey) : null;
+      const nm = it.name || '—';
+      const q = it.qty || it.quantity || 1;
+      if (!p) return '• ' + nm + ' (x' + q + ') — không có trong kho';
+      return '• ' + nm + ' (x' + q + ')\n   Giá vốn: ' + formatVND(p.cost || 0) + '\n   Danh mục: ' + catPath(p.categoryKey) + '\n   Tồn kho: ' + (p.stock || 0);
+    }).join('\n');
+  }
 
   // ══════════════════════════════════════════════
   //  SHELL HTML
@@ -532,7 +550,7 @@ export async function mount(container) {
           <td><input type="checkbox"></td>
           <td style="color:#aaa">${code}</td>
           <td>${esc(s.customer || '—')}</td>
-          <td title="${esc(items.map(it => it.name).join(', '))}">${esc(itemStr)}</td>
+          <td title="${esc(itemsTooltip(items))}">${esc(itemStr)}</td>
           <td class="sl-money">${formatVND(s.total || 0)}</td>
           <td>${pay}</td>
           <td><span class="sl-badge badge-trash">Đã xoá</span></td>
@@ -548,7 +566,7 @@ export async function mount(container) {
           <div class="sl-customer">${esc(s.customer || '—')}</div>
           ${s.phone ? `<div class="sl-phone">${esc(s.phone)}</div>` : ''}
         </td>
-        <td title="${esc(items.map(it => it.name).join(', '))}">${esc(itemStr)}</td>
+        <td title="${esc(itemsTooltip(items))}">${esc(itemStr)}</td>
         <td class="sl-money">${formatVND(s.total || 0)}</td>
         <td>${pay}</td>
         <td><span class="sl-badge ${st.cls}">${st.label}</span></td>
@@ -1185,6 +1203,7 @@ export async function mount(container) {
   container._cleanup = () => {
     if (unsub) { unsub(); unsub = null; }
     if (unsubProducts) unsubProducts();
+    if (unsubCats) unsubCats();
     hideDrop();
     if (globalDrop) { globalDrop.remove(); globalDrop = null; }
   };
