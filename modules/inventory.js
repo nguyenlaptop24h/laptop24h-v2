@@ -203,21 +203,23 @@ export async function mount(container) {
         <label>Danh mục<br><select id="f-cat" class="search-input" style="width:100%">${catSel}</select></label>
         <label>ĐVT<br><input id="f-unit" class="search-input" value="${p.unit||''}" style="width:100%" /></label>
         <label>Tồn kho<br><input id="f-stock" type="number" class="search-input" value="${p.stock||0}" style="width:100%" /></label>
-        <label>Giá vốn<br><input id="f-cost" type="text" class="search-input" data-fmt="number" value="${String(p.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" style="width:100%" /></label>
+        <label>Giá vốn <span style="color:#e74c3c">*</span><br><input id="f-cost" type="text" class="search-input" data-fmt="number" placeholder="Bắt buộc nhập" value="${p.cost ? String(p.cost).replace(/\B(?=(\d{3})+(?!\d))/g,'.') : ''}" style="width:100%" /></label>
         <label>Giá bán<br><input id="f-sell" type="text" class="search-input" data-fmt="number" value="${String(p.price||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}" style="width:100%" /></label>
         <label>Bảo hành<br><input id="f-warranty" class="search-input" value="${p.warranty||''}" style="width:100%" /></label>
       </div>`,
       confirmText: 'Lưu',
       onConfirm: async () => {
         const name = document.querySelector('#f-name')?.value.trim() || '';
-        if (!name) { toast('Nhập tên sản phẩm!','warning'); return; }
+        if (!name) { toast('Nhập tên sản phẩm!','warning'); return false; }
+        const cost = Number((document.querySelector('#f-cost')?.value||'').replace(/\./g,'')) || 0;
+        if (!(cost > 0)) { toast('Chưa nhập giá vốn — không thể lưu sản phẩm!','warning'); document.querySelector('#f-cost')?.focus(); return false; }
         const data = {
           id:          document.querySelector('#f-id')?.value.trim() || '',
           name,
           categoryKey: document.querySelector('#f-cat')?.value || null,
           unit:        document.querySelector('#f-unit')?.value.trim() || '',
           stock:       Number(document.querySelector('#f-stock')?.value) || 0,
-          cost: Number((document.querySelector('#f-cost')?.value||'').replace(/\./g,'')) || 0,
+          cost,
           price: Number((document.querySelector('#f-sell')?.value||'').replace(/\./g,'')) || 0,
           warranty:    document.querySelector('#f-warranty')?.value.trim() || '',
         };

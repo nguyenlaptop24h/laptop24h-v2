@@ -253,19 +253,21 @@ export async function mount(container) {
   font-size:10px; font-weight:700; color:#999; text-transform:uppercase;
 }
 .sf-item-row {
-  display:flex; align-items:center; gap:5px; margin-bottom:5px;
-  background:#f9f9f9; border-radius:6px; padding:7px 9px;
+  display:flex; flex-direction:column; align-items:stretch; gap:6px; margin-bottom:7px;
+  background:#f9f9f9; border-radius:6px; padding:8px 9px;
   border:1px solid #f0f0f0;
 }
 .sf-item-row:focus-within { border-color:#c7d9f8; background:#f5f8ff; }
 .sf-item-row input { padding:6px 8px; border:1px solid #e0e0e0; border-radius:5px; font-size:12.5px; outline:none; background:#fff; }
 .sf-item-row input:focus { border-color:#1a73e8; }
-.sf-name  { flex:1; min-width:0; }
+.sf-item-l2 { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.sf-name  { width:100%; font-weight:600; }
 .sf-qty   { width:56px !important; text-align:center; }
 .sf-price { width:110px !important; text-align:right; }
+.sf-cost  { width:110px !important; text-align:right; }
 .sf-disc    { width:80px !important; text-align:right; }
-.sf-bh-date { width:120px !important; }
-.sf-line-total { width:90px; text-align:right; font-size:12px; font-weight:700; color:#1a3a6b; flex-shrink:0; }
+.sf-bh-date { width:130px !important; }
+.sf-line-total { margin-left:auto; text-align:right; font-size:13px; font-weight:700; color:#1a3a6b; flex-shrink:0; padding-right:4px; }
 .sf-remove-btn {
   background:none; border:none; color:#ccc; cursor:pointer; font-size:15px;
   padding:0 3px; flex-shrink:0; line-height:1;
@@ -751,16 +753,6 @@ export async function mount(container) {
       <div class="sl-items-header">
         <div class="sl-items-label">📦 Sản phẩm</div>
       </div>
-      <div style="display:flex;gap:5px;padding:4px 9px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.3px">
-        <div style="flex:1">Tên sản phẩm</div>
-        <div style="width:56px;text-align:center">SL</div>
-        <div style="width:110px;text-align:right">Đơn giá</div>
-        <div style="width:100px;text-align:right">Giá vốn</div>
-        <div style="width:80px;text-align:right">Giảm</div>
-        <div style="width:120px;text-align:center">Hết BH</div>
-        <div style="width:90px;text-align:right">Thành tiền</div>
-        <div style="width:22px"></div>
-      </div>
       <div id="sf-rows"></div>
       <button id="sf-add-row" class="sl-add-row-btn">＋ Thêm sản phẩm</button>
 
@@ -840,14 +832,16 @@ export async function mount(container) {
     const row = document.createElement('div');
     row.className = 'sf-item-row';
     row.innerHTML = `
-      <input class="sf-name"  placeholder="Tên sản phẩm..." autocomplete="off" style="flex:1;min-width:0">
-      <input class="sf-qty"   type="number" min="1"  title="Số lượng">
-      <input class="sf-price" type="text" inputmode="numeric" data-fmt="number"  title="Đơn giá" style="width:110px">
-      <input class="sf-cost"  type="text" inputmode="numeric" data-fmt="number"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Vốn" style="width:100px">
-      <input class="sf-disc"    type="text" inputmode="numeric" data-fmt="number"  title="Giảm giá" style="width:80px">
-      <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
-      <span class="sf-line-total">0đ</span>
-      <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>`;
+      <input class="sf-name"  placeholder="🔍 Tên sản phẩm..." autocomplete="off">
+      <div class="sf-item-l2">
+        <input class="sf-qty"   type="number" min="1"  title="Số lượng" placeholder="SL">
+        <input class="sf-price" type="text" inputmode="numeric" data-fmt="number"  title="Đơn giá bán" placeholder="Đơn giá">
+        <input class="sf-cost"  type="text" inputmode="numeric" data-fmt="number"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Giá vốn">
+        <input class="sf-disc"    type="text" inputmode="numeric" data-fmt="number"  title="Giảm giá" placeholder="Giảm">
+        <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
+        <span class="sf-line-total">0đ</span>
+        <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>
+      </div>`;
     wrap.appendChild(row);
 
     // Set values programmatically
