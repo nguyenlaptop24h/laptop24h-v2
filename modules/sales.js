@@ -260,7 +260,9 @@ export async function mount(container) {
 .sf-item-row:focus-within { border-color:#c7d9f8; background:#f5f8ff; }
 .sf-item-row input { padding:6px 8px; border:1px solid #e0e0e0; border-radius:5px; font-size:12.5px; outline:none; background:#fff; }
 .sf-item-row input:focus { border-color:#1a73e8; }
-.sf-item-l2 { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.sf-item-l2 { display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap; }
+.sf-fg { display:flex; flex-direction:column; gap:2px; }
+.sf-fg > span { font-size:9.5px; font-weight:700; color:#9aa; text-transform:uppercase; letter-spacing:.3px; padding-left:2px; }
 .sf-name  { width:100%; font-weight:600; }
 .sf-qty   { width:56px !important; text-align:center; }
 .sf-price { width:110px !important; text-align:right; }
@@ -834,11 +836,11 @@ export async function mount(container) {
     row.innerHTML = `
       <input class="sf-name"  placeholder="🔍 Tên sản phẩm..." autocomplete="off">
       <div class="sf-item-l2">
-        <input class="sf-qty"   type="number" min="1"  title="Số lượng" placeholder="SL">
-        <input class="sf-price" type="text" inputmode="numeric" data-fmt="number"  title="Đơn giá bán" placeholder="Đơn giá">
-        <input class="sf-cost"  type="text" inputmode="numeric" data-fmt="number"  title="Giá vốn (nếu bán hàng không từ kho)" placeholder="Giá vốn">
-        <input class="sf-disc"    type="text" inputmode="numeric" data-fmt="number"  title="Giảm giá" placeholder="Giảm">
-        <input class="sf-bh-date" type="date"            title="Ngày hết bảo hành">
+        <div class="sf-fg"><span>SL</span><input class="sf-qty" type="number" min="1" title="Số lượng"></div>
+        <div class="sf-fg"><span>Đơn giá</span><input class="sf-price" type="text" inputmode="numeric" data-fmt="number" title="Đơn giá bán"></div>
+        <div class="sf-fg"><span>Giá vốn</span><input class="sf-cost" type="text" inputmode="numeric" data-fmt="number" title="Giá vốn (nếu bán hàng không từ kho)"></div>
+        <div class="sf-fg"><span>Giảm</span><input class="sf-disc" type="text" inputmode="numeric" data-fmt="number" title="Giảm giá"></div>
+        <div class="sf-fg"><span>Hết BH</span><input class="sf-bh-date" type="date" title="Ngày hết bảo hành"></div>
         <span class="sf-line-total">0đ</span>
         <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>
       </div>`;
