@@ -46,7 +46,10 @@ export function showModal({ title, body, onConfirm, confirmText = 'Xác nhận',
   const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300); };
   overlay.querySelector('.modal-close').onclick = close;
   overlay.querySelector('.modal-cancel').onclick = close;
-  overlay.querySelector('.modal-confirm').onclick = () => { close(); onConfirm && onConfirm(); };
+  overlay.querySelector('.modal-confirm').onclick = async () => {
+    if (onConfirm) { const r = await onConfirm(); if (r === false) return; }
+    close();
+  };
   return { close };
 }
 
