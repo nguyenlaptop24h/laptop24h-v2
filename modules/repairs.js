@@ -932,13 +932,15 @@ function printWarrantySlip(d) {
     rows += '<tr><td class="lb">Chi phí</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>';
     rows += '<tr><td class="lb">Ngày trả</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>';
     rows += '<tr><td class="lb">Bảo hành nội dung sửa chữa đến</td><td class="vl" colspan="3"><b>'+esc(warrEnd())+'</b></td></tr>';
-    if (Array.isArray(d.servicesUsed) && d.servicesUsed.length) {
+    var whItems = [];
+    (Array.isArray(d.servicesUsed)?d.servicesUsed:[]).forEach(function(s){ whItems.push({name:s.name, m:Number(s.warrantyMonths)||0}); });
+    (Array.isArray(d.partsUsed)?d.partsUsed:[]).forEach(function(p){ var m=Number(p.warrantyMonths)||0; if(m>0) whItems.push({name:p.name, m:m}); });
+    if (whItems.length) {
       rows += '<tr><td class="sec" colspan="4">CHI TIẾT BẢO HÀNH TỪNG PHẦN</td></tr>';
-      d.servicesUsed.forEach(function(s){
-        var m = Number(s.warrantyMonths)||0;
-        var e = svcEnd(m);
-        var txt = m>0 ? ('<b>'+m+' tháng</b>'+(e?(' — đến '+esc(e)):'')) : 'Không bảo hành';
-        rows += '<tr><td class="lb">'+esc(s.name||'')+'</td><td class="vl" colspan="3">'+txt+'</td></tr>';
+      whItems.forEach(function(it){
+        var e = svcEnd(it.m);
+        var txt = it.m>0 ? ('<b>'+it.m+' tháng</b>'+(e?(' — đến '+esc(e)):'')) : 'Không bảo hành';
+        rows += '<tr><td class="lb">'+esc(it.name||'')+'</td><td class="vl" colspan="3">'+txt+'</td></tr>';
       });
     }
 
@@ -1079,6 +1081,7 @@ function openForm(record) {
   var _partsArr = (record && Array.isArray(record.partsUsed)) ? record.partsUsed.map(function(p){return Object.assign({},p);}) : [];
   var _svcArr = (record && Array.isArray(record.servicesUsed)) ? record.servicesUsed.map(function(p){return Object.assign({},p);}) : [];
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,"."); };
+  var _pWMonths = function(w){ var m=String(w==null?"":w).toLowerCase(); if(/kh[ôo]ng/.test(m)) return 0; var ny=m.match(/(\d+)\s*n[ăa]m/); if(ny) return parseInt(ny[1])*12; var mo=m.match(/(\d+)\s*th[áa]ng/); if(mo) return parseInt(mo[1]); var n=m.match(/\d+/); return n?parseInt(n[0]):0; };
 
   function renderPartsList() {
     var list = formWrap.querySelector("#f-parts-list");
@@ -1091,6 +1094,8 @@ function openForm(record) {
            + "<span style=\"flex:1;font-size:13px\">" + p.name + "</span>"
            + "<span style=\"font-size:12px;color:#666\">x" + p.qty + "</span>"
            + "<input type=\"text\" class=\"part-von-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.costPrice) + "\" style=\"width:62px;font-size:11px;border:1px solid #d0d7e5;border-radius:3px;padding:1px 4px;text-align:right;color:#888\" placeholder=\"V\u1ed1n\">"
+           + "<input type=\"number\" min=\"0\" class=\"part-bh-inp\" data-idx=\"" + i + "\" value=\"" + (Number(p.warrantyMonths)||0) + "\" title=\"B\u1ea3o h\u00e0nh (th\u00e1ng)\" style=\"width:34px;font-size:11px;border:1px solid #cbd5e1;border-radius:3px;padding:1px 3px;text-align:center\">"
+           + "<span style=\"font-size:10px;color:#888\">th</span>"
            + "<span style=\"font-size:13px;font-weight:600;color:#1d4ed8;min-width:68px;text-align:right\">" + fmtN(p.salePrice*p.qty) + "\u20ab</span>"
            + "<button type=\"button\" data-idx=\"" + i + "\" class=\"rm-part\" style=\"border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px\">\u00d7</button>"
            + "</div>";
@@ -1182,7 +1187,8 @@ function openForm(record) {
     var ei  = _partsArr.findIndex(function(x){return x.invKey===p._key;});
     if(ei>=0){ _partsArr[ei].qty += qty; } else {
       _partsArr.push({invKey:p._key, name:p.name, qty:qty,
-        salePrice:(Number(p.price)||Number(p.cost)||0), costPrice:Number(p.cost)||0});
+        salePrice:(Number(p.price)||Number(p.cost)||0), costPrice:Number(p.cost)||0,
+        warrantyMonths:_pWMonths(p.warranty)});
     }
     _partSel=null;
     if(_searchEl){ _searchEl.value=""; _searchEl.focus(); }
@@ -1214,10 +1220,13 @@ function openForm(record) {
     renderPartsList();
   });
   formWrap.querySelector("#f-parts-list").addEventListener("input", function(e){
-    var vi = e.target.classList.contains("part-von-inp") ? e.target : null;
-    if(!vi) return;
-    _partsArr[Number(vi.dataset.idx)].costPrice = parseFloat((vi.value||"").replace(/\./g,""))||0;
-    recalcTotals();
+    if(e.target.classList.contains("part-von-inp")){
+      _partsArr[Number(e.target.dataset.idx)].costPrice = parseFloat((e.target.value||"").replace(/\./g,""))||0;
+      recalcTotals(); return;
+    }
+    if(e.target.classList.contains("part-bh-inp")){
+      _partsArr[Number(e.target.dataset.idx)].warrantyMonths = parseInt(e.target.value)||0; return;
+    }
   });
   formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
   formWrap.querySelector("#f-partsCostExtra").addEventListener("input", recalcTotals);
