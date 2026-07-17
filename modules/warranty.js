@@ -49,7 +49,9 @@ export async function mount(container){
   const today = new Date(); today.setHours(0,0,0,0); const todayMs = today.getTime();
   let repRows = [], saleRows = [], tab = 'rep';
 
-  const [repairs, sales] = await Promise.all([getAll('repairs'), getAll('sales')]);
+  const [repairs, sales, products] = await Promise.all([getAll('repairs'), getAll('sales'), getAll('products')]);
+  const prodByKey = {}; products.forEach(p => { prodByKey[p._key] = p; });
+  const wmonths = w => { const m = String(w == null ? '' : w).match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
 
   // ─── Phiếu sửa chữa còn bảo hành ───
   repairs.forEach(r => {
@@ -71,12 +73,18 @@ export async function mount(container){
   // ─── Phiếu bán hàng còn bảo hành (theo từng sản phẩm có bhDate) ───
   sales.forEach(s => {
     if (s.deletedAt) return;
+    const sd = pd(s.date) || pd(s.createdAt);
     (s.items || []).forEach(it => {
-      const end = pd(it.bhDate);
+      // Hết BH = ngày nhập (bhDate); nếu trống & hàng trong kho → ngày bán + số tháng BH của SP
+      let end = pd(it.bhDate);
+      if (!end && it.invkey && prodByKey[it.invkey] && sd) {
+        const wm = wmonths(prodByKey[it.invkey].warranty);
+        if (wm > 0) { end = new Date(sd.getTime()); end.setMonth(end.getMonth() + wm); }
+      }
       if (!end || end.getTime() < todayMs) return;
       saleRows.push({
         customer: s.customer || '', phone: s.phone || '',
-        date: pd(s.date) || pd(s.createdAt), product: it.name || '',
+        date: sd, product: it.name || '',
         qty: it.qty || 1, end,
         search: ((s.customer||'')+' '+(s.phone||'')+' '+(it.name||'')).toLowerCase()
       });

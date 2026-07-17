@@ -17,6 +17,16 @@ function esc(s) {
 function _dot(n) { const s = String(Math.round(Number(n) || 0)); return s.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 // Đọc số từ ô có dấu "." (bỏ mọi ký tự không phải chữ số)
 function _num(v) { return parseFloat(String(v == null ? '' : (v.value != null ? v.value : v)).replace(/[^0-9]/g, '')) || 0; }
+// Số tháng bảo hành từ field warranty của sản phẩm (vd "6 tháng" -> 6)
+function _wmonths(w) { const m = String(w == null ? '' : w).match(/\d+/); return m ? parseInt(m[0], 10) : 0; }
+// Ngày bán + số tháng -> 'YYYY-MM-DD'
+function _addMonths(dateStr, months) {
+  let d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+  if (isNaN(d.getTime())) d = new Date();
+  d.setMonth(d.getMonth() + Number(months || 0));
+  const y = d.getFullYear(), mo = String(d.getMonth() + 1).padStart(2, '0'), da = String(d.getDate()).padStart(2, '0');
+  return y + '-' + mo + '-' + da;
+}
 
 function logToSheet(data, action) {
   try {
@@ -885,7 +895,19 @@ export async function mount(container) {
         opt.onmousedown = e => {
           e.preventDefault();
           const p = invItems.find(x => x._key === opt.dataset.key);
-          if (p) { nameInput.value = p.name || ''; row.querySelector('.sf-price').value = _dot(p.price || 0); row.querySelector('.sf-cost').value = _dot(p.cost || 0); row.dataset.invkey = p['_key'] || ''; }
+          if (p) {
+            nameInput.value = p.name || '';
+            row.querySelector('.sf-price').value = _dot(p.price || 0);
+            row.querySelector('.sf-cost').value = _dot(p.cost || 0);
+            row.dataset.invkey = p['_key'] || '';
+            const bhI = row.querySelector('.sf-bh-date');
+            if (!bhI.value) {                              // không ghi đè ngày user đã nhập
+              const wm = _wmonths(p.warranty);
+              const saleDate = (container.querySelector('#sf-date')?.value) || '';
+              if (wm > 0) bhI.value = _addMonths(saleDate, wm);
+              else toast('⚠️ "' + (p.name || '') + '" chưa có bảo hành trong kho — nhập ngày Hết BH thủ công nếu cần', 'warning');
+            }
+          }
           hideDrop(); recalc();
         };
       });
@@ -933,20 +955,31 @@ export async function mount(container) {
     const paid          = _num(modal.querySelector('#sf-paid'));
 
     const items = [];
+    const noBH = [];
     modal.querySelectorAll('.sf-item-row').forEach(row => {
       const name = row.querySelector('.sf-name').value.trim();
       if (!name) return;
+      const invkey = row.dataset.invkey || '';
+      // Hết BH = ngày user nhập; nếu trống & là hàng trong kho → ngày bán + số tháng BH của SP
+      let bhDate = row.querySelector('.sf-bh-date').value || null;
+      if (!bhDate && invkey) {
+        const prod = invItems.find(p => p['_key'] === invkey);
+        const wm = prod ? _wmonths(prod.warranty) : 0;
+        if (wm > 0) bhDate = _addMonths(date, wm);
+      }
+      if (!bhDate) noBH.push(name);
       items.push({
         name,
         qty:      parseFloat(row.querySelector('.sf-qty').value)   || 1,
         price:    _num(row.querySelector('.sf-price')),
         cost:     _num(row.querySelector('.sf-cost')),
         discount: _num(row.querySelector('.sf-disc')),
-        bhDate:   row.querySelector('.sf-bh-date').value || null,
-        invkey: row.dataset.invkey || '',
+        bhDate,
+        invkey,
       });
     });
     if (!items.length) { toast('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
+    if (noBH.length) toast('⚠️ Chưa có bảo hành: ' + noBH.join(', ') + ' — có thể nhập "Hết BH" thủ công.', 'warning');
 
     const subtotal = items.reduce((s, it) => s + Math.max(0, it.qty * it.price - it.discount), 0);
     const total    = Math.max(0, subtotal - extraDiscount);
