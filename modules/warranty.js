@@ -56,6 +56,8 @@ export async function mount(container){
   // ─── Phiếu sửa chữa còn bảo hành ───
   repairs.forEach(r => {
     if (r.deletedAt) return;
+    // Lợi nhuận = 0 (máy trả, không sửa) → không phát sinh nghĩa vụ bảo hành
+    if (((r.cost||0) - (r.partsCost||0) - (r.discount||0)) === 0) return;
     const dd = pd(r.deliveredDate);
     const wm = Number(r.warrantyMonths) || 0;
     if (!dd || wm <= 0) return;                 // chưa giao hoặc không có bảo hành

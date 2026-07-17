@@ -322,6 +322,7 @@ export async function mount(container) {
         const rc=_pdS(r.receivedDate); if(!rc) return false; const rcMs=rc.getTime();
         return (bySerial[s]||[]).some(p => {
           if(p===r) return false;
+          if(repProfitOf(p) === 0) return false;   // phiếu LN=0 không phát sinh nghĩa vụ bảo hành
           const prc=_pdS(p.receivedDate); if(!prc) return false;
           return prc.getTime() < rcMs && repWEndMs(p) >= rcMs;
         });
