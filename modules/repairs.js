@@ -908,6 +908,14 @@ function printWarrantySlip(d) {
       var dd=('0'+dt.getDate()).slice(-2), mo=('0'+(dt.getMonth()+1)).slice(-2);
       return dd+'/'+mo+'/'+dt.getFullYear() + (d.warranty?(' ('+d.warranty+')'):'');
     }
+    function svcEnd(months){
+      var base = d.deliveredDate || d.receivedDate || '';
+      if(!base || !months) return '';
+      var dt=new Date(base+'T00:00:00'); if(isNaN(dt.getTime())) return '';
+      dt.setMonth(dt.getMonth()+Number(months));
+      var dd=('0'+dt.getDate()).slice(-2), mo=('0'+(dt.getMonth()+1)).slice(-2);
+      return dd+'/'+mo+'/'+dt.getFullYear();
+    }
     var docDate = d.deliveredDate || todayStr();
 
     var rows = '';
@@ -924,6 +932,15 @@ function printWarrantySlip(d) {
     rows += '<tr><td class="lb">Chi phí</td><td class="vl">'+money(d.cost)+'</td><td class="lb">Đặt cọc</td><td class="vl">'+money(d.deposit)+'</td></tr>';
     rows += '<tr><td class="lb">Ngày trả</td><td class="vl">'+v(d.deliveredDate)+'</td><td class="lb">KTV</td><td class="vl">'+v(d.techName)+'</td></tr>';
     rows += '<tr><td class="lb">Bảo hành nội dung sửa chữa đến</td><td class="vl" colspan="3"><b>'+esc(warrEnd())+'</b></td></tr>';
+    if (Array.isArray(d.servicesUsed) && d.servicesUsed.length) {
+      rows += '<tr><td class="sec" colspan="4">CHI TIẾT BẢO HÀNH TỪNG PHẦN</td></tr>';
+      d.servicesUsed.forEach(function(s){
+        var m = Number(s.warrantyMonths)||0;
+        var e = svcEnd(m);
+        var txt = m>0 ? ('<b>'+m+' tháng</b>'+(e?(' — đến '+esc(e)):'')) : 'Không bảo hành';
+        rows += '<tr><td class="lb">'+esc(s.name||'')+'</td><td class="vl" colspan="3">'+txt+'</td></tr>';
+      });
+    }
 
     var termsArr = [
       'Được bảo hành khi: máy còn thời hạn bảo hành; tái phát vấn đề giống nội dung đã sửa chữa; máy còn tem bảo hành.',
