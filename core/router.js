@@ -55,7 +55,7 @@ export function initRouter() {
     import('../modules/customers.js?v=15'),
     import('../modules/debts.js?v=4'),
     import('../modules/stats.js?v=18'),
-    import('../modules/warranty.js?v=4'),
+    import('../modules/warranty.js?v=5'),
     import('../modules/services.js?v=1'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=3'),
