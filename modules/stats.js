@@ -298,8 +298,8 @@ export async function mount(container) {
         getAll('repairs'), getAll('sales'), getAll('products'), getAll('categories')
       ]);
 
-      const repF  = repairs.filter(r => inRange(repMs(r), from, to));
-      const saleF = sales.filter(s   => inRange(s.ts || s.createdAt, from, to));
+      const repF  = repairs.filter(r => !r.deletedAt && inRange(repMs(r), from, to));
+      const saleF = sales.filter(s   => !s.deletedAt && inRange(s.ts || s.createdAt, from, to));
 
       // ── Repairs ──
       const repRevenue  = repF.reduce((s,r)=>s+(r.cost||0),0);

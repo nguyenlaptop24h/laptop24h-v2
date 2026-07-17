@@ -202,10 +202,10 @@ async function showCustStats(name, phone) {
       var rd = new Date(r.receivedDate||r.ts||0);
       return rd.getFullYear()===d.getFullYear()&&rd.getMonth()===d.getMonth();
     });
-    var prf = mrs.reduce(function(s,r){return s+(r.profit||(r.cost||0)-(r.partsCost||0));},0);
+    var prf = mrs.reduce(function(s,r){return s+((r.cost||0)-(r.partsCost||0)-(r.discount||0));},0);
     months.push({lbl:lbl,count:mrs.length,prf:prf});
   }
-  var totalProfit = myReps.reduce(function(s,r){return s+(r.profit||(r.cost||0)-(r.partsCost||0));},0);
+  var totalProfit = myReps.reduce(function(s,r){return s+((r.cost||0)-(r.partsCost||0)-(r.discount||0));},0);
   var openRows = open.length ? open.map(function(r){
     return '<tr><td style="padding:4px 6px">'+( r.device||'')+' '+(r.serial||'')+'</td><td style="padding:4px 6px;color:'+(r.status==='Đang sửa'?'#e67e22':'#3498db')+'">'+( r.status||'')+'</td><td style="padding:4px 6px">'+(r.receivedDate||'').slice(0,10)+'</td><td style="padding:4px 6px;text-align:right;white-space:nowrap">'+fmtN(r.cost||0)+'đ</td></tr>';
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;padding:8px">Không có máy tại shop</td></tr>';
@@ -233,16 +233,17 @@ async function showProfitRanking() {
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
 
   // Chỉ khách hàng ĐÃ LƯU trong module Khách hàng — khớp phiếu theo SĐT hoặc tên
-  var byPhone={}, byName={};
+  // Đánh dấu SĐT/tên bị trùng giữa nhiều khách đã lưu → không dùng để khớp (tránh gộp nhầm)
+  var byPhone={}, byName={}, phoneDup={}, nameDup={};
   allData.forEach(function(c){
     var ph=(c.phone||'').trim(), nm=(c.name||'').trim().toLowerCase();
-    if(ph && /[0-9]/.test(ph)) byPhone[ph]=c;
-    if(nm) byName[nm]=c;
+    if(ph && /[0-9]/.test(ph)){ if(byPhone[ph] && byPhone[ph]._key!==c._key) phoneDup[ph]=1; byPhone[ph]=c; }
+    if(nm){ if(byName[nm] && byName[nm]._key!==c._key) nameDup[nm]=1; byName[nm]=c; }
   });
   function matchCust(name, phone){
     var ph=(phone||'').trim(), nm=(name||'').trim().toLowerCase();
-    if(ph && /[0-9]/.test(ph) && byPhone[ph]) return byPhone[ph];
-    if(nm && byName[nm]) return byName[nm];
+    if(ph && /[0-9]/.test(ph) && byPhone[ph] && !phoneDup[ph]) return byPhone[ph];
+    if(nm && byName[nm] && !nameDup[nm]) return byName[nm];
     return null;
   }
 
@@ -251,17 +252,18 @@ async function showProfitRanking() {
     if (rr.deletedAt) return;
     var c = matchCust(rr.customerName, rr.phone);
     if(!c) return;
-    var pf = (typeof rr.profit==='number') ? rr.profit : ((rr.cost||0)-(rr.partsCost||0));
+    var pf = (rr.cost||0) - (rr.partsCost||0) - (rr.discount||0);
     var ds = rr.receivedDate || (rr.ts? new Date(rr.ts).toISOString().slice(0,10):'');
-    entries.push({name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
+    entries.push({ck:(c._key||((c.name||'')+'|'+(c.phone||''))), name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
   });
   sales.forEach(function(s){
+    if (s.deletedAt) return;
     var c = matchCust(s.customer, s.phone);
     if(!c) return;
-    var cap=0; (s.items||[]).forEach(function(it){ cap += (Number(it.qty)||1)*(costByKey[it.invkey]||0); });
+    var cap=0; (s.items||[]).forEach(function(it){ var uc=(it.invkey && Object.prototype.hasOwnProperty.call(costByKey,it.invkey))?costByKey[it.invkey]:(Number(it.cost)||0); cap += (Number(it.qty)||1)*uc; });
     var pf = (Number(s.total)||0) - cap;
     var ds = s.date || (s.createdAt? new Date(s.createdAt).toISOString().slice(0,10):'');
-    entries.push({name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
+    entries.push({ck:(c._key||((c.name||'')+'|'+(c.phone||''))), name:(c.name||'?'), phone:(c.phone||''), profit:pf, date:ds});
   });
 
   function periodRange(p){
@@ -282,7 +284,7 @@ async function showProfitRanking() {
         var dt=new Date(e.date+'T00:00:00');
         if(isNaN(dt.getTime()) || dt<rng[0] || dt>=rng[1]) return;
       }
-      var key=(e.name.toLowerCase()||'?')+'|'+e.phone;
+      var key=e.ck||((e.name.toLowerCase()||'?')+'|'+e.phone);
       if(!groups[key]) groups[key]={name:e.name||'?',phone:e.phone,profit:0,count:0};
       groups[key].profit+=e.profit; groups[key].count++;
     });
