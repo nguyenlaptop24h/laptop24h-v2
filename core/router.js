@@ -56,9 +56,10 @@ export function initRouter() {
     import('../modules/debts.js?v=4'),
     import('../modules/stats.js?v=18'),
     import('../modules/warranty.js?v=3'),
+    import('../modules/services.js?v=1'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=3'),
-  ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, users, settings]) => {
+  ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, services, users, settings]) => {
     if (repairs.status === 'fulfilled') registerRoute('#repairs', repairs.value.mount);
     if (sales.status === 'fulfilled') registerRoute('#sales', sales.value.mount);
     if (inventory.status === 'fulfilled') registerRoute('#inventory', inventory.value.mount);
@@ -66,6 +67,7 @@ export function initRouter() {
     if (debts.status === 'fulfilled') registerRoute('#debts', debts.value.mount);
     if (stats.status === 'fulfilled') registerRoute('#stats', stats.value.mount);
     if (warranty.status === 'fulfilled') registerRoute('#warranty', warranty.value.mount);
+    if (services.status === 'fulfilled') registerRoute('#services', services.value.mount);
     if (users.status === 'fulfilled') registerRoute('#users', users.value.mount);
     if (settings.status === 'fulfilled') registerRoute('#settings', settings.value.mount);
     navigate();
