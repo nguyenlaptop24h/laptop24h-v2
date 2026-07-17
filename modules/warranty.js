@@ -73,9 +73,9 @@ export async function mount(container){
     if (end.getTime() < todayMs) return;        // đã hết hạn
     repRows.push({
       customer: r.customerName || '', phone: r.phone || '',
-      device: r.device || '', serial: r.serial || '',
+      device: r.device || '', serial: r.serial || '', content: r.repairRequest || '',
       delivered: dd, months, end,
-      search: ((r.customerName||'')+' '+(r.phone||'')+' '+(r.device||'')+' '+(r.serial||'')).toLowerCase()
+      search: ((r.customerName||'')+' '+(r.phone||'')+' '+(r.device||'')+' '+(r.serial||'')+' '+(r.repairRequest||'')).toLowerCase()
     });
   });
   repRows.sort((a,b)=> b.end.getTime() - a.end.getTime());
@@ -114,7 +114,7 @@ export async function mount(container){
       <td><b>${esc(r.customer)}</b></td>
       <td>${esc(r.phone)}</td>
       <td>${esc(r.device)}</td>
-      <td style="font-size:12px;color:#64748b">${esc(r.serial)}</td>
+      <td style="font-size:12px;color:#475569;max-width:280px">${esc(r.content)}</td>
       <td>${fmtDate(r.delivered)}</td>
       <td style="text-align:center">${r.months} th</td>
       <td>${fmtDate(r.end)}</td>
@@ -122,7 +122,7 @@ export async function mount(container){
     </tr>`).join('');
     return '<div class="bh-count">'+list.length+' phiếu còn bảo hành</div>'+
       '<div class="bh-wrap"><table class="bh-tbl"><thead><tr>'+
-      '<th>Khách hàng</th><th>SĐT</th><th>Máy</th><th>Serial</th><th>Ngày trả</th><th>BH</th><th>Hết BH</th><th>Còn lại</th>'+
+      '<th>Khách hàng</th><th>SĐT</th><th>Máy</th><th>Nội dung</th><th>Ngày trả</th><th>BH</th><th>Hết BH</th><th>Còn lại</th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
   function renderSale(q){
