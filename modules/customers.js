@@ -233,17 +233,16 @@ async function showProfitRanking() {
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
 
   // Chỉ khách hàng ĐÃ LƯU trong module Khách hàng — khớp phiếu theo SĐT hoặc tên
-  // Đánh dấu SĐT/tên bị trùng giữa nhiều khách đã lưu → không dùng để khớp (tránh gộp nhầm)
-  var byPhone={}, byName={}, phoneDup={}, nameDup={};
+  // CHỈ tính khách ĐÃ LƯU và KHỚP SỐ ĐIỆN THOẠI (không khớp theo tên → tránh gom nhầm khách trùng tên)
+  var digits=function(v){return (v||'').replace(/[^0-9]/g,'');};
+  var byPhone={}, phoneDup={};
   allData.forEach(function(c){
-    var ph=(c.phone||'').trim(), nm=(c.name||'').trim().toLowerCase();
-    if(ph && /[0-9]/.test(ph)){ if(byPhone[ph] && byPhone[ph]._key!==c._key) phoneDup[ph]=1; byPhone[ph]=c; }
-    if(nm){ if(byName[nm] && byName[nm]._key!==c._key) nameDup[nm]=1; byName[nm]=c; }
+    var ph=digits(c.phone);
+    if(ph){ if(byPhone[ph] && byPhone[ph]._key!==c._key) phoneDup[ph]=1; byPhone[ph]=c; }
   });
   function matchCust(name, phone){
-    var ph=(phone||'').trim(), nm=(name||'').trim().toLowerCase();
-    if(ph && /[0-9]/.test(ph) && byPhone[ph] && !phoneDup[ph]) return byPhone[ph];
-    if(nm && byName[nm] && !nameDup[nm]) return byName[nm];
+    var ph=digits(phone);
+    if(ph && byPhone[ph] && !phoneDup[ph]) return byPhone[ph];
     return null;
   }
 
