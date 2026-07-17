@@ -991,7 +991,7 @@ function openForm(record) {
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>TÌNH TRẠNG KHI NHẬN (MÔ TẢ LỖI)</label><textarea id="f-initialCondition" placeholder="Không lên nguồn, màn hình trắng, bàn phím liệt...">${record?.initialCondition||''}</textarea></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label style="color:#0891b2">NỘI DUNG SỬA CHỮA (in vào phiếu bảo hành)</label><textarea id="f-repairRequest" placeholder="Đã làm gì: thay màn hình, vệ sinh, tra keo...">${record?.repairRequest||''}</textarea></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>PHỤ KIỆN KÈM THEO</label><input id="f-accessories" type="text" placeholder="Sạc, túi, chuột..." value="${record?.accessories||''}"></div></div>
-<div class="rfm-r" style="display:block"><div style="background:#eef4ff;border:1px solid #c7d9f0;border-radius:8px;padding:10px;margin:0 0 4px"><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-bottom:8px">LINH KIỆN Sử DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div id="f-parts-combo" style="flex:1;position:relative"><input id="f-parts-search" type="text" autocomplete="off" placeholder="Gõ tên linh kiện để tìm..." style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><div id="f-parts-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><input id="f-parts-qty" type="number" min="1" value="1" style="width:52px;padding:7px 5px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center"><button type="button" id="f-parts-add" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-parts-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng LK: <b id="f-parts-total">0</b>₫ &nbsp;|&nbsp; Vốn LK: <b id="f-parts-vcost">0</b>₫</div></div></div>
+<div class="rfm-r" style="display:block"><div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 4px"><div style="flex:1;min-width:290px;background:#eef4ff;border:1px solid #c7d9f0;border-radius:8px;padding:10px"><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-bottom:8px">LINH KIỆN SỬ DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div id="f-parts-combo" style="flex:1;position:relative"><input id="f-parts-search" type="text" autocomplete="off" placeholder="Gõ tên linh kiện để tìm..." style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><div id="f-parts-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><input id="f-parts-qty" type="number" min="1" value="1" style="width:52px;padding:7px 5px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center"><button type="button" id="f-parts-add" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-parts-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng LK: <b id="f-parts-total">0</b>₫ &nbsp;|&nbsp; Vốn LK: <b id="f-parts-vcost">0</b>₫</div></div><div style="flex:1;min-width:290px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px"><div style="font-size:11px;font-weight:700;color:#16a34a;letter-spacing:.5px;margin-bottom:8px">DỊCH VỤ SỬ DỤNG</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div id="f-svc-combo" style="flex:1;position:relative"><input id="f-svc-search" type="text" autocomplete="off" placeholder="Gõ tên dịch vụ để tìm..." style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px"><div id="f-svc-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #bbf7d0;border-radius:6px;z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><button type="button" id="f-svc-add" style="padding:7px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">+ Thêm</button></div><div id="f-svc-list" style="max-height:160px;overflow-y:auto"></div><div style="margin-top:5px;text-align:right;font-size:12px;color:#444">Tổng DV: <b id="f-svc-total">0</b>₫</div></div></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>NGÀY NHẬN *</label><input id="f-receivedDate" type="date" value="${record?.receivedDate||new Date().toISOString().slice(0,10)}"></div><div class="rfm-f"><label>CÔNG SỬa (₫)</label><input id="f-serviceFee" type="text" data-fmt="number" value="${String(record?.serviceFee??record?.cost??0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>TIỀN CỌC (Đ)</label><input id="f-deposit" type="text" data-fmt="number" value="${String(record?.deposit||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>TỔNG TIỀN SỬa (₫)</label><input id="f-cost" type="text" data-fmt="number" readonly style="background:#eef4ff;font-weight:700;color:#1e40af" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LK MUA NGOÀI (₫)</label><input id="f-partsCostExtra" type="text" data-fmt="number" placeholder="LK mua ngoài kho..." style="background:#fff" value="${String(record?.partsCostExtra||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LINH KIỆN (tổng) (₫)</label><input id="f-partsCost" type="text" data-fmt="number" readonly style="background:#f8fafc;font-weight:600" value="${String(record?.partsCost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div><div class="rfm-r rfm-r2"><div class="rfm-f"><label>BẢO HÀNH SỬA CHỮA</label><select id="f-warranty"><option value="3 tháng" ${(record?.warranty||'3 tháng')==='3 tháng'?'selected':''}>3 tháng</option><option value="6 tháng" ${record?.warranty==='6 tháng'?'selected':''}>6 tháng</option><option value="1 năm" ${record?.warranty==='1 năm'?'selected':''}>1 năm</option><option value="Không bảo hành" ${record?.warranty==='Không bảo hành'?'selected':''}>Không bảo hành</option></select></div><div class="rfm-f"><label>KỸ THUẬT VIÊN</label><input id="f-techName" type="text" placeholder="Tên KTV..." value="${record?.techName||''}"></div></div>
 <div class="rfm-r rfm-r1"><div class="rfm-f"><label>GHI CHÚ NỘI BỘ</label><textarea id="f-internalNote" placeholder="Chỉ nhân viên thấy...">${record?.internalNote||''}</textarea></div></div><input type="hidden" id="f-status" value="${record?.status||'Tiếp nhận'}">
@@ -1033,6 +1033,7 @@ function openForm(record) {
         deposit:        parseFloat((formWrap.querySelector('#f-deposit').value||'').replace(/\./g,'')) || 0,
               serviceFee:    parseFloat((formWrap.querySelector('#f-serviceFee').value||'').replace(/\./g,'')) || 0,
               partsUsed:     _partsArr,
+              servicesUsed:  _svcArr,
               partsCost:     parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,'')) || 0,
               partsCostExtra: parseFloat((formWrap.querySelector('#f-partsCostExtra').value||'').replace(/\./g,'')) || 0,
         profit:        (parseFloat((formWrap.querySelector('#f-cost').value||'').replace(/\./g,''))||0) - (parseFloat((formWrap.querySelector('#f-partsCost').value||'').replace(/\./g,''))||0),
@@ -1059,6 +1060,7 @@ function openForm(record) {
     
   // ── Parts Picker ──────────────────────────
   var _partsArr = (record && Array.isArray(record.partsUsed)) ? record.partsUsed.map(function(p){return Object.assign({},p);}) : [];
+  var _svcArr = (record && Array.isArray(record.servicesUsed)) ? record.servicesUsed.map(function(p){return Object.assign({},p);}) : [];
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,"."); };
 
   function renderPartsList() {
@@ -1083,8 +1085,11 @@ function openForm(record) {
     var svc = parseFloat((formWrap.querySelector("#f-serviceFee").value||"").replace(/\./g,""))||0;
     var pT  = _partsArr.reduce(function(s,p){return s+p.salePrice*p.qty;},0);
     var vT  = _partsArr.reduce(function(s,p){return s+p.costPrice*p.qty;},0);
+    var sT  = _svcArr.reduce(function(s,x){return s+(Number(x.price)||0);},0);
     var extra = parseFloat((formWrap.querySelector("#f-partsCostExtra").value||"").replace(/\./g,""))||0;
-    formWrap.querySelector("#f-cost").value      = fmtN(svc+pT);
+    var svcTotalEl = formWrap.querySelector("#f-svc-total");
+    if (svcTotalEl) svcTotalEl.textContent = fmtN(sT);
+    formWrap.querySelector("#f-cost").value      = fmtN(svc+pT+sT);
     formWrap.querySelector("#f-partsCost").value = fmtN(vT + extra);
   }
 
@@ -1199,6 +1204,93 @@ function openForm(record) {
   });
   formWrap.querySelector("#f-serviceFee").addEventListener("input", recalcTotals);
   formWrap.querySelector("#f-partsCostExtra").addEventListener("input", recalcTotals);
+
+  // ── Services Picker ──────────────────────────
+  var _svcPool = [];
+  var _svcSearchEl = formWrap.querySelector("#f-svc-search");
+  var _svcDropEl = formWrap.querySelector("#f-svc-drop");
+  var SVC_STEP = 50000;
+
+  function renderSvcList(){
+    var list = formWrap.querySelector("#f-svc-list");
+    list.innerHTML = _svcArr.length ? _svcArr.map(function(s,i){
+      var bh = (Number(s.warrantyMonths)||0);
+      return "<div style=\"display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #dcfce7\">"
+        + "<span style=\"flex:1;font-size:13px\">" + (s.name||"") + (bh?" <span style=\"color:#16a34a;font-size:11px\">(BH "+bh+"th)</span>":"") + "</span>"
+        + "<button type=\"button\" class=\"svc-minus\" data-idx=\""+i+"\" title=\"-50.000\" style=\"width:22px;height:22px;border:1px solid #bbf7d0;background:#fff;border-radius:5px;cursor:pointer;color:#16a34a;font-weight:700;line-height:1\">−</button>"
+        + "<input type=\"text\" class=\"svc-price-inp\" data-idx=\""+i+"\" value=\""+fmtN(s.price)+"\" style=\"width:78px;font-size:12px;border:1px solid #bbf7d0;border-radius:4px;padding:2px 5px;text-align:right;font-weight:600;color:#166534\">"
+        + "<button type=\"button\" class=\"svc-plus\" data-idx=\""+i+"\" title=\"+50.000\" style=\"width:22px;height:22px;border:1px solid #bbf7d0;background:#fff;border-radius:5px;cursor:pointer;color:#16a34a;font-weight:700;line-height:1\">+</button>"
+        + "<button type=\"button\" data-idx=\""+i+"\" class=\"rm-svc\" style=\"border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 2px\">×</button>"
+        + "</div>";
+    }).join("") : "<div style=\"color:#aaa;font-size:12px;padding:2px 0\">Chưa có dịch vụ</div>";
+    recalcTotals();
+  }
+
+  function renderSvcDrop(q){
+    if(!_svcDropEl) return;
+    q=(q||"").toLowerCase().trim();
+    var list=_svcPool.filter(function(s){return !q||(s.name||"").toLowerCase().indexOf(q)>=0;}).slice(0,60);
+    if(!list.length){ _svcDropEl.innerHTML='<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Không có dịch vụ phù hợp</div>'; return; }
+    _svcDropEl.innerHTML=list.map(function(s){
+      return '<div class="svc-opt" data-key="'+s._key+'" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'+
+        (s.name||"?")+' <span style="color:#16a34a">'+fmtN(s.price||0)+'₫</span> <span style="color:#64748b">('+(Number(s.warrantyMonths)||0)+'th)</span></div>';
+    }).join('');
+  }
+
+  function addSvc(s){
+    if(!s) return;
+    if(_svcArr.some(function(x){return x.svcKey===s._key;})){ toast("Dịch vụ đã có trong phiếu","error"); return; }
+    _svcArr.push({svcKey:s._key, name:s.name, price:Number(s.price)||0, warrantyMonths:Number(s.warrantyMonths)||0});
+    if(_svcSearchEl){ _svcSearchEl.value=""; _svcSearchEl.focus(); }
+    if(_svcDropEl) _svcDropEl.style.display="none";
+    renderSvcList();
+  }
+
+  (async function loadSvcs(){
+    try {
+      var svcs = await getAll("services");
+      _svcPool = (svcs||[]).filter(function(s){return !s.deletedAt;}).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");});
+      renderSvcDrop("");
+    } catch(e){ console.warn("loadSvcs",e); }
+  })();
+
+  if(_svcSearchEl){
+    _svcSearchEl.addEventListener("focus", function(){ renderSvcDrop(_svcSearchEl.value); _svcDropEl.style.display="block"; });
+    _svcSearchEl.addEventListener("input", function(){ renderSvcDrop(_svcSearchEl.value); _svcDropEl.style.display="block"; });
+    _svcSearchEl.addEventListener("blur", function(){ setTimeout(function(){ if(_svcDropEl) _svcDropEl.style.display="none"; },160); });
+    _svcSearchEl.addEventListener("keydown", function(e){
+      if(e.key==="Enter"){ e.preventDefault();
+        var q=(_svcSearchEl.value||"").toLowerCase().trim();
+        var first=_svcPool.filter(function(s){return !q||(s.name||"").toLowerCase().indexOf(q)>=0;})[0];
+        if(first) addSvc(first);
+      }
+    });
+  }
+  if(_svcDropEl){
+    _svcDropEl.addEventListener("mousedown", function(e){
+      var it=e.target.closest(".svc-opt"); if(!it) return; e.preventDefault();
+      var s=_svcPool.find(function(x){return x._key===it.dataset.key;});
+      if(s) addSvc(s);
+    });
+  }
+  formWrap.querySelector("#f-svc-add").addEventListener("click", function(){
+    var q=(_svcSearchEl&&_svcSearchEl.value||"").toLowerCase().trim();
+    var pick=_svcPool.filter(function(s){return !q||(s.name||"").toLowerCase().indexOf(q)>=0;})[0];
+    if(!pick){ toast("Gõ và chọn dịch vụ trước","error"); return; }
+    addSvc(pick);
+  });
+  formWrap.querySelector("#f-svc-list").addEventListener("click", function(e){
+    var rm=e.target.closest(".rm-svc"); var mi=e.target.closest(".svc-minus"); var pl=e.target.closest(".svc-plus");
+    if(rm){ _svcArr.splice(Number(rm.dataset.idx),1); renderSvcList(); return; }
+    if(mi){ var i=Number(mi.dataset.idx); _svcArr[i].price=Math.max(0,(Number(_svcArr[i].price)||0)-SVC_STEP); renderSvcList(); return; }
+    if(pl){ var j=Number(pl.dataset.idx); _svcArr[j].price=(Number(_svcArr[j].price)||0)+SVC_STEP; renderSvcList(); return; }
+  });
+  formWrap.querySelector("#f-svc-list").addEventListener("input", function(e){
+    var pi=e.target.classList.contains("svc-price-inp")?e.target:null; if(!pi) return;
+    _svcArr[Number(pi.dataset.idx)].price=parseFloat((pi.value||"").replace(/[^0-9]/g,""))||0;
+    recalcTotals();
+  });
+  renderSvcList();
 
   // Customer search autocomplete
   var _searchInp = formWrap.querySelector('#f-customerName');
