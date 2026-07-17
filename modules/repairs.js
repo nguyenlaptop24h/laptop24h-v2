@@ -877,8 +877,10 @@ function quickChangeStatus(record) {
 }
 
 
-function printWarrantySlip(d) {
+async function printWarrantySlip(d) {
     d = d || {};
+    var _wpProds = {}; try { (await getAll('products')||[]).forEach(function(p){ _wpProds[p._key]=p; }); } catch(e){}
+    var _wpMonths = function(w){ var m=String(w==null?"":w).toLowerCase(); if(/kh[ôo]ng/.test(m)) return 0; var ny=m.match(/(\d+)\s*n[ăa]m/); if(ny) return parseInt(ny[1])*12; var mo=m.match(/(\d+)\s*th[áa]ng/); if(mo) return parseInt(mo[1]); var n=m.match(/\d+/); return n?parseInt(n[0]):0; };
     var T = {};
     try { T = JSON.parse(localStorage.getItem('sl_invoice_tpl') || '{}'); } catch(e) {}
     var R = getReceiptTpl();
@@ -934,7 +936,7 @@ function printWarrantySlip(d) {
     rows += '<tr><td class="lb">Bảo hành nội dung sửa chữa đến</td><td class="vl" colspan="3"><b>'+esc(warrEnd())+'</b></td></tr>';
     var whItems = [];
     (Array.isArray(d.servicesUsed)?d.servicesUsed:[]).forEach(function(s){ whItems.push({name:s.name, m:Number(s.warrantyMonths)||0}); });
-    (Array.isArray(d.partsUsed)?d.partsUsed:[]).forEach(function(p){ var m=Number(p.warrantyMonths)||0; if(m>0) whItems.push({name:p.name, m:m}); });
+    (Array.isArray(d.partsUsed)?d.partsUsed:[]).forEach(function(p){ var m=Number(p.warrantyMonths)||0; if(!m && p.invKey && _wpProds[p.invKey]) m=_wpMonths(_wpProds[p.invKey].warranty); if(m>0) whItems.push({name:p.name, m:m}); });
     if (whItems.length) {
       rows += '<tr><td class="sec" colspan="4">CHI TIẾT BẢO HÀNH TỪNG PHẦN</td></tr>';
       whItems.forEach(function(it){
@@ -1154,6 +1156,10 @@ function openForm(record) {
       _partsPool = prods.filter(function(p){
         return !p.deletedAt && (p.stock||0)>0 && (!allow || allow[p.categoryKey]);
       }).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","vi");});
+      // Bổ sung bảo hành cho linh kiện đã có (lấy từ kho) nếu chưa có số tháng
+      var _bf=false;
+      _partsArr.forEach(function(pp){ if((!pp.warrantyMonths || pp.warrantyMonths===0) && pp.invKey){ var pr=prods.find(function(x){return x._key===pp.invKey;}); if(pr){ var mm=_pWMonths(pr.warranty); if(mm>0){ pp.warrantyMonths=mm; _bf=true; } } } });
+      if(_bf) renderPartsList();
       renderPartDrop("");
     } catch(e){ console.warn("loadProds",e); }
   })();
