@@ -51,7 +51,14 @@ export async function mount(container){
 
   const [repairs, sales, products] = await Promise.all([getAll('repairs'), getAll('sales'), getAll('products')]);
   const prodByKey = {}; products.forEach(p => { prodByKey[p._key] = p; });
-  const wmonths = w => { const m = String(w == null ? '' : w).match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
+  const wmonths = w => { const m = String(w == null ? '' : w).toLowerCase(); if(/kh[ôo]ng/.test(m)) return 0; const ny=m.match(/(\d+)\s*n[ăa]m/); if(ny) return parseInt(ny[1])*12; const mo=m.match(/(\d+)\s*th[áa]ng/); if(mo) return parseInt(mo[1]); const n=m.match(/\d+/); return n?parseInt(n[0]):0; };
+  // Số tháng bảo hành thực tế = MAX của: BH nội dung sửa (text) + từng dịch vụ + từng linh kiện (lấy kho nếu trống). KHÔNG dùng warrantyMonths cũ.
+  const repMonths = r => {
+    const arr = [ wmonths(r.warranty) ];
+    (r.servicesUsed||[]).forEach(s => arr.push(Number(s.warrantyMonths)||0));
+    (r.partsUsed||[]).forEach(p => { let m=Number(p.warrantyMonths)||0; if(!m && p.invKey && prodByKey[p.invKey]) m=wmonths(prodByKey[p.invKey].warranty); arr.push(m); });
+    return Math.max(0, ...arr);
+  };
 
   // ─── Phiếu sửa chữa còn bảo hành ───
   repairs.forEach(r => {
@@ -59,14 +66,15 @@ export async function mount(container){
     // Lợi nhuận = 0 (máy trả, không sửa) → không phát sinh nghĩa vụ bảo hành
     if (((r.cost||0) - (r.partsCost||0) - (r.discount||0)) === 0) return;
     const dd = pd(r.deliveredDate);
-    const wm = Number(r.warrantyMonths) || 0;
-    if (!dd || wm <= 0) return;                 // chưa giao hoặc không có bảo hành
-    const end = addMonths(dd, wm);
+    if (!dd) return;                            // chưa giao máy
+    const months = repMonths(r);
+    if (months <= 0) return;                    // để trống bảo hành = không bảo hành
+    const end = addMonths(dd, months);
     if (end.getTime() < todayMs) return;        // đã hết hạn
     repRows.push({
       customer: r.customerName || '', phone: r.phone || '',
       device: r.device || '', serial: r.serial || '',
-      delivered: dd, months: wm, end,
+      delivered: dd, months, end,
       search: ((r.customerName||'')+' '+(r.phone||'')+' '+(r.device||'')+' '+(r.serial||'')).toLowerCase()
     });
   });

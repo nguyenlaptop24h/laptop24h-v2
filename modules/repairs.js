@@ -1075,6 +1075,12 @@ function openForm(record) {
         else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('Đã thêm phiếu mới'); }
         if (record && record.partsUsed && record.partsUsed.length) { await restorePartsStock(record.partsUsed); }
         await deductPartsStock(_partsArr);
+        // Phiếu mới: nhắc điền bảo hành nếu chưa có bảo hành nào
+        if (!record) {
+          var _pm = function(w){ var m=String(w||'').toLowerCase(); if(/kh[ôo]ng/.test(m)) return 0; var ny=m.match(/(\d+)\s*n[ăa]m/); if(ny) return parseInt(ny[1])*12; var mo=m.match(/(\d+)\s*th[áa]ng/); if(mo) return parseInt(mo[1]); var n=m.match(/\d+/); return n?parseInt(n[0]):0; };
+          var _eff = Math.max(0, _pm(data.warranty), ...(_svcArr||[]).map(function(s){return Number(s.warrantyMonths)||0;}), ...(_partsArr||[]).map(function(p){return Number(p.warrantyMonths)||0;}));
+          if (_eff <= 0) toast('⚠️ Phiếu mới chưa có bảo hành — hãy chọn "Bảo hành sửa chữa" hoặc thêm dịch vụ/linh kiện có bảo hành', 'warning');
+        }
         formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); selectedKeys = new Set(); updateBtnStates();
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
