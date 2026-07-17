@@ -309,6 +309,24 @@ export async function mount(container) {
       const repProfit   = repRevenue - repCapital - repDiscount;
       const repDebt     = repF.filter(r => r.paymentStatus === 'debt').reduce((s,r) => s + Math.max(0, (r.cost||0) - (r.deposit||0) - (r.discount||0)), 0);
 
+      // Đếm phiếu: sinh lời / lợi nhuận = 0 / phiếu bảo hành quay lại
+      const repProfitOf = r => (r.cost||0) - (r.partsCost||0) - (r.discount||0);
+      const repSucceed  = repF.filter(r => repProfitOf(r) > 0).length;
+      const repReturn0  = repF.filter(r => repProfitOf(r) === 0).length;
+      const _pdS = v => { if(!v) return null; const d=new Date(String(v).length<=10?String(v)+'T00:00:00':String(v)); return isNaN(d.getTime())?null:d; };
+      const repWEndMs = r => { const dd=_pdS(r.deliveredDate); const wm=Number(r.warrantyMonths)||0; if(!dd||wm<=0) return 0; const x=new Date(dd.getTime()); x.setMonth(x.getMonth()+wm); return x.getTime(); };
+      const bySerial = {};
+      repairs.forEach(r => { if(r.deletedAt) return; const s=(r.serial||'').trim(); if(!s) return; (bySerial[s]=bySerial[s]||[]).push(r); });
+      const repWarrantyReturn = repF.filter(r => {
+        const s=(r.serial||'').trim(); if(!s) return false;
+        const rc=_pdS(r.receivedDate); if(!rc) return false; const rcMs=rc.getTime();
+        return (bySerial[s]||[]).some(p => {
+          if(p===r) return false;
+          const prc=_pdS(p.receivedDate); if(!prc) return false;
+          return prc.getTime() < rcMs && repWEndMs(p) >= rcMs;
+        });
+      }).length;
+
       const statusMap = {};
       repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
 
@@ -409,14 +427,15 @@ export async function mount(container) {
             <h3 class="rep-hdr">&#128295; S&#7917;a ch&#7919;a &mdash; ${lbl}</h3>
             <div class="st-row"><span class="st-label">Doanh thu</span><span class="st-val blue">${formatVND(repRevenue)}</span></div>
             <div class="st-row"><span class="st-label">V&#7889;n linh ki&#7879;n</span><span class="st-val">${formatVND(repCapital)}</span></div>
-            <div class="st-row"><span class="st-label">Chi&#7871;t kh&#7845;u</span><span class="st-val">${formatVND(repDiscount)}</span></div>
             <div class="st-row" style="border-top:2px solid #e3f2fd;margin-top:4px;padding-top:8px;">
               <span class="st-label" style="font-weight:600">L&#7907;i nhu&#7853;n</span>
               <span class="st-val ${repProfit>=0?'green':'red'}" style="font-size:15px">${formatVND(repProfit)}</span>
             </div>
-            <div class="st-row"><span class="st-label">&#272;&#227; &#273;&#7863;t c&#7885;c</span><span class="st-val green">${formatVND(repDeposit)}</span></div>
             <div class="st-row"><span class="st-label">C&#242;n n&#7907;</span><span class="st-val ${repDebt>0?'red':''}">${formatVND(Math.max(0,repDebt))}</span></div>
             <div class="st-row"><span class="st-label">S&#7889; phi&#7871;u</span><span class="st-val">${repF.length}</span></div>
+            <div class="st-row"><span class="st-label">&#10004; Th&#224;nh c&#244;ng (sinh l&#7901;i)</span><span class="st-val green">${repSucceed}</span></div>
+            <div class="st-row"><span class="st-label">&#8617; S&#7889; m&#225;y tr&#7843; (LN=0)</span><span class="st-val">${repReturn0}</span></div>
+            <div class="st-row"><span class="st-label">&#128737;&#65039; S&#7889; phi&#7871;u b&#7843;o h&#224;nh (quay l&#7841;i)</span><span class="st-val ${repWarrantyReturn>0?'red':''}">${repWarrantyReturn}</span></div>
             ${Object.keys(statusMap).length>0?`
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;">
               ${Object.entries(statusMap).map(([k,v])=>`<div class="st-row"><span class="st-label" style="font-size:12px">${k}</span><span style="font-size:12px;font-weight:600">${v}</span></div>`).join('')}
