@@ -375,6 +375,21 @@ export async function mount(container) {
         let g=0; while(c && c.parentKey && catMap[c.parentKey] && g<20){ c=catMap[c.parentKey]; g++; }
         return (c && c.name) ? c.name : 'Chưa phân loại';
       };
+
+      // ── Bán hàng: tách LAPTOP riêng, phần còn lại "Khác" ──
+      const isLaptopCat = (key)=> /laptop/i.test(rootCatName(key));
+      let lapRev=0, lapCap=0, lapQty=0, othRev=0, othCap=0, othQty=0;
+      for (const sl of saleF) {
+        for (const it of (sl.items||[])) {
+          const prod = it.invkey ? productByKey[it.invkey] : null;
+          const cost = (prod && prod.cost != null) ? prod.cost : (it.cost || 0);
+          const qty  = (it.qty || it.quantity || 1);
+          const rev  = Math.max(0, qty*(it.price||0) - (it.discount||0));
+          const cap  = qty*cost;
+          if (prod && isLaptopCat(prod.categoryKey)) { lapRev+=rev; lapCap+=cap; lapQty+=qty; }
+          else { othRev+=rev; othCap+=cap; othQty+=qty; }
+        }
+      }
       const inStock = products.filter(p=>!p.deletedAt && (p.stock||0)>0);
       const invItems = inStock.length;
       const invQty = inStock.reduce((s,p)=>s+(p.stock||0),0);
@@ -455,6 +470,16 @@ export async function mount(container) {
             <div class="st-row"><span class="st-label">&#272;&#227; thu</span><span class="st-val green">${formatVND(salePaid)}</span></div>
             <div class="st-row"><span class="st-label">C&#242;n n&#7907;</span><span class="st-val ${saleDebt>0?'red':''}">${formatVND(Math.max(0,saleDebt))}</span></div>
             <div class="st-row"><span class="st-label">S&#7889; &#273;&#417;n h&#224;ng</span><span class="st-val">${saleF.length}</span></div>
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd">
+              <div style="font-weight:700;font-size:12px;color:#555;margin-bottom:5px">Ph&#226;n lo&#7841;i s&#7843;n ph&#7849;m</div>
+              <table class="st-tbl" style="margin-top:0">
+                <thead><tr><th>Lo&#7841;i</th><th style="text-align:right">Doanh thu</th><th style="text-align:right">Gi&#225; v&#7889;n</th><th style="text-align:right">L&#7907;i nhu&#7853;n</th><th style="text-align:center">SL</th></tr></thead>
+                <tbody>
+                  <tr><td>&#128187; Laptop</td><td style="text-align:right">${formatVND(lapRev)}</td><td style="text-align:right">${formatVND(lapCap)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(lapRev-lapCap)}</td><td style="text-align:center">${lapQty}</td></tr>
+                  <tr><td>&#128230; Kh&#225;c</td><td style="text-align:right">${formatVND(othRev)}</td><td style="text-align:right">${formatVND(othCap)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(othRev-othCap)}</td><td style="text-align:center">${othQty}</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- KHO HANG -->
