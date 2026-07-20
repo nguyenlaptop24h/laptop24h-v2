@@ -190,8 +190,8 @@ async function showCustStats(name, phone) {
   var allReps = [];
   try { allReps = await getAll('repairs'); } catch(e){}
   var phoneReal = phone && /[0-9]/.test(phone);
-  var myReps = allReps.filter(function(r){ return (name && r.customerName === name) || (phoneReal && r.phone === phone); });
-  var open = myReps.filter(function(r){ return ['Tiếp nhận','\u0110ang sửa'].indexOf(r.status||'') >= 0 && !String(r.deliveredDate||'').trim(); });
+  var myReps = allReps.filter(function(r){ if (r.deletedAt) return false; return (name && r.customerName === name) || (phoneReal && r.phone === phone); });
+  var open = myReps.filter(function(r){ return ['Tiếp nhận','\u0110ang sửa'].indexOf(r.status||'') >= 0 || (r.status||'') === 'Hoàn thành'; });
   var fmtN = function(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
   var now = new Date();
   var months = [];
