@@ -1102,9 +1102,10 @@ function openForm(record) {
     formWrap.querySelector("#f-parts-vcost").textContent = fmtN(von);
     list.innerHTML = _partsArr.length ? _partsArr.map(function(p,i){
       return "<div style=\"display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #e0e8f4\">"
-           + "<span style=\"flex:1;font-size:13px\">" + p.name + "</span>"
+           + "<span style=\"flex:1;font-size:13px\">" + p.name + (p.invKey ? "" : " <span style=\"font-size:10px;color:#d97706;font-weight:700\">(ngo\u00e0i)</span>") + "</span>"
            + "<span style=\"font-size:12px;color:#666\">x" + p.qty + "</span>"
-           + "<input type=\"text\" class=\"part-von-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.costPrice) + "\" style=\"width:62px;font-size:11px;border:1px solid #d0d7e5;border-radius:3px;padding:1px 4px;text-align:right;color:#888\" placeholder=\"V\u1ed1n\">"
+           + "<input type=\"text\" class=\"part-price-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.salePrice) + "\" title=\"Gi\u00e1 b\u00e1n\" style=\"width:70px;font-size:11px;border:1px solid #c7d9f0;border-radius:3px;padding:1px 4px;text-align:right;color:#1d4ed8\" placeholder=\"Gi\u00e1\">"
+           + "<input type=\"text\" class=\"part-von-inp\" data-idx=\"" + i + "\" value=\"" + fmtN(p.costPrice) + "\" title=\"Gi\u00e1 v\u1ed1n\" style=\"width:62px;font-size:11px;border:1px solid #d0d7e5;border-radius:3px;padding:1px 4px;text-align:right;color:#888\" placeholder=\"V\u1ed1n\">"
            + "<input type=\"number\" min=\"0\" class=\"part-bh-inp\" data-idx=\"" + i + "\" value=\"" + (Number(p.warrantyMonths)||0) + "\" title=\"B\u1ea3o h\u00e0nh (th\u00e1ng)\" style=\"width:34px;font-size:11px;border:1px solid #cbd5e1;border-radius:3px;padding:1px 3px;text-align:center\">"
            + "<span style=\"font-size:10px;color:#888\">th</span>"
            + "<span style=\"font-size:13px;font-weight:600;color:#1d4ed8;min-width:68px;text-align:right\">" + fmtN(p.salePrice*p.qty) + "\u20ab</span>"
@@ -1137,7 +1138,7 @@ function openForm(record) {
     var list = _partsPool.filter(function(p){
       return !q || (p.name||"").toLowerCase().indexOf(q)>=0 || (p.id||"").toLowerCase().indexOf(q)>=0;
     }).slice(0,60);
-    if(!list.length){ _dropEl.innerHTML = '<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Kh\u00f4ng c\u00f3 linh ki\u1ec7n ph\u00f9 h\u1ee3p</div>'; return; }
+    if(!list.length){ _dropEl.innerHTML = '<div style="padding:8px 10px;color:#9ca3af;font-size:13px">Kh\u00f4ng c\u00f3 trong kho \u2014 b\u1ea5m <b style="color:#d97706">+ Th\u00eam</b> \u0111\u1ec3 th\u00eam linh ki\u1ec7n <b>mua ngo\u00e0i</b></div>'; return; }
     _dropEl.innerHTML = list.map(function(p){
       return '<div class="part-opt" data-key="'+p._key+'" style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'+
         (p.name||"?")+' <span style="color:#16a34a">'+fmtN(p.price||p.cost||0)+'\u20ab</span> <span style="color:#64748b">(kho:'+(p.stock||0)+')</span></div>';
@@ -1180,9 +1181,9 @@ function openForm(record) {
     _searchEl.addEventListener("keydown", function(e){
       if(e.key==="Enter"){
         e.preventDefault();
-        var q=(_searchEl.value||"").toLowerCase().trim();
+        var raw=(_searchEl.value||"").trim(); var q=raw.toLowerCase();
         var first=_partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
-        if(first) addPart(first);
+        if(first) addPart(first); else if(raw) addManualPart(raw);
       }
     });
   }
@@ -1222,11 +1223,23 @@ function openForm(record) {
 
   renderPartsList();
 
+  // Linh ki\u1ec7n MUA NGO\u00c0I (kh\u00f4ng c\u00f3 trong kho): th\u00eam d\u00f2ng th\u1ee7 c\u00f4ng \u0111\u1ec3 nh\u1eadp Gi\u00e1 / V\u1ed1n / B\u1ea3o h\u00e0nh
+  function addManualPart(nm){
+    var qty = Math.max(1, parseInt(formWrap.querySelector("#f-parts-qty").value)||1);
+    _partsArr.push({invKey:"", name:nm, qty:qty, salePrice:0, costPrice:0, warrantyMonths:0});
+    if(_searchEl){ _searchEl.value=""; _searchEl.focus(); }
+    if(_dropEl) _dropEl.style.display="none";
+    renderPartsList();
+    toast("\u0110\u00e3 th\u00eam linh ki\u1ec7n mua ngo\u00e0i \u2014 nh\u1eadp Gi\u00e1, V\u1ed1n v\u00e0 s\u1ed1 th\u00e1ng BH","warning");
+  }
+
   formWrap.querySelector("#f-parts-add").addEventListener("click", function(){
-    var q=(_searchEl&&_searchEl.value||"").toLowerCase().trim();
+    var raw=(_searchEl&&_searchEl.value||"").trim();
+    var q=raw.toLowerCase();
     var pick = _partSel || _partsPool.filter(function(p){return !q||(p.name||"").toLowerCase().indexOf(q)>=0||(p.id||"").toLowerCase().indexOf(q)>=0;})[0];
-    if(!pick){ toast("G\u00f5 v\u00e0 ch\u1ecdn linh ki\u1ec7n tr\u01b0\u1edbc","error"); return; }
-    addPart(pick);
+    if(pick){ addPart(pick); return; }
+    if(raw){ addManualPart(raw); return; }
+    toast("G\u00f5 t\u00ean linh ki\u1ec7n tr\u01b0\u1edbc","error");
   });
   formWrap.querySelector("#f-parts-list").addEventListener("click", function(e){
     var btn = e.target.closest(".rm-part");
@@ -1235,6 +1248,10 @@ function openForm(record) {
     renderPartsList();
   });
   formWrap.querySelector("#f-parts-list").addEventListener("input", function(e){
+    if(e.target.classList.contains("part-price-inp")){
+      _partsArr[Number(e.target.dataset.idx)].salePrice = parseFloat((e.target.value||"").replace(/[^0-9]/g,""))||0;
+      recalcTotals(); return;
+    }
     if(e.target.classList.contains("part-von-inp")){
       _partsArr[Number(e.target.dataset.idx)].costPrice = parseFloat((e.target.value||"").replace(/\./g,""))||0;
       recalcTotals(); return;
@@ -1425,12 +1442,14 @@ async function confirmDeleteKeys(keys) {
 async function restorePartsStock(partsUsed) {
   if (!partsUsed || !partsUsed.length) return;
   for (const p of partsUsed) {
+    if (!p.invKey) continue;   // linh kiện mua ngoài → không đụng tới kho
     try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: (prod.stock||0) + p.qty }); } catch(e) {}
   }
 }
 async function deductPartsStock(partsUsed) {
   if (!partsUsed || !partsUsed.length) return;
   for (const p of partsUsed) {
+    if (!p.invKey) continue;   // linh kiện mua ngoài → không trừ kho
     try { const prod = await getItem('products', p.invKey); if (prod) await updateItem('products', p.invKey, { stock: Math.max(0, (prod.stock||0) - p.qty) }); } catch(e) {}
   }
 }
