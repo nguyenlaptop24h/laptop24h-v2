@@ -328,12 +328,14 @@ export async function mount(container) {
         });
       }).length;
 
-      // ── Thống kê theo kỹ thuật viên ──
+      // ── Thống kê kỹ thuật viên: chỉ 3 KTV, gộp tên không phân biệt dấu / hoa thường ──
+      const _noAcc = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toUpperCase().trim();
+      const TECHS = [{key:'TIEN',label:'TIẾN'},{key:'THUAN',label:'THUẬN'},{key:'NGUYEN',label:'NGUYÊN'}];
       const techMap = {};
+      TECHS.forEach(t=>{ techMap[t.key] = {name:t.label, tickets:0, done:0, revenue:0, capital:0, profit:0}; });
       repF.forEach(r=>{
-        const t = (r.techName||'').trim() || 'Chưa ghi KTV';
-        if(!techMap[t]) techMap[t] = {name:t, tickets:0, done:0, revenue:0, capital:0, profit:0};
-        const g = techMap[t];
+        const g = techMap[_noAcc(r.techName)];
+        if(!g) return;                       // bỏ qua KTV khác / phiếu chưa ghi tên KTV
         g.tickets++;
         const stt = r.status||'';
         if (stt === 'Hoàn thành' || stt === 'Đã giao') g.done++;
@@ -451,12 +453,12 @@ export async function mount(container) {
             <td style="text-align:right;font-weight:700;color:${t.profit>=0?'#4CAF50':'#f44336'}">${formatVND(t.profit)}</td>
           </tr>`;
         }).join('') + `<tr style="font-weight:700;border-top:2px solid #bbb;background:#fafafa">
-            <td>TỔNG</td>
-            <td style="text-align:center">${repF.length}</td>
+            <td>TỔNG (3 KTV)</td>
+            <td style="text-align:center">${techArr.reduce((s,t)=>s+t.tickets,0)}</td>
             <td style="text-align:center">${techArr.reduce((s,t)=>s+t.done,0)}</td>
-            <td style="text-align:right">${formatVND(repRevenue)}</td>
-            <td style="text-align:right">${formatVND(repCapital)}</td>
-            <td style="text-align:right">${formatVND(repProfit)}</td>
+            <td style="text-align:right">${formatVND(techArr.reduce((s,t)=>s+t.revenue,0))}</td>
+            <td style="text-align:right">${formatVND(techArr.reduce((s,t)=>s+t.capital,0))}</td>
+            <td style="text-align:right">${formatVND(techArr.reduce((s,t)=>s+t.profit,0))}</td>
           </tr>`)
         : '<tr><td colspan="6" style="text-align:center;color:#888;padding:12px">Không có dữ liệu</td></tr>';
 
