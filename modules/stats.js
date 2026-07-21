@@ -328,6 +328,21 @@ export async function mount(container) {
         });
       }).length;
 
+      // ── Thống kê theo kỹ thuật viên ──
+      const techMap = {};
+      repF.forEach(r=>{
+        const t = (r.techName||'').trim() || 'Chưa ghi KTV';
+        if(!techMap[t]) techMap[t] = {name:t, tickets:0, done:0, revenue:0, capital:0, profit:0};
+        const g = techMap[t];
+        g.tickets++;
+        const stt = r.status||'';
+        if (stt === 'Hoàn thành' || stt === 'Đã giao') g.done++;
+        g.revenue += (r.cost||0);
+        g.capital += (r.partsCost||0);
+        g.profit  += repProfitOf(r);
+      });
+      const techArr = Object.values(techMap).sort((a,b)=> b.profit - a.profit);
+
       const statusMap = {};
       repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
 
@@ -425,6 +440,26 @@ export async function mount(container) {
         </details>`;
       }).join('');
 
+      const techRows = techArr.length ? (techArr.map((t,i)=>{
+          const rk = i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);
+          return `<tr>
+            <td><b>${rk} ${t.name}</b></td>
+            <td style="text-align:center">${t.tickets}</td>
+            <td style="text-align:center;font-weight:600;color:#2196F3">${t.done}</td>
+            <td style="text-align:right">${formatVND(t.revenue)}</td>
+            <td style="text-align:right">${formatVND(t.capital)}</td>
+            <td style="text-align:right;font-weight:700;color:${t.profit>=0?'#4CAF50':'#f44336'}">${formatVND(t.profit)}</td>
+          </tr>`;
+        }).join('') + `<tr style="font-weight:700;border-top:2px solid #bbb;background:#fafafa">
+            <td>TỔNG</td>
+            <td style="text-align:center">${repF.length}</td>
+            <td style="text-align:center">${techArr.reduce((s,t)=>s+t.done,0)}</td>
+            <td style="text-align:right">${formatVND(repRevenue)}</td>
+            <td style="text-align:right">${formatVND(repCapital)}</td>
+            <td style="text-align:right">${formatVND(repProfit)}</td>
+          </tr>`)
+        : '<tr><td colspan="6" style="text-align:center;color:#888;padding:12px">Không có dữ liệu</td></tr>';
+
       let lbl = periodEl.options[periodEl.selectedIndex]?.text || '';
       if (period==='single' && singleEl.value)
         lbl = new Date(singleEl.value+'T00:00:00').toLocaleDateString('vi-VN');
@@ -480,6 +515,22 @@ export async function mount(container) {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <!-- KY THUAT VIEN -->
+          <div class="st-panel st-full">
+            <h3>&#128104;&#8205;&#128295; Th&#7889;ng k&#234; k&#7929; thu&#7853;t vi&#234;n &mdash; ${lbl}</h3>
+            <table class="st-tbl">
+              <thead><tr>
+                <th>K&#7929; thu&#7853;t vi&#234;n</th>
+                <th style="text-align:center">S&#7889; phi&#7871;u</th>
+                <th style="text-align:center">Ho&#224;n th&#224;nh</th>
+                <th style="text-align:right">Doanh thu</th>
+                <th style="text-align:right">V&#7889;n LK</th>
+                <th style="text-align:right">L&#7907;i nhu&#7853;n</th>
+              </tr></thead>
+              <tbody>${techRows}</tbody>
+            </table>
           </div>
 
           <!-- KHO HANG -->
