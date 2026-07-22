@@ -154,7 +154,7 @@ export async function mount(container) {
   }
 
   // ─── revenue chart ──────────────────────────────────────
-  async function renderRevenueChart(repF, saleF, from, to) {
+  async function renderRevenueChart(repF, saleF, from, to, productByKey) {
     const canvas = container.querySelector('#st-chart');
     if (!canvas) return;
     try { await loadChartJs(); } catch (e) {
@@ -163,6 +163,9 @@ export async function mount(container) {
     }
     try { if (_chartInstance) { _chartInstance.destroy(); } } catch (_) {}
     _chartInstance = null;
+    const _pbk = productByKey || {};
+    const repProfitOf = r => (r.cost||0) - (r.partsCost||0) - (r.discount||0);
+    const saleProfitOf = sl => { let cap=0; (sl.items||[]).forEach(it=>{ const prod=it.invkey?_pbk[it.invkey]:null; const cost=(prod&&prod.cost!=null)?prod.cost:(it.cost||0); cap += (it.qty||it.quantity||1)*cost; }); return (sl.total||0) - cap; };
 
     const diffDays = Math.ceil((to - from) / 86400000);
     const labels = [], repData = [], saleData = [], buckets = [];
@@ -176,8 +179,8 @@ export async function mount(container) {
         const hS = new Date(baseDay); hS.setHours(h,0,0,0);
         const hE = new Date(baseDay); hE.setHours(h,59,59,999);
         buckets.push({ type:'hour', date:_ld(baseDay), from:hS.getTime(), to:hE.getTime() });
-        repData.push( repF.filter(r=>inRange(repMs(r), hS.getTime(), hE.getTime())).reduce((s,r)=>s+(r.cost||0),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+(sl.total||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r), hS.getTime(), hE.getTime())).reduce((s,r)=>s+repProfitOf(r),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+saleProfitOf(sl),0));
       }
     } else if (diffDays <= 62) {
       // Daily
@@ -186,8 +189,8 @@ export async function mount(container) {
         labels.push(d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}));
         const dS = d.getTime(), dE = dS + 86399999;
         buckets.push({ type:'day', date:_ld(d), from:dS, to:dE });
-        repData.push( repF.filter(r=>inRange(repMs(r),dS,dE)).reduce((s,r)=>s+(r.cost||0),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+(sl.total||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r),dS,dE)).reduce((s,r)=>s+repProfitOf(r),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
       }
     } else {
       // Monthly
@@ -199,8 +202,8 @@ export async function mount(container) {
         const nx = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
         const mE = nx.getTime()-1;
         buckets.push({ type:'month', from:mS, to:mE });
-        repData.push( repF.filter(r=>inRange(repMs(r),mS,mE)).reduce((s,r)=>s+(r.cost||0),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+(sl.total||0),0));
+        repData.push( repF.filter(r=>inRange(repMs(r),mS,mE)).reduce((s,r)=>s+repProfitOf(r),0));
+        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
         cur = nx;
       }
     }
@@ -502,7 +505,7 @@ export async function mount(container) {
 
           <!-- BIEU DO -->
           <div class="st-panel st-full">
-            <h3>&#128200; Bi&#7875;u &#273;&#7891; doanh thu &mdash; ${lbl} <span style="font-weight:400;font-size:11px;color:#888">(b&#7845;m v&#224;o c&#7897;t &#273;&#7875; xem chi ti&#7871;t ng&#224;y &#273;&#243;)</span></h3>
+            <h3>&#128200; Bi&#7875;u &#273;&#7891; l&#7907;i nhu&#7853;n &mdash; ${lbl} <span style="font-weight:400;font-size:11px;color:#888">(b&#7845;m v&#224;o c&#7897;t &#273;&#7875; xem chi ti&#7871;t ng&#224;y &#273;&#243;)</span></h3>
             <div class="st-chart-wrap"><canvas id="st-chart"></canvas></div>
           </div>
 
@@ -598,7 +601,7 @@ export async function mount(container) {
         </div>`;
 
       renderLowStockTable(1);
-      renderRevenueChart(repF, saleF, from, to);
+      renderRevenueChart(repF, saleF, from, to, productByKey);
       renderTechChart(repairs);
 
     } catch (e) {
