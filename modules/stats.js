@@ -94,6 +94,7 @@ export async function mount(container) {
   let _lowStock      = [];
   let _curPage       = 1;
   let _chartInstance = null;
+  let _techChartInstance = null;
   const PAGE_SIZE    = 10;
 
   periodEl.addEventListener('change', () => {
@@ -243,6 +244,36 @@ export async function mount(container) {
             ticks: { callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }
           }
         }
+      }
+    });
+  }
+
+  // ─── biểu đồ lợi nhuận KTV theo 6 tháng ────────────────
+  async function renderTechChart(repairs) {
+    const canvas = container.querySelector('#st-tech-chart');
+    if (!canvas) return;
+    try { await loadChartJs(); } catch (e) { return; }
+    try { if (_techChartInstance) _techChartInstance.destroy(); } catch (_) {}
+    _techChartInstance = null;
+    const noAcc = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toUpperCase().trim();
+    const techs = [{key:'TIEN',label:'TIẾN',color:'#2196F3'},{key:'THUAN',label:'THUẬN',color:'#4CAF50'},{key:'NGUYEN',label:'NGUYÊN',color:'#FF9800'}];
+    const now = new Date(); const labels = []; const mkeys = [];
+    for (let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); labels.push((d.getMonth()+1)+'/'+d.getFullYear()); mkeys.push(d.getFullYear()+'-'+d.getMonth()); }
+    const data = {}; techs.forEach(t=>{ data[t.key]=mkeys.map(()=>0); });
+    repairs.forEach(r=>{
+      if (r.deletedAt) return;
+      const k = noAcc(r.techName); if (!data[k]) return;
+      const ms = repMs(r); if (!ms) return; const d = new Date(ms);
+      const idx = mkeys.indexOf(d.getFullYear()+'-'+d.getMonth()); if (idx<0) return;
+      data[k][idx] += (r.cost||0) - (r.partsCost||0) - (r.discount||0);
+    });
+    _techChartInstance = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: techs.map(t=>({ label:t.label, data:data[t.key], borderColor:t.color, backgroundColor:t.color, tension:.3, fill:false, pointRadius:3 })) },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'top'}, tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+formatVND(ctx.parsed.y) } } },
+        scales:{ y:{ beginAtZero:true, ticks:{ callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v } } }
       }
     });
   }
@@ -522,7 +553,9 @@ export async function mount(container) {
           <!-- KY THUAT VIEN -->
           <div class="st-panel st-full">
             <h3>&#128104;&#8205;&#128295; Th&#7889;ng k&#234; k&#7929; thu&#7853;t vi&#234;n &mdash; ${lbl}</h3>
-            <table class="st-tbl">
+            <div style="font-size:12px;color:#888;margin:-4px 0 6px">Bi&#7875;u &#273;&#7891; l&#7907;i nhu&#7853;n 6 th&#225;ng g&#7847;n nh&#7845;t</div>
+            <div class="st-chart-wrap"><canvas id="st-tech-chart"></canvas></div>
+            <table class="st-tbl" style="margin-top:14px">
               <thead><tr>
                 <th>K&#7929; thu&#7853;t vi&#234;n</th>
                 <th style="text-align:center">S&#7889; phi&#7871;u</th>
@@ -566,6 +599,7 @@ export async function mount(container) {
 
       renderLowStockTable(1);
       renderRevenueChart(repF, saleF, from, to);
+      renderTechChart(repairs);
 
     } catch (e) {
       content.innerHTML = `<p style="padding:1rem;color:red">L&#7895;i: ${e.message}</p>`;
