@@ -1062,7 +1062,7 @@ export async function mount(container) {
     const itemRows = (s.items || []).map((it, i) => {
       const line = Math.max(0, (it.qty || 1) * (it.price || 0) - (it.discount || 0));
       const bhChip = it.bhDate
-        ? `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#e0f2f1;color:#00695c;border:1px solid #80cbc4">${it.bhDate.split('-').reverse().join('/')}</span>`
+        ? `<span style="display:inline-block;white-space:nowrap;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:#e0f2f1;color:#00695c;border:1px solid #80cbc4">${it.bhDate.split('-').reverse().join('/')}</span>`
         : `<span style="color:#bbb;font-size:12px">—</span>`;
       return `<tr>
         <td style="text-align:center;color:#888">${i + 1}</td>
@@ -1070,7 +1070,7 @@ export async function mount(container) {
         <td style="text-align:center">${it.qty || 1}</td>
         <td style="text-align:right">${fmt(it.price || 0)}</td>
         <td style="text-align:right;font-weight:600">${fmt(line)}đ</td>
-        <td style="text-align:center">${bhChip}</td>
+        <td style="text-align:center;white-space:nowrap">${bhChip}</td>
       </tr>`;
     }).join('');
 
@@ -1154,7 +1154,7 @@ export async function mount(container) {
           <th style="width:36px" class="tc">SL</th>
           <th style="width:90px" class="tr">Đơn giá</th>
           <th style="width:95px" class="tr">Thành tiền</th>
-          <th style="width:112px" class="tc">BH đến ngày</th>
+          <th style="width:104px" class="tc">BH đến ngày</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
