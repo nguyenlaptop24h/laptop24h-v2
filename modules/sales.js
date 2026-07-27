@@ -1095,12 +1095,12 @@ export async function mount(container) {
   .body{padding:20px 28px;flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
   .cust-box{display:grid;grid-template-columns:1fr 1fr;gap:7px 24px;margin-bottom:18px;background:#f9fffe;border:1px solid #e0f2f1;border-radius:7px;padding:11px 14px}
   .cust-box .fi{font-size:12.5px}.cust-box .k{font-weight:700;color:#00695c}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
   thead tr{background:#00897b;color:#fff}
   thead th{padding:11px 9px;font-weight:600;text-align:left}
   .tc{text-align:center}.tr{text-align:right}
   tbody tr:nth-child(even){background:#f4fdfb}
-  tbody td{padding:12px 9px;border-bottom:1px solid #e8f5e9;vertical-align:middle}
+  tbody td{padding:12px 9px;border-bottom:1px solid #e8f5e9;vertical-align:middle;overflow-wrap:break-word;word-break:break-word}
   .totals-wrap{display:flex;justify-content:flex-end;margin-top:8px}
   .totals-box{min-width:240px}
   .t-row{display:flex;justify-content:space-between;padding:5px 9px;font-size:12.5px}
