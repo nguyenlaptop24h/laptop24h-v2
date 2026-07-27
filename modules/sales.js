@@ -1069,7 +1069,6 @@ export async function mount(container) {
         <td>${esc(it.name || '')}${it.discount ? `<br><span style="font-size:11px;color:#888">Giảm: ${fmt(it.discount)}đ</span>` : ''}</td>
         <td style="text-align:center">${it.qty || 1}</td>
         <td style="text-align:right">${fmt(it.price || 0)}</td>
-        <td style="text-align:right;font-weight:600">${fmt(line)}đ</td>
         <td style="text-align:center;white-space:nowrap">${bhChip}</td>
       </tr>`;
     }).join('');
@@ -1152,9 +1151,8 @@ export async function mount(container) {
           <th style="width:28px" class="tc">#</th>
           <th>Tên sản phẩm</th>
           <th style="width:36px" class="tc">SL</th>
-          <th style="width:90px" class="tr">Đơn giá</th>
-          <th style="width:95px" class="tr">Thành tiền</th>
-          <th style="width:104px" class="tc">BH đến ngày</th>
+          <th style="width:110px" class="tr">Đơn giá</th>
+          <th style="width:120px" class="tc">BH đến ngày</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
