@@ -1,6 +1,8 @@
 // core/router.js - Hash-based routing
 // MÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi module tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ± ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ route cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§a mÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¬nh qua registerRoute()
 
+import { isAdmin } from './auth.js';
+
 const routes = {};
 let currentRoute = null;
 
@@ -18,8 +20,8 @@ export function initRouter() {
 
   async function navigate() {
     const hash = location.hash || '#repairs';
-  const _role = (JSON.parse(localStorage.getItem('l24_session')||'{}')).role;
-  if (hash === '#stats' && _role === 'staff') { location.hash = '#repairs'; return; }
+  // Nhân viên (không phải admin) chỉ được vào: Phiếu sửa chữa, Kho hàng, Khách hàng
+  if (!isAdmin() && ['#repairs','#inventory','#customers'].indexOf(hash) < 0) { location.hash = '#repairs'; return; }
     const mountFn = routes[hash];
     const main = document.getElementById('main-content');
     if (!mountFn) {
@@ -35,17 +37,6 @@ export function initRouter() {
 
   window.addEventListener('hashchange', navigate);
   navigate();
-
-  // Hide stats for staff
-  {
-    const _s = JSON.parse(localStorage.getItem('l24_session')||'{}');
-    if (_s.role === 'staff') {
-      ['#stats','#debts'].forEach(function(h){
-        var el=document.querySelector('#nav-links a[href="'+h+'"]');
-        if(el)el.closest('li').style.display='none';
-      });
-    }
-  }
 
   // Import tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥t cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ modules ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng thÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¹ng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ routes
   Promise.allSettled([

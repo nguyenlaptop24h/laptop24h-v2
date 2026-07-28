@@ -139,7 +139,17 @@ function showApp() {
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   const admin = isAdmin();
+  // Reset rồi áp lại quyền hiển thị menu
+  document.querySelectorAll('#nav-links li').forEach(li => { li.style.display = ''; });
   document.querySelectorAll('.admin-only').forEach(el => { el.style.display = admin ? '' : 'none'; });
+  // Nhân viên (không phải admin) chỉ thấy: Phiếu sửa chữa, Kho hàng, Khách hàng
+  if (!admin) {
+    const _allow = ['#repairs', '#inventory', '#customers'];
+    document.querySelectorAll('#nav-links li').forEach(li => {
+      const a = li.querySelector('a');
+      if (a && _allow.indexOf(a.getAttribute('href')) < 0) li.style.display = 'none';
+    });
+  }
   const nameEl = document.getElementById('user-name');
   if (nameEl) nameEl.textContent = currentUser?.name || currentUser?.username || '';
   const branchEl = document.getElementById('branch-label');
