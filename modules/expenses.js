@@ -13,6 +13,9 @@ function num(v){ return parseFloat(String(v==null?'':v).replace(/[^0-9]/g,'')) |
 function pd(s){ if(!s) return null; const d=new Date(String(s).length<=10?String(s)+'T00:00:00':String(s)); return isNaN(d.getTime())?null:d; }
 function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtDate(d){ return d?d.toLocaleDateString('vi-VN'):'—'; }
+function ymNow(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function addMonthYM(ym,n){ const p=ym.split('-'); const d=new Date(Number(p[0]),(Number(p[1])-1)+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function rnd(){ return 'rec_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 export function mount(container){
   container.innerHTML = `
@@ -54,7 +57,38 @@ export function mount(container){
   `;
 
   let items = [];
-  onSnapshot(COL, list => { items = (list||[]).filter(x=>!x.deletedAt); refreshCatOptions(); render(); });
+  let _ensured = false;
+  onSnapshot(COL, list => {
+    items = (list||[]).filter(x=>!x.deletedAt);
+    refreshCatOptions(); render();
+    if (!_ensured) { _ensured = true; ensureRecurring(); }
+  });
+
+  // Tự ghi chi phí cố định cho các tháng mới (copy khoản gần nhất trong chuỗi)
+  async function ensureRecurring(){
+    const groups = {};
+    items.forEach(x=>{ if(x.recurId){ (groups[x.recurId]=groups[x.recurId]||[]).push(x); } });
+    const curMonth = ymNow();
+    let created = 0;
+    for(const id in groups){
+      const arr = groups[id].slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      let latest = arr[arr.length-1];
+      if(!latest || !latest.recurring) continue;              // chuỗi đã dừng
+      let lm = (latest.date||'').slice(0,7);
+      let guard = 0;
+      while(lm < curMonth && guard < 36){
+        guard++;
+        const nm = addMonthYM(lm, 1);
+        const existing = groups[id].filter(x=>(x.date||'').slice(0,7)===nm)[0];
+        if(existing){ latest = existing; lm = nm; continue; }
+        const day = (latest.date||'').slice(8,10) || '01';
+        const doc = { date:nm+'-'+day, category:latest.category, name:latest.name, amount:latest.amount, note:latest.note||'', recurring:true, recurId:id, createdAt:Date.now() };
+        try { await addItem(COL, doc); created++; groups[id].push(doc); latest = doc; } catch(e){}
+        lm = nm;
+      }
+    }
+    if(created) toast('Đã tự ghi ' + created + ' khoản chi cố định cho tháng mới', 'success');
+  }
 
   const bodyEl = container.querySelector('#ex-body');
   const periodEl = container.querySelector('#ex-period');
@@ -106,7 +140,7 @@ export function mount(container){
     const rows = list.length ? list.map(x=>`
       <tr><td style="white-space:nowrap">${fmtDate(pd(x.date))}</td>
         <td><span class="ex-cat">${esc(x.category||'Khác')}</span></td>
-        <td>${esc(x.name)}${x.note?`<div style="font-size:11px;color:#9ca3af">${esc(x.note)}</div>`:''}</td>
+        <td>${esc(x.name)}${x.recurring?' <span style="font-size:10px;color:#2563eb;font-weight:700" title="Chi phí cố định hàng tháng">🔒 cố định</span>':''}${x.note?`<div style="font-size:11px;color:#9ca3af">${esc(x.note)}</div>`:''}</td>
         <td style="text-align:right;font-weight:600;white-space:nowrap">${formatVND(x.amount||0)}</td>
         <td style="text-align:right;white-space:nowrap"><button class="ex-btn" data-edit="${x._key}">✏</button><button class="ex-btn del" data-del="${x._key}">🗑</button></td>
       </tr>`).join('') : '<tr><td colspan="5" class="ex-empty">Chưa có chi phí. Bấm "＋ Thêm chi phí".</td></tr>';
@@ -139,21 +173,29 @@ export function mount(container){
         <div class="ex-fld"><label>Nội dung <span style="color:#e11d48">*</span></label><input id="exf-name" value="${esc(ex?.name)}" placeholder="VD: Tiền điện tháng 7, mua keo tản nhiệt..."></div>
         <div class="ex-fld"><label>Số tiền (đ) <span style="color:#e11d48">*</span></label><input id="exf-amount" data-fmt="number" inputmode="numeric" value="${ex?dot(ex.amount||0):''}" placeholder="0"></div>
         <div class="ex-fld"><label>Ghi chú</label><input id="exf-note" value="${esc(ex?.note)}" placeholder="Không bắt buộc"></div>
+        <label style="display:flex;align-items:center;gap:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 11px;cursor:pointer;font-size:13.5px;color:#1e40af">
+          <input type="checkbox" id="exf-recur" ${ex?.recurring?'checked':''} style="width:auto;margin:0">
+          🔒 Chi phí cố định — tự ghi lại các tháng sau (theo số tiền mới nhất)
+        </label>
       `,
       onConfirm: async () => {
         const name = (document.querySelector('#exf-name')?.value||'').trim();
         const amount = num(document.querySelector('#exf-amount')?.value);
         if(!name){ toast('Nhập nội dung khoản chi!','warning'); return false; }
         if(!(amount>0)){ toast('Nhập số tiền!','warning'); return false; }
+        const recurring = !!document.querySelector('#exf-recur')?.checked;
         const data = {
           date: document.querySelector('#exf-date')?.value || todayStr(),
           category: document.querySelector('#exf-cat')?.value || 'Khác',
           name, amount,
-          note: (document.querySelector('#exf-note')?.value||'').trim()
+          note: (document.querySelector('#exf-note')?.value||'').trim(),
+          recurring,
+          recurId: recurring ? (ex?.recurId || rnd()) : (ex?.recurId || null)
         };
         try {
           if(key){ await updateItem(COL, key, data); toast('Đã cập nhật','success'); }
           else { data.createdAt = Date.now(); await addItem(COL, data); toast('Đã thêm khoản chi','success'); }
+          _ensured = false;   // để snapshot tự chạy lại ensureRecurring với dữ liệu mới
         } catch(e){ toast('Lỗi: '+e.message,'error'); return false; }
       }
     });
