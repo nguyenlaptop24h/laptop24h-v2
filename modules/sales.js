@@ -1,7 +1,7 @@
 // modules/sales.js - Ban hang v43 (fix invItems tu Firestore + no-cors sheet)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
-import { toast, formatVND } from '../core/ui.js';
+import { toast, formatVND, showModal } from '../core/ui.js';
 
 const COLLECTION = 'sales';
 const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
@@ -840,6 +840,51 @@ export async function mount(container) {
   // ══════════════════════════════════════════════
   //  ITEM ROW
   // ══════════════════════════════════════════════
+  // Thêm sản phẩm bán ngoài (không từ kho) vào kho / 1 danh mục
+  function addRowToInventory(row){
+    const name = row.querySelector('.sf-name').value.trim();
+    if(!name){ toast('Nhập tên sản phẩm trước','error'); return; }
+    if(row.dataset.invkey){ toast('Sản phẩm này đã có trong kho','warning'); return; }
+    const price = _num(row.querySelector('.sf-price'));
+    const cost  = _num(row.querySelector('.sf-cost'));
+    const cats  = (catItems||[]).filter(c=>!c.deletedAt).slice().sort((a,b)=>catPath(a._key).localeCompare(catPath(b._key),'vi'));
+    const catOpts = cats.map(c=>`<option value="${c._key}">${esc(catPath(c._key))}</option>`).join('') || '<option value="">(Chưa có danh mục)</option>';
+    showModal({
+      title: 'Thêm sản phẩm vào kho',
+      confirmText: '＋ Thêm vào kho',
+      body: `
+        <div style="margin-bottom:10px;font-weight:700">${esc(name)}</div>
+        <div style="margin-bottom:8px"><label style="font-size:13px;color:#555">Danh mục</label>
+          <select id="tk-cat" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px">${catOpts}</select></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1"><label style="font-size:13px;color:#555">Giá bán</label><input id="tk-price" data-fmt="number" value="${_dot(price)}" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px"></div>
+          <div style="flex:1"><label style="font-size:13px;color:#555">Giá vốn</label><input id="tk-cost" data-fmt="number" value="${_dot(cost)}" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><label style="font-size:13px;color:#555">Tồn kho</label><input id="tk-stock" type="number" min="0" value="0" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px"></div>
+          <div style="flex:1"><label style="font-size:13px;color:#555">Bảo hành (tháng)</label><input id="tk-wm" type="number" min="0" value="0" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px"></div>
+        </div>`,
+      onConfirm: async () => {
+        const wm = parseInt(document.querySelector('#tk-wm')?.value)||0;
+        const data = {
+          name,
+          categoryKey: document.querySelector('#tk-cat')?.value || null,
+          price: _num(document.querySelector('#tk-price')),
+          cost:  _num(document.querySelector('#tk-cost')),
+          stock: parseInt(document.querySelector('#tk-stock')?.value)||0,
+          warranty: wm>0 ? (wm+' tháng') : ''
+        };
+        try {
+          const r = await addItem('products', data);
+          if(r && r.key) row.dataset.invkey = r.key;   // liên kết dòng này với SP vừa tạo
+          const btn = row.querySelector('.sf-tokho');
+          if(btn){ btn.textContent='✓ Đã thêm'; btn.disabled=true; btn.style.opacity='.6'; btn.style.cursor='default'; }
+          toast('Đã thêm "'+name+'" vào kho','success');
+        } catch(e){ toast('Lỗi: '+e.message,'error'); return false; }
+      }
+    });
+  }
+
   function addItemRow(wrap, data) {
     const row = document.createElement('div');
     row.className = 'sf-item-row';
@@ -852,6 +897,7 @@ export async function mount(container) {
         <div class="sf-fg"><span>Giảm</span><input class="sf-disc" type="text" inputmode="numeric" data-fmt="number" title="Giảm giá"></div>
         <div class="sf-fg"><span>Hết BH</span><input class="sf-bh-date" type="date" title="Ngày hết bảo hành"></div>
         <span class="sf-line-total">0đ</span>
+        <button class="sf-tokho" type="button" title="Thêm sản phẩm này vào kho" style="border:1px solid #86efac;background:#f0fdf4;color:#16a34a;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:4px 8px;white-space:nowrap">＋ Kho</button>
         <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>
       </div>`;
     wrap.appendChild(row);
@@ -915,6 +961,7 @@ export async function mount(container) {
     nameInput.onfocus = () => { if (nameInput.value.trim()) nameInput.dispatchEvent(new Event('input')); };
     nameInput.onblur  = () => setTimeout(hideDrop, 200);
     row.querySelector('.sf-remove-btn').onclick = () => { row.remove(); recalc(); };
+    row.querySelector('.sf-tokho').onclick = () => addRowToInventory(row);
     row.querySelectorAll('.sf-qty, .sf-price, .sf-disc').forEach(inp => inp.oninput = recalc);
     recalc();
   }
