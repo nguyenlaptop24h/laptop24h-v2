@@ -431,11 +431,16 @@ export async function mount(container) {
       const isLaptopCat = (key)=> /laptop/i.test(rootCatName(key));
       let lapRev=0, lapCap=0, lapQty=0, othRev=0, othCap=0, othQty=0;
       for (const sl of saleF) {
-        for (const it of (sl.items||[])) {
+        const its = sl.items || [];
+        // Tổng theo sản phẩm, rồi phân bổ "Giảm thêm" cấp đơn theo tỷ lệ để khớp doanh thu tổng
+        let sub = 0;
+        its.forEach(it => { sub += Math.max(0, (it.qty||it.quantity||1)*(it.price||0) - (it.discount||0)); });
+        const factor = sub > 0 ? ((Number(sl.total)||0) / sub) : 0;
+        for (const it of its) {
           const prod = it.invkey ? productByKey[it.invkey] : null;
           const cost = (prod && prod.cost != null) ? prod.cost : (it.cost || 0);
           const qty  = (it.qty || it.quantity || 1);
-          const rev  = Math.max(0, qty*(it.price||0) - (it.discount||0));
+          const rev  = Math.max(0, qty*(it.price||0) - (it.discount||0)) * factor;
           const cap  = qty*cost;
           if (prod && isLaptopCat(prod.categoryKey)) { lapRev+=rev; lapCap+=cap; lapQty+=qty; }
           else { othRev+=rev; othCap+=cap; othQty+=qty; }
