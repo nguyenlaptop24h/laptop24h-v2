@@ -429,23 +429,28 @@ export async function mount(container) {
 
       // ── Bán hàng: tách LAPTOP riêng, phần còn lại "Khác" ──
       const isLaptopCat = (key)=> /laptop/i.test(rootCatName(key));
+      // Lợi nhuận = Giá bán − (Giá vốn + Giảm giá).  gross=giá bán, disc=giảm giá (đã gồm giảm thêm cấp đơn)
       let lapRev=0, lapCap=0, lapQty=0, othRev=0, othCap=0, othQty=0;
+      let lapGross=0, lapDisc=0, othGross=0, othDisc=0;
       for (const sl of saleF) {
         const its = sl.items || [];
-        // Tổng theo sản phẩm, rồi phân bổ "Giảm thêm" cấp đơn theo tỷ lệ để khớp doanh thu tổng
         let sub = 0;
         its.forEach(it => { sub += Math.max(0, (it.qty||it.quantity||1)*(it.price||0) - (it.discount||0)); });
-        const factor = sub > 0 ? ((Number(sl.total)||0) / sub) : 0;
+        const factor = sub > 0 ? ((Number(sl.total)||0) / sub) : 0;   // phân bổ "Giảm thêm" cấp đơn
         for (const it of its) {
           const prod = it.invkey ? productByKey[it.invkey] : null;
           const cost = (prod && prod.cost != null) ? prod.cost : (it.cost || 0);
           const qty  = (it.qty || it.quantity || 1);
-          const rev  = Math.max(0, qty*(it.price||0) - (it.discount||0)) * factor;
-          const cap  = qty*cost;
-          if (prod && isLaptopCat(prod.categoryKey)) { lapRev+=rev; lapCap+=cap; lapQty+=qty; }
-          else { othRev+=rev; othCap+=cap; othQty+=qty; }
+          const gross = qty*(it.price||0);
+          const net   = Math.max(0, qty*(it.price||0) - (it.discount||0)) * factor;
+          const disc  = gross - net;
+          const cap   = qty*cost;
+          if (prod && isLaptopCat(prod.categoryKey)) { lapRev+=net; lapCap+=cap; lapQty+=qty; lapGross+=gross; lapDisc+=disc; }
+          else { othRev+=net; othCap+=cap; othQty+=qty; othGross+=gross; othDisc+=disc; }
         }
       }
+      const saleGross    = lapGross + othGross;   // tổng giá bán (trước giảm)
+      const saleDiscount = lapDisc  + othDisc;    // tổng giảm giá (gồm giảm thêm)
       const inStock = products.filter(p=>!p.deletedAt && (p.stock||0)>0);
       const invItems = inStock.length;
       const invQty = inStock.reduce((s,p)=>s+(p.stock||0),0);
@@ -537,8 +542,9 @@ export async function mount(container) {
           <!-- BAN HANG -->
           <div class="st-panel">
             <h3 class="sale-hdr">&#128187; B&#225;n h&#224;ng &mdash; ${lbl}</h3>
-            <div class="st-row"><span class="st-label">Doanh thu</span><span class="st-val blue">${formatVND(saleRevenue)}</span></div>
+            <div class="st-row"><span class="st-label">Doanh thu (gi&#225; b&#225;n)</span><span class="st-val blue">${formatVND(saleGross)}</span></div>
             <div class="st-row"><span class="st-label">Gi&#225; v&#7889;n h&#224;ng b&#225;n</span><span class="st-val">${formatVND(saleCapital)}</span></div>
+            <div class="st-row"><span class="st-label">Gi&#7843;m gi&#225;</span><span class="st-val red">-${formatVND(saleDiscount)}</span></div>
             <div class="st-row" style="border-top:2px solid #e8f5e9;margin-top:4px;padding-top:8px;">
               <span class="st-label" style="font-weight:600">L&#7907;i nhu&#7853;n</span>
               <span class="st-val ${saleProfit>=0?'green':'red'}" style="font-size:15px">${formatVND(saleProfit)}</span>
@@ -549,10 +555,10 @@ export async function mount(container) {
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ddd">
               <div style="font-weight:700;font-size:12px;color:#555;margin-bottom:5px">Ph&#226;n lo&#7841;i s&#7843;n ph&#7849;m</div>
               <table class="st-tbl" style="margin-top:0">
-                <thead><tr><th>Lo&#7841;i</th><th style="text-align:right">Doanh thu</th><th style="text-align:right">Gi&#225; v&#7889;n</th><th style="text-align:right">L&#7907;i nhu&#7853;n</th><th style="text-align:center">SL</th></tr></thead>
+                <thead><tr><th>Lo&#7841;i</th><th style="text-align:right">Gi&#225; b&#225;n</th><th style="text-align:right">Gi&#225; v&#7889;n</th><th style="text-align:right">Gi&#7843;m gi&#225;</th><th style="text-align:right">L&#7907;i nhu&#7853;n</th><th style="text-align:center">SL</th></tr></thead>
                 <tbody>
-                  <tr><td>&#128187; Laptop</td><td style="text-align:right">${formatVND(lapRev)}</td><td style="text-align:right">${formatVND(lapCap)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(lapRev-lapCap)}</td><td style="text-align:center">${lapQty}</td></tr>
-                  <tr><td>&#128230; Kh&#225;c</td><td style="text-align:right">${formatVND(othRev)}</td><td style="text-align:right">${formatVND(othCap)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(othRev-othCap)}</td><td style="text-align:center">${othQty}</td></tr>
+                  <tr><td>&#128187; Laptop</td><td style="text-align:right">${formatVND(lapGross)}</td><td style="text-align:right">${formatVND(lapCap)}</td><td style="text-align:right;color:#e53935">-${formatVND(lapDisc)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(lapGross-lapCap-lapDisc)}</td><td style="text-align:center">${lapQty}</td></tr>
+                  <tr><td>&#128230; Kh&#225;c</td><td style="text-align:right">${formatVND(othGross)}</td><td style="text-align:right">${formatVND(othCap)}</td><td style="text-align:right;color:#e53935">-${formatVND(othDisc)}</td><td style="text-align:right;color:#4CAF50;font-weight:600">${formatVND(othGross-othCap-othDisc)}</td><td style="text-align:center">${othQty}</td></tr>
                 </tbody>
               </table>
             </div>
