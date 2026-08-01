@@ -107,22 +107,54 @@ export function formatDateTime(ts) {
 
 export { formatVND };
 
-// ---- Context menu (chuột phải) ----
-export function showContextMenu(x, y, items) {
+// ---- Context menu (chuột phải) — hỗ trợ menu con (submenu) ----
+function _closeCtxMenus() {
   document.querySelectorAll('.ctx-menu').forEach(m => m.remove());
+  document.removeEventListener('mousedown', _ctxOnDoc, true);
+  document.removeEventListener('keydown', _ctxOnKey, true);
+  document.removeEventListener('scroll', _closeCtxMenus, true);
+  window.removeEventListener('resize', _closeCtxMenus);
+}
+function _ctxOnDoc(e) { if (!e.target.closest('.ctx-menu')) _closeCtxMenus(); }
+function _ctxOnKey(e) { if (e.key === 'Escape') _closeCtxMenus(); }
+function _buildCtxMenu(items, isSub) {
   const menu = document.createElement('div');
-  menu.className = 'ctx-menu';
+  menu.className = 'ctx-menu' + (isSub ? ' ctx-sub' : '');
   menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:5px;min-width:180px;font-size:14px;font-family:inherit';
   (items || []).forEach(it => {
     if (it.sep) { const d = document.createElement('div'); d.style.cssText = 'height:1px;background:#eee;margin:4px 6px'; menu.appendChild(d); return; }
     const b = document.createElement('div');
-    b.textContent = it.label;
-    b.style.cssText = 'padding:9px 13px;border-radius:6px;cursor:pointer;white-space:nowrap;color:' + (it.danger ? '#dc2626' : '#333');
-    b.addEventListener('mouseenter', () => b.style.background = it.danger ? '#fee2e2' : '#f1f5f9');
-    b.addEventListener('mouseleave', () => b.style.background = '');
-    b.addEventListener('click', () => { close(); try { it.onClick && it.onClick(); } catch (e) { console.warn(e); } });
+    b.style.cssText = 'padding:9px 13px;border-radius:6px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:16px;color:' + (it.danger ? '#dc2626' : '#333');
+    const lab = document.createElement('span'); lab.textContent = it.label; b.appendChild(lab);
+    if (it.submenu) { const ar = document.createElement('span'); ar.textContent = '▸'; ar.style.color = '#999'; b.appendChild(ar); }
+    b.addEventListener('mouseenter', () => {
+      b.style.background = it.danger ? '#fee2e2' : '#f1f5f9';
+      // đóng mọi submenu đang mở của menu này
+      menu.querySelectorAll(':scope ~ .ctx-sub').forEach(m => m.remove());
+      document.querySelectorAll('.ctx-sub').forEach(m => { if (m.__parentMenu === menu) m.remove(); });
+      if (it.submenu) {
+        const child = _buildCtxMenu(it.submenu, true);
+        child.__parentMenu = menu;
+        document.body.appendChild(child);
+        const r = b.getBoundingClientRect(), cr = child.getBoundingClientRect();
+        let cx = r.right - 2, cy = r.top - 4;
+        if (cx + cr.width > window.innerWidth) cx = r.left - cr.width + 2;
+        if (cy + cr.height > window.innerHeight) cy = window.innerHeight - cr.height - 6;
+        child.style.left = Math.max(4, cx) + 'px';
+        child.style.top = Math.max(4, cy) + 'px';
+      }
+    });
+    b.addEventListener('mouseleave', () => { b.style.background = ''; });
+    if (!it.submenu) {
+      b.addEventListener('click', () => { _closeCtxMenus(); try { it.onClick && it.onClick(); } catch (e) { console.warn(e); } });
+    }
     menu.appendChild(b);
   });
+  return menu;
+}
+export function showContextMenu(x, y, items) {
+  _closeCtxMenus();
+  const menu = _buildCtxMenu(items, false);
   document.body.appendChild(menu);
   const r = menu.getBoundingClientRect();
   let px = x, py = y;
@@ -130,19 +162,10 @@ export function showContextMenu(x, y, items) {
   if (py + r.height > window.innerHeight) py = window.innerHeight - r.height - 6;
   menu.style.left = Math.max(4, px) + 'px';
   menu.style.top = Math.max(4, py) + 'px';
-  function close() {
-    menu.remove();
-    document.removeEventListener('mousedown', onDoc, true);
-    document.removeEventListener('scroll', close, true);
-    window.removeEventListener('resize', close);
-    document.removeEventListener('keydown', onKey, true);
-  }
-  function onDoc(e) { if (!menu.contains(e.target)) close(); }
-  function onKey(e) { if (e.key === 'Escape') close(); }
   setTimeout(() => {
-    document.addEventListener('mousedown', onDoc, true);
-    document.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
-    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('mousedown', _ctxOnDoc, true);
+    document.addEventListener('keydown', _ctxOnKey, true);
+    document.addEventListener('scroll', _closeCtxMenus, true);
+    window.addEventListener('resize', _closeCtxMenus);
   }, 0);
 }
