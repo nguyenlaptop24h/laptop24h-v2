@@ -1,7 +1,7 @@
 // modules/inventory.js - Kho hàng + Danh mục
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot } from '../core/db.js';
-import { buildTable, toast, showModal, formatVND } from '../core/ui.js';
+import { buildTable, toast, showModal, formatVND, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
 const COL_PRODUCTS   = 'products';
@@ -410,6 +410,23 @@ export async function mount(container) {
   container.querySelector('#inv-search').addEventListener('input', renderProductTable);
   container.querySelector('#inv-cat-filter').addEventListener('change', renderProductTable);
   container.querySelector('#inv-add').addEventListener('click', () => openProductForm(null));
+
+  // Chuột phải vào 1 sản phẩm → menu thao tác
+  const _invCtx = e => {
+    let key = null;
+    const pr = e.target.closest('.pool-row'); if (pr) key = pr.dataset.key;
+    if (!key) { const tr = e.target.closest('tr'); if (tr) { const b = tr.querySelector('[data-key]'); if (b) key = b.dataset.key; } }
+    if (!key || !container.contains(e.target)) return;
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, [
+      { label: '✏ Sửa sản phẩm', onClick: () => openProductForm(key) },
+      { sep: true },
+      { label: '🗑 Xóa khỏi kho', danger: true, onClick: () => showModal({ title: 'Xoá sản phẩm', danger: true, confirmText: 'Xoá', body: 'Xoá sản phẩm này khỏi kho?', onConfirm: async () => { try { await updateItem(COL_PRODUCTS, key, { deletedAt: Date.now() }); toast('Đã xoá', 'success'); } catch (err) { toast('Lỗi: ' + err.message, 'error'); return false; } } }) }
+    ]);
+  };
+  if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
+  container.__ctxH = _invCtx;
+  container.addEventListener('contextmenu', _invCtx);
   container.querySelector('#inv-del-selected').addEventListener('click', async () => {
     const keys = [...container.querySelectorAll('.inv-cb:checked')].map(cb => cb.dataset.key);
     if (!keys.length) return;

@@ -1,7 +1,7 @@
 // modules/customers.js - Khách hàng
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot, getAll } from '../core/db.js';
-import { buildTable, toast, showModal, formatDate } from '../core/ui.js';
+import { buildTable, toast, showModal, formatDate, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
 const COLLECTION = 'customers';
@@ -91,6 +91,25 @@ export async function mount(container) {
   }
 
   document.getElementById('cust-add').addEventListener('click', () => openForm(null));
+
+  // Chuột phải vào 1 khách → menu thao tác
+  const _custCtx = e => {
+    const tr = e.target.closest('tr'); if (!tr || !container.contains(tr)) return;
+    const sb = tr.querySelector('.cust-stats'); if (!sb) return;
+    const key = sb.dataset.key;
+    const nm = (sb.dataset.n || '').trim(), ph = (sb.dataset.p || '').trim();
+    e.preventDefault();
+    const rec = allData.find(c => c._key === key);
+    const items = [{ label: '📊 Thống kê', onClick: () => showCustStats(nm, ph) }];
+    if (isAdmin()) {
+      items.unshift({ label: '✏ Sửa', onClick: () => rec && openForm(rec) });
+      items.push({ sep: true }, { label: '🗑 Xóa', danger: true, onClick: () => confirmDelete(key) });
+    }
+    showContextMenu(e.clientX, e.clientY, items);
+  };
+  if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
+  container.__ctxH = _custCtx;
+  container.addEventListener('contextmenu', _custCtx);
   if (!isAdmin()) { const _addBtn = document.getElementById('cust-add'); if (_addBtn) _addBtn.style.display = 'none'; }
 
   function openForm(record) {

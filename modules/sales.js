@@ -1,7 +1,7 @@
 // modules/sales.js - Ban hang v43 (fix invItems tu Firestore + no-cors sheet)
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
-import { toast, formatVND, showModal } from '../core/ui.js';
+import { toast, formatVND, showModal, showContextMenu } from '../core/ui.js';
 
 const COLLECTION = 'sales';
 const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
@@ -450,6 +450,25 @@ export async function mount(container) {
   //  WIRE UP TOOLBAR
   // ══════════════════════════════════════════════
   container.querySelector('#sl-add-btn').onclick = () => openForm(null);
+
+  // Chuột phải vào 1 đơn → menu thao tác
+  const _salesCtx = e => {
+    const tr = e.target.closest('tr'); if (!tr || !container.contains(tr)) return;
+    if (e.target.closest('#sl-modal') || e.target.closest('#sl-tpl-overlay')) return;
+    const kb = tr.querySelector('[data-key]'); if (!kb) return;
+    const key = kb.dataset.key; if (!key) return;
+    e.preventDefault();
+    const items = (filterMode === 'trash')
+      ? [{ label: '↩ Khôi phục', onClick: () => restoreItem(key) }]
+      : [{ label: '✏ Sửa đơn', onClick: () => openForm(key) },
+         { label: '🖨 In hóa đơn', onClick: () => printInvoice(key) },
+         { sep: true },
+         { label: '🗑 Xóa', danger: true, onClick: () => softDelete(key) }];
+    showContextMenu(e.clientX, e.clientY, items);
+  };
+  if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
+  container.__ctxH = _salesCtx;
+  container.addEventListener('contextmenu', _salesCtx);
   container.querySelector('#sl-trash-btn').onclick = () => {
     filterMode = 'trash'; updateFilterUI(); currentPage = 1; render();
   };

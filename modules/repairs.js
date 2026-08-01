@@ -1,6 +1,6 @@
 // modules/repairs.js - Phiếu sửa chữa
 import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB } from '../core/db.js';
-import { buildTable, toast, showModal, formatDate, formatVND } from '../core/ui.js';
+import { buildTable, toast, showModal, formatDate, formatVND, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
 const COLLECTION = 'repairs';
@@ -500,6 +500,27 @@ let showTrash = false;
   else { const rec = allData.find(r => r._key === selectedKey); if (rec) quickChangeStatus(rec); }
 });
   editBhBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
+
+  // Chuột phải vào 1 phiếu → menu thao tác
+  const _repCtx = e => {
+    const tr = e.target.closest('.rep-row'); if (!tr || !container.contains(tr)) return;
+    const key = tr.dataset.key; if (!key) return;
+    const rec = allData.find(r => r._key === key); if (!rec) return;
+    if (showTrash) return;
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, [
+      { label: '✏ Sửa phiếu', onClick: () => openForm(rec) },
+      { label: '🖨 In phiếu nhận', onClick: () => printReceipt(rec) },
+      { label: '🛡️ In phiếu bảo hành', onClick: () => printWarrantySlip(rec) },
+      { label: '🔄 Đổi trạng thái', onClick: () => quickChangeStatus(rec) },
+      { label: '📦 Giao máy', onClick: () => quickDeliver(rec) },
+      { sep: true },
+      { label: '🗑 Xóa', danger: true, onClick: () => confirmDeleteKeys([key]) }
+    ]);
+  };
+  if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
+  container.__ctxH = _repCtx;
+  container.addEventListener('contextmenu', _repCtx);
 
   function setSelected(key) {
     selectedKey = key;
