@@ -512,7 +512,18 @@ let showTrash = false;
       { label: '✏ Sửa phiếu', onClick: () => openForm(rec) },
       { label: '🖨 In phiếu nhận', onClick: () => printReceipt(rec) },
       { label: '🛡️ In phiếu bảo hành', onClick: () => printWarrantySlip(rec) },
-      { label: '🔄 Đổi trạng thái', onClick: () => quickChangeStatus(rec) },
+      { label: '🔄 Đổi trạng thái', submenu: STATUS_LIST.map(s => ({
+          label: (s === rec.status ? '✓ ' : '') + s,
+          onClick: () => {
+            const remaining = (rec.cost||0) - (rec.deposit||0) - (rec.discount||0);
+            const fw = container.querySelector('#rep-form-wrap');
+            if (s === 'Hoàn thành') { askRepairContent(rec, fw); return; }
+            if (s === 'Đã giao' && remaining > 0) { askDeliverPayment(rec, remaining, fw); return; }
+            const update = { ...rec, status: s };
+            if (s === 'Đã giao' && !rec.deliveredDate) update.deliveredDate = todayStr();
+            updateItem(COLLECTION, rec._key, update).then(() => toast('✅ ' + s)).catch(e => toast('Lỗi: ' + e.message, 'error'));
+          }
+        })) },
       { label: '📦 Giao máy', onClick: () => quickDeliver(rec) },
       { sep: true },
       { label: '🗑 Xóa', danger: true, onClick: () => confirmDeleteKeys([key]) }
