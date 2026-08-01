@@ -106,3 +106,43 @@ export function formatDateTime(ts) {
 }
 
 export { formatVND };
+
+// ---- Context menu (chuột phải) ----
+export function showContextMenu(x, y, items) {
+  document.querySelectorAll('.ctx-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:5px;min-width:180px;font-size:14px;font-family:inherit';
+  (items || []).forEach(it => {
+    if (it.sep) { const d = document.createElement('div'); d.style.cssText = 'height:1px;background:#eee;margin:4px 6px'; menu.appendChild(d); return; }
+    const b = document.createElement('div');
+    b.textContent = it.label;
+    b.style.cssText = 'padding:9px 13px;border-radius:6px;cursor:pointer;white-space:nowrap;color:' + (it.danger ? '#dc2626' : '#333');
+    b.addEventListener('mouseenter', () => b.style.background = it.danger ? '#fee2e2' : '#f1f5f9');
+    b.addEventListener('mouseleave', () => b.style.background = '');
+    b.addEventListener('click', () => { close(); try { it.onClick && it.onClick(); } catch (e) { console.warn(e); } });
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  const r = menu.getBoundingClientRect();
+  let px = x, py = y;
+  if (px + r.width > window.innerWidth) px = window.innerWidth - r.width - 6;
+  if (py + r.height > window.innerHeight) py = window.innerHeight - r.height - 6;
+  menu.style.left = Math.max(4, px) + 'px';
+  menu.style.top = Math.max(4, py) + 'px';
+  function close() {
+    menu.remove();
+    document.removeEventListener('mousedown', onDoc, true);
+    document.removeEventListener('scroll', close, true);
+    window.removeEventListener('resize', close);
+    document.removeEventListener('keydown', onKey, true);
+  }
+  function onDoc(e) { if (!menu.contains(e.target)) close(); }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  setTimeout(() => {
+    document.addEventListener('mousedown', onDoc, true);
+    document.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    document.addEventListener('keydown', onKey, true);
+  }, 0);
+}
