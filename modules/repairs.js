@@ -394,6 +394,8 @@ function openRepBillTplModal() {
   };
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
+// Cho phép mở trình chỉnh mẫu từ module Cài đặt
+if (typeof window !== 'undefined') { window.__openRepBillTpl = openRepBillTplModal; window.__openReceiptTpl = openReceiptTplModal; }
 let _sheetToken = '';
 function logRepairToSheet(data, action) {
     try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:_sheetToken,...data})}).catch(()=>{}); } catch(e){}
@@ -422,6 +424,7 @@ export async function mount(container) {
     </div>
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
       <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
+      <span id="rep-actionbar" style="display:none">
       <div style="width:1px;height:28px;background:#e5e7eb;margin:0 .25rem"></div>
       <button id="rep-edit-btn" class="btn btn--secondary" disabled style="opacity:.4">✎</button>
       <button id="rep-del-btn"  class="btn btn--danger"    disabled style="opacity:.4">✕</button>
@@ -431,6 +434,7 @@ export async function mount(container) {
         <button id="rep-receipt-tpl-btn" class="btn" style="background:#0891b2;color:#fff;border-color:#0891b2;font-size:.85rem">📋 Mẫu phiếu nhận</button>
       <button id="rep-status-btn" class="btn" disabled style="opacity:.4;background:#f59e0b;color:#fff;border:1px solid #d97706">&#x21C4; Đổi TT</button>
       <span id="rep-sel-hint" style="font-size:.82rem;color:#888;margin-left:.25rem">← Chọn 1 phiếu để thao tác</span>
+      </span>
     </div>
     </div>
     <div id="rep-table-wrap"></div>

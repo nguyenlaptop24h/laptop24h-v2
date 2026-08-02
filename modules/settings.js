@@ -42,6 +42,15 @@ export async function mount(container) {
       </section>
 
       <section class="settings-section">
+        <h3>Mẫu in</h3>
+        <p class="form-note">Tùy chỉnh nội dung (tên cửa hàng, địa chỉ, hotline, tiêu đề, chân trang) cho bill bảo hành và phiếu nhận.</p>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+          <button type="button" class="btn" id="set-bill-tpl" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6">🖨 Mẫu bill bảo hành</button>
+          <button type="button" class="btn" id="set-receipt-tpl" style="background:#0891b2;color:#fff;border-color:#0891b2">📋 Mẫu phiếu nhận</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
         <h3>Cấu hình Firebase</h3>
         <p class="form-note">Chỉnh sửa trực tiếp trong file <code>core/db.js</code> — FIREBASE_CONFIG.</p>
       </section>
@@ -63,6 +72,15 @@ export async function mount(container) {
       </div>
     </div>
   `;
+
+  container.querySelector('#set-bill-tpl')?.addEventListener('click', () => {
+    if (window.__openRepBillTpl) window.__openRepBillTpl();
+    else toast('Không mở được trình chỉnh mẫu — hãy tải lại trang', 'error');
+  });
+  container.querySelector('#set-receipt-tpl')?.addEventListener('click', () => {
+    if (window.__openReceiptTpl) window.__openReceiptTpl();
+    else toast('Không mở được trình chỉnh mẫu — hãy tải lại trang', 'error');
+  });
 
   container.querySelector('#settings-save').addEventListener('click', async () => {
     const data = {};
