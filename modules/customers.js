@@ -134,6 +134,12 @@ export async function mount(container) {
     if (!isAdmin()) { toast('Chỉ quản trị viên mới được thêm/sửa khách hàng', 'error'); return; }
     const wrap = document.getElementById('cust-form-wrap');
     wrap.classList.remove('hidden');
+    // Tự sinh mã khách hàng cho khách mới (KH + số tăng dần)
+    const nextCode = record ? (record.id || '') : (() => {
+      let mx = 0;
+      (allData || []).forEach(c => { const m = /^KH0*(\d+)$/i.exec((c.id || '').trim()); if (m) { const n = parseInt(m[1], 10); if (n > mx) mx = n; } });
+      return 'KH' + String(mx + 1).padStart(3, '0');
+    })();
     wrap.innerHTML = `
       <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center">
         <div style="background:#fff;border-radius:12px;width:min(560px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.3);padding:1.4rem;box-sizing:border-box">
@@ -144,7 +150,7 @@ export async function mount(container) {
           <div class="form-grid">
             <div class="form-group">
               <label>Mã khách hàng</label>
-              <input id="f-id" type="text" value="${record?.id||''}" placeholder="VD: KH001" />
+              <input id="f-id" type="text" value="${nextCode}" placeholder="VD: KH001" />
             </div>
             <div class="form-group">
               <label>Tên khách hàng *</label>
