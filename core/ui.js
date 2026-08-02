@@ -120,7 +120,7 @@ function _ctxOnKey(e) { if (e.key === 'Escape') _closeCtxMenus(); }
 function _buildCtxMenu(items, isSub) {
   const menu = document.createElement('div');
   menu.className = 'ctx-menu' + (isSub ? ' ctx-sub' : '');
-  menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:5px;min-width:180px;font-size:14px;font-family:inherit';
+  menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:5px;min-width:180px;max-width:420px;max-height:72vh;overflow-y:auto;font-size:14px;font-family:inherit';
   (items || []).forEach(it => {
     if (it.sep) { const d = document.createElement('div'); d.style.cssText = 'height:1px;background:#eee;margin:4px 6px'; menu.appendChild(d); return; }
     const b = document.createElement('div');
