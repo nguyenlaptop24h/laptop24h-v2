@@ -21,19 +21,20 @@ export async function mount(container) {
     <div class="module-header"><h2>Kho hàng</h2></div>
     <div id="inv-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px"></div>
     <div id="inv-dup"></div>
-    <div style="display:flex;gap:12px;align-items:flex-start">
-      <div style="flex:0 0 210px;min-width:0">
-        <div id="inv-tree" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:.5rem"></div>
-        <button id="cat-add" class="btn btn--secondary btn--sm" style="width:100%;margin-top:.5rem">+ Thêm danh mục gốc</button>
-        <div id="cat-form-wrap"></div>
+    <div style="display:flex;gap:12px;align-items:flex-start;height:calc(100vh - 250px);min-height:360px">
+      <div style="flex:0 0 210px;min-width:0;height:100%;display:flex;flex-direction:column">
+        <div id="inv-tree" style="flex:1;overflow-y:auto;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:.5rem"></div>
+        <button id="cat-add" class="btn btn--secondary btn--sm" style="width:100%;margin-top:.5rem;flex:none">+ Thêm danh mục gốc</button>
+        <div id="cat-form-wrap" style="flex:none"></div>
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+      <div style="flex:1;min-width:0;height:100%;display:flex;flex-direction:column">
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center;flex:none">
           <input id="inv-search" type="text" placeholder="🔍 Tìm sản phẩm theo tên hoặc mã..." class="search-input" style="flex:1;min-width:180px" />
           <button id="inv-add" class="btn btn--primary btn--sm">+ Thêm sản phẩm</button>
         </div>
-        <div id="inv-chips" style="display:flex;gap:.4rem;margin-bottom:.5rem;font-size:.8rem"></div>
-        <div id="inv-table-wrap"></div>
+        <div id="inv-chips" style="display:flex;gap:.4rem;margin-bottom:.5rem;font-size:.8rem;flex:none"></div>
+        <div id="inv-table-wrap" style="flex:1;overflow-y:auto;border:1px solid #e5e7eb;border-radius:12px;background:#fff"></div>
+        <div style="font-size:.75rem;color:#94a3b8;margin-top:.4rem;flex:none">Bấm 1 dòng để xem lịch sử bán · chuột phải để Sửa / Chuyển danh mục / Gộp / Xóa</div>
       </div>
     </div>
   `;
@@ -318,7 +319,7 @@ export async function mount(container) {
     const wrap = container.querySelector('#inv-table-wrap');
     const data = filtered();
     if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#94a3b8;font-size:.85rem">Không có sản phẩm.</p>'; return; }
-    const th = (t, w, al) => `<th style="padding:.5rem .6rem;text-align:${al || 'left'};font-size:.75rem;color:#64748b;font-weight:600;${w ? 'width:' + w : ''}">${t}</th>`;
+    const th = (t, w, al) => `<th style="padding:.5rem .6rem;text-align:${al || 'left'};font-size:.75rem;color:#64748b;font-weight:600;position:sticky;top:0;background:#f1f5f9;z-index:2;border-bottom:1px solid #e5e7eb;${w ? 'width:' + w : ''}">${t}</th>`;
     let rows = '';
     data.forEach(p => {
       const n = Number(p.stock) || 0;
@@ -335,11 +336,9 @@ export async function mount(container) {
         <td style="text-align:center">${trendHtml(trendOf(st))}</td></tr>`;
       if (expandedKey === p._key) rows += detailRow(p, st);
     });
-    wrap.innerHTML = `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
-      <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:.83rem">
-        <thead><tr style="background:#f8fafc">${th('Sản phẩm')}${th('Tồn', '52px', 'center')}${th('Giá bán', '90px', 'right')}${th('Đã bán', '62px', 'right')}${th('Tháng này', '70px', 'right')}${th('Xu hướng', '64px', 'center')}</tr></thead>
-        <tbody>${rows}</tbody></table></div>
-      <div style="font-size:.75rem;color:#94a3b8;margin-top:.4rem">Bấm 1 dòng để xem lịch sử bán · chuột phải để Sửa / Chuyển danh mục / Gộp / Xóa</div>`;
+    wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:.83rem;background:#fff">
+        <thead><tr>${th('Sản phẩm')}${th('Tồn', '52px', 'center')}${th('Giá bán', '90px', 'right')}${th('Đã bán', '62px', 'right')}${th('Tháng này', '70px', 'right')}${th('Xu hướng', '64px', 'center')}</tr></thead>
+        <tbody>${rows}</tbody></table>`;
     wrap.querySelectorAll('.prod-row').forEach(r => r.addEventListener('click', e => {
       if (e.target.closest('button')) return;
       expandedKey = expandedKey === r.dataset.key ? null : r.dataset.key; renderTable();
