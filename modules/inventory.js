@@ -106,16 +106,18 @@ export async function mount(container) {
 
   // ─────────────── KPI ───────────────
   function renderKPIs() {
-    const totalProd = allProducts.length;
-    const totalStock = allProducts.reduce((s, p) => s + (Number(p.stock) || 0), 0);
-    const value = allProducts.reduce((s, p) => s + (Number(p.stock) || 0) * (Number(p.cost) || 0), 0);
-    const low = allProducts.filter(p => { const n = Number(p.stock) || 0; return n > 0 && n <= LOW_MAX; }).length;
-    const out = allProducts.filter(p => (Number(p.stock) || 0) <= 0).length;
+    const scoped = selectedCatKey ? (() => { const keys = getAllKeysUnder(selectedCatKey); return allProducts.filter(p => keys.has(p.categoryKey)); })() : allProducts;
+    const totalProd = scoped.length;
+    const totalStock = scoped.reduce((s, p) => s + (Number(p.stock) || 0), 0);
+    const value = scoped.reduce((s, p) => s + (Number(p.stock) || 0) * (Number(p.cost) || 0), 0);
+    const low = scoped.filter(p => { const n = Number(p.stock) || 0; return n > 0 && n <= LOW_MAX; }).length;
+    const out = scoped.filter(p => (Number(p.stock) || 0) <= 0).length;
+    const scopeName = selectedCatKey ? (allCategories.find(c => c._key === selectedCatKey)?.name || '') : '';
     const card = (label, val, bg, fg) => `<div style="background:${bg || '#f1f5f9'};border-radius:10px;padding:.6rem .75rem">
       <div style="font-size:12px;color:${fg ? fg : '#64748b'}">${label}</div>
       <div style="font-size:21px;font-weight:600;color:${fg || '#0f172a'}">${val}</div></div>`;
     container.querySelector('#inv-kpis').innerHTML =
-      card('Tổng sản phẩm', _fmtInt(totalProd)) +
+      card(scopeName ? 'SP · ' + scopeName : 'Tổng sản phẩm', _fmtInt(totalProd)) +
       card('Tổng tồn kho', _fmtInt(totalStock)) +
       card('Giá trị tồn (vốn)', formatVND(value)) +
       card('Sắp hết', _fmtInt(low), '#fef3c7', '#b45309') +
@@ -216,10 +218,10 @@ export async function mount(container) {
       : '<div style="color:#94a3b8;font-size:.8rem;padding:.4rem .5rem">Chưa có danh mục</div>';
     el.innerHTML = rowAll + treeHtml;
 
-    el.querySelector('.cat-all')?.addEventListener('click', () => { selectedCatKey = null; renderTree(); renderTable(); });
+    el.querySelector('.cat-all')?.addEventListener('click', () => { selectedCatKey = null; renderTree(); renderTable(); renderKPIs(); });
     el.querySelectorAll('.cat-row').forEach(row => row.addEventListener('click', e => {
       if (e.target.closest('button,.cat-arrow')) return;
-      selectedCatKey = row.dataset.key; renderTree(); renderTable();
+      selectedCatKey = row.dataset.key; renderTree(); renderTable(); renderKPIs();
     }));
     el.querySelectorAll('.cat-arrow').forEach(a => a.addEventListener('click', e => {
       e.stopPropagation(); const k = a.dataset.key;
