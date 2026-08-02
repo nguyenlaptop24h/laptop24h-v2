@@ -1,7 +1,28 @@
 // modules/sales.js - Ban hang v43 (fix invItems tu Firestore + no-cors sheet)
 import { registerRoute } from '../core/router.js';
-import { addItem, updateItem, deleteItem, onSnapshot, getDB } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot, getDB, getAll } from '../core/db.js';
 import { toast, formatVND, showModal, showContextMenu } from '../core/ui.js';
+
+// Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
+function _custHistItems(name, phone, reps, sales) {
+  const norm = s => String(s || '').replace(/[^0-9]/g, '');
+  const short = s => { s = String(s || ''); return s.length > 56 ? s.slice(0, 54) + '…' : s; };
+  const phd = norm(phone), nm = (name || '').trim();
+  if (!phd && !nm) return [];
+  const match = r => !r.deletedAt && ((phd && norm(r.phone) === phd) || (nm && (r.customerName || r.customer || '').trim() === nm));
+  const myReps = (reps || []).filter(match).sort((a, b) => (b.receivedDate || '').localeCompare(a.receivedDate || ''));
+  const mySales = (sales || []).filter(match).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const atShop = myReps.filter(r => (r.status || '') !== 'Đã giao');
+  const svcSub = myReps.length ? myReps.slice(0, 60).map(r => ({ label: short((r.receivedDate || '').slice(0, 10) + ' · ' + (r.device || '?') + (r.repairRequest ? (' — ' + r.repairRequest) : (r.issue ? (' — ' + r.issue) : ''))) })) : [{ label: '(Chưa có)' }];
+  const buySub = mySales.length ? mySales.slice(0, 60).map(s => { const its = s.items || []; const t = its.length ? its.map(i => i.name || '?').join(', ') : '—'; return { label: short((s.date || '').slice(0, 10) + ' · ' + t) }; }) : [{ label: '(Chưa có)' }];
+  const shopSub = atShop.length ? atShop.map(r => ({ label: short((r.device || '?') + (r.serial ? (' [' + r.serial + ']') : '') + ' · ' + (r.status || '') + ' · ' + (r.receivedDate || '').slice(0, 10)) })) : [{ label: 'Không có máy tại cửa hàng' }];
+  return [
+    { sep: true },
+    { label: '🔧 Dịch vụ đã dùng (' + myReps.length + ')', submenu: svcSub },
+    { label: '🖥️ Máy đã mua (' + mySales.length + ')', submenu: buySub },
+    { label: '💻 Máy tại cửa hàng (' + atShop.length + ')', submenu: shopSub }
+  ];
+}
 
 const COLLECTION = 'sales';
 const SALES_SHEET_URL = 'https://script.google.com/macros/s/AKfycby1EKgFp101WvCx7v_bTFthGM655wGJ35azbCicNomLw10xz6Fbt-Ycp6ug15FE1_9S/exec';
@@ -451,8 +472,9 @@ export async function mount(container) {
   // ══════════════════════════════════════════════
   container.querySelector('#sl-add-btn').onclick = () => openForm(null);
 
-  // Chuột phải vào 1 đơn → menu thao tác
-  const _salesCtx = e => {
+  // Chuột phải vào 1 đơn → menu thao tác + lịch sử khách (khớp theo SĐT)
+  let _histReps = null;
+  const _salesCtx = async e => {
     const tr = e.target.closest('tr'); if (!tr || !container.contains(tr)) return;
     if (e.target.closest('#sl-modal') || e.target.closest('#sl-tpl-overlay')) return;
     const kb = tr.querySelector('[data-key]'); if (!kb) return;
@@ -464,6 +486,13 @@ export async function mount(container) {
          { label: '🖨 In hóa đơn', onClick: () => printInvoice(key) },
          { sep: true },
          { label: '🗑 Xóa', danger: true, onClick: () => softDelete(key) }];
+    if (filterMode !== 'trash') {
+      const rec = allItems.find(s => s._key === key);
+      if (rec) {
+        if (!_histReps) { try { _histReps = await getAll('repairs'); } catch (_) { _histReps = []; } }
+        _custHistItems(rec.customer, rec.phone, _histReps, allItems).forEach(i => items.push(i));
+      }
+    }
     showContextMenu(e.clientX, e.clientY, items);
   };
   if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);

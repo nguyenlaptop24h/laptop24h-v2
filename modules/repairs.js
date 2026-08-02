@@ -3,6 +3,27 @@ import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB } f
 import { buildTable, toast, showModal, formatDate, formatVND, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
 
+// Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
+function _custHistItems(name, phone, reps, sales) {
+  const norm = s => String(s || '').replace(/[^0-9]/g, '');
+  const short = s => { s = String(s || ''); return s.length > 56 ? s.slice(0, 54) + '…' : s; };
+  const phd = norm(phone), nm = (name || '').trim();
+  if (!phd && !nm) return [];
+  const match = r => !r.deletedAt && ((phd && norm(r.phone) === phd) || (nm && (r.customerName || r.customer || '').trim() === nm));
+  const myReps = (reps || []).filter(match).sort((a, b) => (b.receivedDate || '').localeCompare(a.receivedDate || ''));
+  const mySales = (sales || []).filter(match).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const atShop = myReps.filter(r => (r.status || '') !== 'Đã giao');
+  const svcSub = myReps.length ? myReps.slice(0, 60).map(r => ({ label: short((r.receivedDate || '').slice(0, 10) + ' · ' + (r.device || '?') + (r.repairRequest ? (' — ' + r.repairRequest) : (r.issue ? (' — ' + r.issue) : ''))) })) : [{ label: '(Chưa có)' }];
+  const buySub = mySales.length ? mySales.slice(0, 60).map(s => { const its = s.items || []; const t = its.length ? its.map(i => i.name || '?').join(', ') : '—'; return { label: short((s.date || '').slice(0, 10) + ' · ' + t) }; }) : [{ label: '(Chưa có)' }];
+  const shopSub = atShop.length ? atShop.map(r => ({ label: short((r.device || '?') + (r.serial ? (' [' + r.serial + ']') : '') + ' · ' + (r.status || '') + ' · ' + (r.receivedDate || '').slice(0, 10)) })) : [{ label: 'Không có máy tại cửa hàng' }];
+  return [
+    { sep: true },
+    { label: '🔧 Dịch vụ đã dùng (' + myReps.length + ')', submenu: svcSub },
+    { label: '🖥️ Máy đã mua (' + mySales.length + ')', submenu: buySub },
+    { label: '💻 Máy tại cửa hàng (' + atShop.length + ')', submenu: shopSub }
+  ];
+}
+
 const COLLECTION = 'repairs';
 const REP_LOGO24H = 'data:image/png;base64,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';
 const RPL_BILL_KEY = 'rp_bill_tpl';
@@ -501,14 +522,15 @@ let showTrash = false;
 });
   editBhBtn.addEventListener('click', () => { const rec = allData.find(r => r._key === selectedKey); if (rec) openEditRepairBH(rec); });
 
-  // Chuột phải vào 1 phiếu → menu thao tác
-  const _repCtx = e => {
+  // Chuột phải vào 1 phiếu → menu thao tác + lịch sử khách (khớp theo SĐT)
+  let _histSales = null;
+  const _repCtx = async e => {
     const tr = e.target.closest('.rep-row'); if (!tr || !container.contains(tr)) return;
     const key = tr.dataset.key; if (!key) return;
     const rec = allData.find(r => r._key === key); if (!rec) return;
     if (showTrash) return;
     e.preventDefault();
-    showContextMenu(e.clientX, e.clientY, [
+    const menu = [
       { label: '✏ Sửa phiếu', onClick: () => openForm(rec) },
       { label: '🖨 In phiếu nhận', onClick: () => printReceipt(rec) },
       { label: '🛡️ In phiếu bảo hành', onClick: () => printWarrantySlip(rec) },
@@ -527,7 +549,10 @@ let showTrash = false;
       { label: '📦 Giao máy', onClick: () => quickDeliver(rec) },
       { sep: true },
       { label: '🗑 Xóa', danger: true, onClick: () => confirmDeleteKeys([key]) }
-    ]);
+    ];
+    if (!_histSales) { try { _histSales = await getAll('sales'); } catch (_) { _histSales = []; } }
+    _custHistItems(rec.customerName, rec.phone, allData, _histSales).forEach(i => menu.push(i));
+    showContextMenu(e.clientX, e.clientY, menu);
   };
   if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
   container.__ctxH = _repCtx;
