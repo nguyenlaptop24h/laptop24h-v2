@@ -55,7 +55,7 @@ export function showModal({ title, body, onConfirm, confirmText = 'Xác nhận',
 
 // ---- Table builder ----
 export function buildTable(cols, data) {
-  const thead = cols.map(c => `<th>${c.label}</th>`).join('');
+  const thead = cols.map(c => `<th${c.cls ? ` class="${c.cls}"` : ''}>${c.label}</th>`).join('');
   const tbody = data.map(row => {
     const cells = cols.map(c => {
       let val = '';
@@ -64,7 +64,7 @@ export function buildTable(cols, data) {
       } else if (typeof c.key === 'string') {
         val = row[c.key] ?? '';
       }
-      return `<td>${val}</td>`;
+      return `<td${c.cls ? ` class="${c.cls}"` : ''}>${val}</td>`;
     }).join('');
     return `<tr>${cells}</tr>`;
   }).join('');
