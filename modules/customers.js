@@ -108,7 +108,7 @@ export async function mount(container) {
 
     if (!_repsCache) { try { _repsCache = await getAll('repairs'); } catch (_) { _repsCache = []; } }
     const phd = ph.replace(/[^0-9]/g, '');
-    const mine = _repsCache.filter(r => !r.deletedAt && ((nm && (r.customerName || '').trim() === nm) || (phd && (r.phone || '').replace(/[^0-9]/g, '') === phd)));
+    const mine = _repsCache.filter(r => !r.deletedAt && phd && (r.phone || '').replace(/[^0-9]/g, '') === phd);
     mine.sort((a, b) => (b.receivedDate || '').localeCompare(a.receivedDate || ''));
     const atShop = mine.filter(r => (r.status || '') !== 'Đã giao');
 

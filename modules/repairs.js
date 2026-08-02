@@ -7,9 +7,9 @@ import { isAdmin } from '../core/auth.js';
 function _custHistItems(name, phone, reps, sales) {
   const norm = s => String(s || '').replace(/[^0-9]/g, '');
   const short = s => { s = String(s || ''); return s.length > 56 ? s.slice(0, 54) + '…' : s; };
-  const phd = norm(phone), nm = (name || '').trim();
-  if (!phd && !nm) return [];
-  const match = r => !r.deletedAt && ((phd && norm(r.phone) === phd) || (nm && (r.customerName || r.customer || '').trim() === nm));
+  const phd = norm(phone);
+  if (!phd) return [];
+  const match = r => !r.deletedAt && norm(r.phone) === phd;
   const myReps = (reps || []).filter(match).sort((a, b) => (b.receivedDate || '').localeCompare(a.receivedDate || ''));
   const mySales = (sales || []).filter(match).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const atShop = myReps.filter(r => (r.status || '') !== 'Đã giao');
