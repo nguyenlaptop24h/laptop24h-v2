@@ -92,19 +92,37 @@ export async function mount(container) {
 
   document.getElementById('cust-add').addEventListener('click', () => openForm(null));
 
-  // Chuột phải vào 1 khách → menu thao tác
-  const _custCtx = e => {
+  // Chuột phải vào 1 khách → menu thao tác + lịch sử dịch vụ + máy tại shop
+  let _repsCache = null;
+  const _short = s => { s = String(s || ''); return s.length > 58 ? s.slice(0, 56) + '…' : s; };
+  const _custCtx = async e => {
     const tr = e.target.closest('tr'); if (!tr || !container.contains(tr)) return;
     const sb = tr.querySelector('.cust-stats'); if (!sb) return;
     const key = sb.dataset.key;
     const nm = (sb.dataset.n || '').trim(), ph = (sb.dataset.p || '').trim();
     e.preventDefault();
     const rec = allData.find(c => c._key === key);
-    const items = [{ label: '📊 Thống kê', onClick: () => showCustStats(nm, ph) }];
-    if (isAdmin()) {
-      items.unshift({ label: '✏ Sửa', onClick: () => rec && openForm(rec) });
-      items.push({ sep: true }, { label: '🗑 Xóa', danger: true, onClick: () => confirmDelete(key) });
-    }
+    const items = [];
+    if (isAdmin()) items.push({ label: '✏ Sửa', onClick: () => rec && openForm(rec) });
+    items.push({ label: '📊 Thống kê', onClick: () => showCustStats(nm, ph) });
+
+    if (!_repsCache) { try { _repsCache = await getAll('repairs'); } catch (_) { _repsCache = []; } }
+    const phd = ph.replace(/[^0-9]/g, '');
+    const mine = _repsCache.filter(r => !r.deletedAt && ((nm && (r.customerName || '').trim() === nm) || (phd && (r.phone || '').replace(/[^0-9]/g, '') === phd)));
+    mine.sort((a, b) => (b.receivedDate || '').localeCompare(a.receivedDate || ''));
+    const atShop = mine.filter(r => (r.status || '') !== 'Đã giao');
+
+    const svcSub = mine.length
+      ? mine.slice(0, 50).map(r => ({ label: _short((r.receivedDate || '').slice(0, 10) + ' · ' + (r.device || '?') + (r.repairRequest ? (' — ' + r.repairRequest) : (r.issue ? (' — ' + r.issue) : ''))) }))
+      : [{ label: '(Chưa có dịch vụ nào)' }];
+    const shopSub = atShop.length
+      ? atShop.map(r => ({ label: _short((r.device || '?') + (r.serial ? (' [' + r.serial + ']') : '') + ' · ' + (r.status || '') + ' · ' + (r.receivedDate || '').slice(0, 10)) }))
+      : [{ label: 'Không có máy tại cửa hàng' }];
+
+    items.push({ sep: true });
+    items.push({ label: '🔧 Dịch vụ đã dùng (' + mine.length + ')', submenu: svcSub });
+    items.push({ label: '💻 Máy tại cửa hàng (' + atShop.length + ')', submenu: shopSub });
+    if (isAdmin()) items.push({ sep: true }, { label: '🗑 Xóa', danger: true, onClick: () => confirmDelete(key) });
     showContextMenu(e.clientX, e.clientY, items);
   };
   if (container.__ctxH) container.removeEventListener('contextmenu', container.__ctxH);
