@@ -171,7 +171,7 @@ export async function mount(container) {
       { label: 'Giá vốn',  key: p => formatVND(p.cost||0) },
       { label: 'Giá bán',  key: p => formatVND(p.price||0) },
       { label: 'Bảo hành', key: p => p.warranty || '' },
-      { label: '', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
+      { label: '', cls: 'col-hide', key: p => `<button class="btn btn--sm btn--secondary inv-edit" data-key="${p._key}">Sửa</button>` }
     ];
     // FIX: buildTable(cols, data) - cols first!
     wrap.innerHTML = buildTable(cols, data);

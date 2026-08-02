@@ -622,7 +622,7 @@ export async function mount(container) {
           <td>${pay}</td>
           <td><span class="sl-badge badge-trash">Đã xoá</span></td>
           <td>${s.date || ''}</td>
-          <td><button class="sl-action-btn sl-restore-btn" data-key="${s._key}">↩ Khôi phục</button></td>
+          <td class="col-hide"><button class="sl-action-btn sl-restore-btn" data-key="${s._key}">↩ Khôi phục</button></td>
         </tr>`;
       }
 
@@ -638,7 +638,7 @@ export async function mount(container) {
         <td>${pay}</td>
         <td><span class="sl-badge ${st.cls}">${st.label}</span></td>
         <td>${s.date || ''}</td>
-        <td>
+        <td class="col-hide">
           <div class="sl-actions">
             <button class="sl-action-btn sl-edit-btn"  data-key="${s._key}">✏</button>
             <button class="sl-action-btn sl-print-btn" data-key="${s._key}">🖨</button>
@@ -660,7 +660,7 @@ export async function mount(container) {
           <th>Thanh toán</th>
           <th>Trạng thái</th>
           <th>Ngày bán</th>
-          <th>Thao tác</th>
+          <th class="col-hide">Thao tác</th>
         </tr>
       </thead>
       <tbody>${rows.join('')}</tbody>
