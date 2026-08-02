@@ -224,8 +224,6 @@ export async function mount(container) {
       e.stopPropagation(); const k = a.dataset.key;
       if (openFolders.has(k)) openFolders.delete(k); else openFolders.add(k); renderTree();
     }));
-    el.querySelectorAll('.cat-edit').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openCatForm(b.dataset.key); }));
-    el.querySelectorAll('.cat-addchild').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openFolders.add(b.dataset.key); openCatForm(null, b.dataset.key); }));
   }
   function renderNode(cat, depth) {
     const children = allCategories.filter(c => c.parentKey === cat._key);
@@ -239,8 +237,6 @@ export async function mount(container) {
       ${arrow}
       <span style="flex:1;font-weight:${depth === 0 ? 600 : 400}">${cat.name}</span>
       <span style="font-size:.72rem;color:#94a3b8;background:#e2e8f0;border-radius:9px;padding:0 6px">${countUnder(cat._key)}</span>
-      <button class="cat-edit btn btn--xs btn--ghost" data-key="${cat._key}" title="Sửa">✎</button>
-      <button class="cat-addchild btn btn--xs btn--ghost" data-key="${cat._key}" title="Thêm mục con" style="font-weight:700">＋</button>
     </div>${body}`;
   }
 
