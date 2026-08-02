@@ -42,7 +42,7 @@ export function initRouter() {
   Promise.allSettled([
     import('../modules/repairs.js?v=101'),
     import('../modules/sales.js?v=83'),
-    import('../modules/inventory.js?v=28'),
+    import('../modules/inventory.js?v=29'),
     import('../modules/customers.js?v=22'),
     import('../modules/debts.js?v=4'),
     import('../modules/stats.js?v=25'),
