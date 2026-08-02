@@ -9,6 +9,8 @@
   #nav-links a { display: flex; align-items: center; gap: 11px; }
   .nav-ic { flex: none; opacity: .9; }
   #nav-links a:hover .nav-ic, #nav-links a.active .nav-ic { opacity: 1; }
+  /* Ẩn cột Thao tác (đã có chuột phải) — nút vẫn còn trong DOM để menu chuột phải hoạt động */
+  .col-hide { display: none !important; }
 </style>
 </head>
 <body>
@@ -67,6 +69,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 
 <!-- App bootstrap (ES module) -->
-<script type="module" src="app.js?v=174"></script>
+<script type="module" src="app.js?v=175"></script>
 </body>
 </html>
