@@ -112,11 +112,13 @@ function _closeCtxMenus() {
   document.querySelectorAll('.ctx-menu').forEach(m => m.remove());
   document.removeEventListener('mousedown', _ctxOnDoc, true);
   document.removeEventListener('keydown', _ctxOnKey, true);
-  document.removeEventListener('scroll', _closeCtxMenus, true);
+  document.removeEventListener('scroll', _ctxOnScroll, true);
   window.removeEventListener('resize', _closeCtxMenus);
 }
 function _ctxOnDoc(e) { if (!e.target.closest('.ctx-menu')) _closeCtxMenus(); }
 function _ctxOnKey(e) { if (e.key === 'Escape') _closeCtxMenus(); }
+// Cuộn BÊN TRONG menu (danh sách dài) thì KHÔNG đóng; chỉ đóng khi cuộn trang bên ngoài
+function _ctxOnScroll(e) { if (e.target && e.target.closest && e.target.closest('.ctx-menu')) return; _closeCtxMenus(); }
 function _buildCtxMenu(items, isSub) {
   const menu = document.createElement('div');
   menu.className = 'ctx-menu' + (isSub ? ' ctx-sub' : '');
@@ -165,7 +167,7 @@ export function showContextMenu(x, y, items) {
   setTimeout(() => {
     document.addEventListener('mousedown', _ctxOnDoc, true);
     document.addEventListener('keydown', _ctxOnKey, true);
-    document.addEventListener('scroll', _closeCtxMenus, true);
+    document.addEventListener('scroll', _ctxOnScroll, true);
     window.addEventListener('resize', _closeCtxMenus);
   }, 0);
 }
