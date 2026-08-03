@@ -905,7 +905,8 @@ function quickChangeStatus(record) {
     var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
       'body{font-family:Arial,sans-serif;color:#1f2937;font-size:'+fs(11)+';width:' + (rPaper==='A4'?194:132) + 'mm;margin:0 auto}' +
-      '.lien{padding:4px 0 6px}' +
+      '.lien{min-height:' + (rPaper==='A4'?281:194) + 'mm;display:flex;flex-direction:column;justify-content:center;padding:2mm 0}' +
+      '.rc{width:100%}' +
       '.head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #000;padding-bottom:7px;margin-bottom:8px}' +
       '.logo{height:'+fs(42)+';width:auto;object-fit:contain}' +
       '.shop{flex:1}.sn{font-size:'+fs(18)+';font-weight:bold;color:#000;line-height:1.2;margin-bottom:1px}.si{font-size:'+fs(10)+';color:#222;line-height:1.5}' +
@@ -924,12 +925,12 @@ function quickChangeStatus(record) {
       '@media print{.np{display:none}}';
 
     var blocks = '';
-    for (var ci=0; ci<copies; ci++){ blocks += '<div class="lien"' + (ci<copies-1 ? ' style="page-break-after:always"' : '') + '>' + inner + '</div>'; }
+    for (var ci=0; ci<copies; ci++){ blocks += '<div class="lien"' + (ci<copies-1 ? ' style="page-break-after:always"' : '') + '><div class="rc">' + inner + '</div></div>'; }
 
     var html = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Phiếu nhận máy</title><style>'+css+'</style></head><body>' +
       blocks +
       '<div class="np" style="text-align:center;margin-top:10px"><button onclick="window.print()" style="padding:7px 22px;font-size:14px;cursor:pointer">\u{1F5A8} In phiếu</button></div>' +
-      '<script>(function(){var M=96/25.4,PH=' + (rPaper==='A4'?281:194) + '*M;function f(){var L=document.querySelectorAll(".lien");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();<\/script>' +
+      '<script>(function(){var M=96/25.4,PH=' + (rPaper==='A4'?281:194) + '*M-4;function f(){var L=document.querySelectorAll(".rc");for(var i=0;i<L.length;i++){var el=L[i];el.style.zoom=1;var h=el.scrollHeight;if(h>PH)el.style.zoom=PH/h;}}f();window.addEventListener("beforeprint",f);})();<\/script>' +
       '</body></html>';
 
     var w = window.open('', '_blank', 'width=600,height=860');
