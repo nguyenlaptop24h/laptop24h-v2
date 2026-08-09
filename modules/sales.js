@@ -73,6 +73,7 @@ export async function mount(container) {
   let allItems = [];
   let invItems = [];
   let filterMode = 'day';
+  let dateFrom = '', dateTo = '';
   let searchQ = '';
   let currentPage = 1;
   const PAGE_SIZE = 10;
@@ -375,6 +376,12 @@ export async function mount(container) {
       <span class="sl-f" data-mode="month">Tháng</span>
       <span class="sl-f" data-mode="all">Tất cả</span>
     </div>
+    <div class="sl-daterange" style="display:flex;align-items:center;gap:4px;margin-left:8px">
+      <input type="date" id="sl-date-from" title="Từ ngày" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px">
+      <span style="color:#94a3b8">→</span>
+      <input type="date" id="sl-date-to" title="Đến ngày" style="padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px">
+      <span id="sl-date-clear" title="Xóa lọc ngày" style="cursor:pointer;color:#94a3b8;font-size:15px;padding:0 4px;display:none">✕</span>
+    </div>
     <div class="sl-spacer"></div>
     <button class="sl-btn sl-btn-tpl" id="sl-tpl-btn" title="Cài đặt mẫu hóa đơn">🖨 Mẫu HĐ</button>
     <div class="sl-quickstats">
@@ -505,8 +512,25 @@ export async function mount(container) {
     searchQ = e.target.value.toLowerCase().trim(); currentPage = 1; render();
   };
   container.querySelectorAll('.sl-f').forEach(f => {
-    f.onclick = () => { filterMode = f.dataset.mode; updateFilterUI(); currentPage = 1; render(); };
+    f.onclick = () => {
+      filterMode = f.dataset.mode;
+      dateFrom = ''; dateTo = '';
+      const df = container.querySelector('#sl-date-from'), dt = container.querySelector('#sl-date-to'), dc = container.querySelector('#sl-date-clear');
+      if (df) df.value = ''; if (dt) dt.value = ''; if (dc) dc.style.display = 'none';
+      updateFilterUI(); currentPage = 1; render();
+    };
   });
+  // Lọc theo khoảng ngày
+  const _dFrom = container.querySelector('#sl-date-from'), _dTo = container.querySelector('#sl-date-to'), _dClear = container.querySelector('#sl-date-clear');
+  function _applyDate() {
+    dateFrom = _dFrom.value; dateTo = _dTo.value;
+    if (dateFrom || dateTo) filterMode = 'date';
+    _dClear.style.display = (dateFrom || dateTo) ? '' : 'none';
+    updateFilterUI(); currentPage = 1; render();
+  }
+  if (_dFrom) _dFrom.onchange = _applyDate;
+  if (_dTo) _dTo.onchange = _applyDate;
+  if (_dClear) _dClear.onclick = () => { _dFrom.value = ''; _dTo.value = ''; dateFrom = ''; dateTo = ''; filterMode = 'day'; _dClear.style.display = 'none'; updateFilterUI(); currentPage = 1; render(); };
   container.querySelector('#sl-tpl-btn').onclick = openTemplateEditor;
   try { getDB().ref('billTemplate').on('value', s => { const v = s.val(); if (v) { _billTpl = v; try { localStorage.setItem(TPL_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
 
@@ -555,6 +579,7 @@ export async function mount(container) {
     if (filterMode === 'day')        list = list.filter(s => (s.date || '').startsWith(todayStr));
     else if (filterMode === 'week')  { const { start, end } = getWeekBounds(todayStr); list = list.filter(s => s.date >= start && s.date <= end); }
     else if (filterMode === 'month') list = list.filter(s => (s.date || '').startsWith(todayStr.slice(0, 7)));
+    else if (filterMode === 'date') { const f = dateFrom || '0000-01-01', t = dateTo || '9999-12-31'; list = list.filter(s => { const d = s.date || ''; return d >= f && d <= t; }); }
     if (searchQ) list = list.filter(s =>
       (s.customer || '').toLowerCase().includes(searchQ) ||
       (s.phone || '').includes(searchQ) ||

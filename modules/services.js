@@ -1,4 +1,4 @@
-// modules/services.js - Danh mục Dịch vụ sửa chữa v1
+// modules/services.js - Danh mục Dịch vụ sửa chữa v2
 import { registerRoute } from '../core/router.js';
 import { onSnapshot, addItem, updateItem } from '../core/db.js';
 import { toast, formatVND, showModal } from '../core/ui.js';
@@ -52,6 +52,7 @@ export function mount(container){
     if(!list.length){ listEl.innerHTML = '<p class="sv-empty">Chưa có dịch vụ nào. Bấm "＋ Thêm dịch vụ".</p>'; return; }
     const rows = list.map(s => `<tr>
       <td><b>${esc(s.name)}</b></td>
+      <td style="text-align:right;color:#64748b">${formatVND(s.cost||0)}</td>
       <td style="text-align:right">${formatVND(s.price||0)}</td>
       <td style="text-align:center">${Number(s.warrantyMonths)||0} tháng</td>
       <td style="text-align:right;white-space:nowrap">
@@ -61,7 +62,7 @@ export function mount(container){
     </tr>`).join('');
     listEl.innerHTML = `<div style="font-size:13px;color:#64748b;margin-bottom:8px">${list.length} dịch vụ</div>
       <table class="sv-tbl"><thead><tr>
-        <th>Tên dịch vụ</th><th style="text-align:right">Giá</th><th style="text-align:center">Bảo hành</th><th></th>
+        <th>Tên dịch vụ</th><th style="text-align:right">Giá vốn</th><th style="text-align:right">Giá bán</th><th style="text-align:center">Bảo hành</th><th></th>
       </tr></thead><tbody>${rows}</tbody></table>`;
     listEl.querySelectorAll('[data-edit]').forEach(b=> b.onclick = ()=> openForm(items.find(x=>x._key===b.dataset.edit)));
     listEl.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=> delItem(items.find(x=>x._key===b.dataset.del)));
@@ -75,7 +76,9 @@ export function mount(container){
       body: `
         <div class="sv-fld"><label>Tên dịch vụ <span style="color:#e11d48">*</span></label>
           <input id="svf-name" value="${esc(ex?.name)}" placeholder="VD: Sửa main, Thay màn hình, Thay pin..."></div>
-        <div class="sv-fld"><label>Giá (đ)</label>
+        <div class="sv-fld"><label>Giá vốn (đ)</label>
+          <input id="svf-cost" data-fmt="number" inputmode="numeric" value="${ex?dot(ex.cost||0):''}" placeholder="0"></div>
+        <div class="sv-fld"><label>Giá bán (đ)</label>
           <input id="svf-price" data-fmt="number" inputmode="numeric" value="${ex?dot(ex.price||0):''}" placeholder="0"></div>
         <div class="sv-fld"><label>Thời hạn bảo hành (tháng)</label>
           <input id="svf-wm" type="number" min="0" max="60" value="${ex?(Number(ex.warrantyMonths)||0):3}" placeholder="3"></div>
@@ -85,6 +88,7 @@ export function mount(container){
         if(!name){ toast('Nhập tên dịch vụ!','warning'); return false; }
         const data = {
           name,
+          cost: num(document.querySelector('#svf-cost')?.value),
           price: num(document.querySelector('#svf-price')?.value),
           warrantyMonths: parseInt(document.querySelector('#svf-wm')?.value,10) || 0
         };
