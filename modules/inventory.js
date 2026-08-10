@@ -74,6 +74,15 @@ export async function mount(container) {
     return allProducts.filter(p => keys.has(p.categoryKey)).length;
   }
 
+  // Sản phẩm thuộc danh mục "Laptop" (theo tên danh mục gốc/cha)
+  function isLaptopCat(catKey) {
+    let cur = catKey ? allCategories.find(c => c._key === catKey) : null, g = 0;
+    while (cur && g < 20) { if (_norm(cur.name).includes('laptop')) return true; cur = cur.parentKey ? allCategories.find(c => c._key === cur.parentKey) : null; g++; }
+    return false;
+  }
+  // Nhân viên KHÔNG được xem giá vốn của laptop
+  function canSeeCost(p) { return isAdmin() || !isLaptopCat(p && p.categoryKey); }
+
   // ─────────────── SALES STATS ───────────────
   function computeSalesStats() {
     salesStats = {};
@@ -119,7 +128,7 @@ export async function mount(container) {
     container.querySelector('#inv-kpis').innerHTML =
       card(scopeName ? 'SP · ' + scopeName : 'Tổng sản phẩm', _fmtInt(totalProd)) +
       card('Tổng tồn kho', _fmtInt(totalStock)) +
-      card('Giá trị tồn (vốn)', formatVND(value)) +
+      (isAdmin() ? card('Giá trị tồn (vốn)', formatVND(value)) : '') +
       card('Sắp hết', _fmtInt(low), '#fef3c7', '#b45309') +
       card('Hết hàng', _fmtInt(out), '#fee2e2', '#b91c1c');
   }
@@ -356,14 +365,18 @@ export async function mount(container) {
       <div style="font-size:.68rem;color:#475569;font-weight:600">${vals[i]}</div></div>`).join('');
     const value = (Number(p.stock) || 0) * (Number(p.cost) || 0);
     const profit = (Number(p.stock) || 0) * ((Number(p.price) || 0) - (Number(p.cost) || 0));
+    const showCost = canSeeCost(p);
+    const costLine = showCost
+      ? `Giá vốn: <b>${formatVND(p.cost || 0)}</b> · Giá bán: <b>${formatVND(p.price || 0)}</b> · Bảo hành: ${p.warranty || '—'}<br>
+          Vốn đọng (tồn×vốn): <b>${formatVND(value)}</b> · Lãi dự kiến: <b style="color:#16a34a">${formatVND(profit)}</b><br>`
+      : `Giá bán: <b>${formatVND(p.price || 0)}</b> · Bảo hành: ${p.warranty || '—'}<br>`;
     return `<tr style="background:#f8fafc"><td colspan="6" style="padding:.7rem .9rem">
       <div style="display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap">
         <div><div style="font-size:.72rem;color:#64748b;margin-bottom:.3rem">Bán theo tháng (6 tháng)</div>
           <div style="display:flex;gap:8px;align-items:flex-end">${bars}</div></div>
         <div style="font-size:.8rem;color:#475569;line-height:1.9">
           Tổng đã bán: <b>${_fmtInt(st ? st.total : 0)}</b> · Xu hướng: ${trendHtml(trendOf(st))}<br>
-          Giá vốn: <b>${formatVND(p.cost || 0)}</b> · Giá bán: <b>${formatVND(p.price || 0)}</b> · Bảo hành: ${p.warranty || '—'}<br>
-          Vốn đọng (tồn×vốn): <b>${formatVND(value)}</b> · Lãi dự kiến: <b style="color:#16a34a">${formatVND(profit)}</b><br>
+          ${costLine}
           Lần bán gần nhất: ${st && st.last ? st.last.split('-').reverse().join('/') : '—'}
         </div></div></td></tr>`;
   }
