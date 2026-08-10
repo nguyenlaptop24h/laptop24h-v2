@@ -301,6 +301,7 @@ export async function mount(container) {
 .sf-cost  { width:110px !important; text-align:right; }
 .sf-disc    { width:80px !important; text-align:right; }
 .sf-bh-date { width:130px !important; }
+.sf-bh-mon { width:110px !important; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; background:#fff; }
 .sf-line-total { margin-left:auto; text-align:right; font-size:13px; font-weight:700; color:#1a3a6b; flex-shrink:0; padding-right:4px; }
 .sf-remove-btn {
   background:none; border:none; color:#ccc; cursor:pointer; font-size:15px;
@@ -968,7 +969,7 @@ export async function mount(container) {
         <div class="sf-fg"><span>Đơn giá</span><input class="sf-price" type="text" inputmode="numeric" data-fmt="number" title="Đơn giá bán"></div>
         <div class="sf-fg"><span>Giá vốn</span><input class="sf-cost" type="text" inputmode="numeric" data-fmt="number" title="Giá vốn (nếu bán hàng không từ kho)"></div>
         <div class="sf-fg"><span>Giảm</span><input class="sf-disc" type="text" inputmode="numeric" data-fmt="number" title="Giảm giá"></div>
-        <div class="sf-fg"><span>Hết BH</span><input class="sf-bh-date" type="date" title="Ngày hết bảo hành"></div>
+        <div class="sf-fg"><span>Bảo hành</span><select class="sf-bh-mon" title="Thời hạn bảo hành (tự tính ngày hết hạn)"><option value="">— BH —</option><option value="1">1 tháng</option><option value="3">3 tháng</option><option value="6">6 tháng</option><option value="12">12 tháng</option><option value="24">24 tháng</option><option value="36">36 tháng</option></select></div>
         <span class="sf-line-total">0đ</span>
         <button class="sf-tokho" type="button" title="Thêm sản phẩm này vào kho" style="border:1px solid #86efac;background:#f0fdf4;color:#16a34a;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:4px 8px;white-space:nowrap">＋ Kho</button>
         <button class="sf-remove-btn" type="button" title="Xoá dòng">✕</button>
@@ -981,7 +982,7 @@ export async function mount(container) {
     row.querySelector('.sf-price').value = _dot(data.price    || 0);
     row.querySelector('.sf-cost').value  = _dot(data.cost     || 0);
     row.querySelector('.sf-disc').value  = _dot(data.discount || 0);
-    row.querySelector('.sf-bh-date').value = data.bhDate || '';
+    { const _bhSel = row.querySelector('.sf-bh-mon'); if (data.bhMonths) _bhSel.value = String(data.bhMonths); row.dataset.bhdate = data.bhDate || ''; }
 
     const nameInput = row.querySelector('.sf-name');
     const drop = getOrCreateDrop();
@@ -1019,12 +1020,11 @@ export async function mount(container) {
             row.querySelector('.sf-price').value = _dot(p.price || 0);
             row.querySelector('.sf-cost').value = _dot(p.cost || 0);
             row.dataset.invkey = p['_key'] || '';
-            const bhI = row.querySelector('.sf-bh-date');
-            if (!bhI.value) {                              // không ghi đè ngày user đã nhập
+            const bhSel = row.querySelector('.sf-bh-mon');
+            if (bhSel && !bhSel.value) {                     // không ghi đè lựa chọn của user
               const wm = _wmonths(p.warranty);
-              const saleDate = (container.querySelector('#sf-date')?.value) || '';
-              if (wm > 0) bhI.value = _addMonths(saleDate, wm);
-              else toast('⚠️ "' + (p.name || '') + '" chưa có bảo hành trong kho — nhập ngày Hết BH thủ công nếu cần', 'warning');
+              if (['1','3','6','12','24','36'].indexOf(String(wm)) >= 0) bhSel.value = String(wm);
+              else if (wm <= 0) toast('⚠️ "' + (p.name || '') + '" chưa có bảo hành trong kho — chọn thời hạn ở ô Bảo hành nếu cần', 'warning');
             }
           }
           hideDrop(); recalc();
@@ -1080,13 +1080,16 @@ export async function mount(container) {
       const name = row.querySelector('.sf-name').value.trim();
       if (!name) return;
       const invkey = row.dataset.invkey || '';
-      // Hết BH = ngày user nhập; nếu trống & là hàng trong kho → ngày bán + số tháng BH của SP
-      let bhDate = row.querySelector('.sf-bh-date').value || null;
-      if (!bhDate && invkey) {
+      // Bảo hành: ưu tiên số tháng user chọn (ngày bán + số tháng); nếu trống & hàng trong kho → theo BH sản phẩm; sửa đơn cũ → giữ ngày cũ
+      let bhMonths = parseInt(row.querySelector('.sf-bh-mon')?.value, 10) || 0;
+      let bhDate = null;
+      if (bhMonths > 0) bhDate = _addMonths(date, bhMonths);
+      else if (invkey) {
         const prod = invItems.find(p => p['_key'] === invkey);
         const wm = prod ? _wmonths(prod.warranty) : 0;
-        if (wm > 0) bhDate = _addMonths(date, wm);
+        if (wm > 0) { bhDate = _addMonths(date, wm); bhMonths = wm; }
       }
+      if (!bhDate && row.dataset.bhdate) bhDate = row.dataset.bhdate;
       if (!bhDate) noBH.push(name);
       items.push({
         name,
@@ -1095,11 +1098,12 @@ export async function mount(container) {
         cost:     _num(row.querySelector('.sf-cost')),
         discount: _num(row.querySelector('.sf-disc')),
         bhDate,
+        bhMonths,
         invkey,
       });
     });
     if (!items.length) { toast('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
-    if (noBH.length) toast('⚠️ Chưa có bảo hành: ' + noBH.join(', ') + ' — có thể nhập "Hết BH" thủ công.', 'warning');
+    if (noBH.length) toast('⚠️ Chưa có bảo hành: ' + noBH.join(', ') + ' — chọn thời hạn ở ô "Bảo hành".', 'warning');
 
     const subtotal = items.reduce((s, it) => s + Math.max(0, it.qty * it.price - it.discount), 0);
     const total    = Math.max(0, subtotal - extraDiscount);
