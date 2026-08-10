@@ -895,7 +895,8 @@ export async function mount(container) {
       modal.querySelector('#sf-del-modal').onclick = () => { softDelete(key); overlay.style.display = 'none'; };
       modal.querySelector('#sf-print-modal').onclick = () => printInvoice(key);
     }
-    overlay.onclick = e => { if (e.target === overlay) overlay.style.display = 'none'; };
+    // Không đóng khi bấm ra ngoài — chỉ đóng khi Lưu / Huỷ / nút ✕ (tránh mất đơn đang nhập)
+    overlay.onclick = null;
   }
 
   // ══════════════════════════════════════════════
