@@ -615,9 +615,17 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
       { label: 'Chi phí',    key: r => formatVND(r.cost || 0) },
       { label: 'Trạng thái', key: r => '<span class="badge ' + (STATUS_CLASS[r.status]||'badge-gray') + '">' + (r.status||'') + '</span>' }
     ,
-      { label: showTrash ? 'Thao tác' : 'Ghi chú', key: r => showTrash
-          ? '<button onclick="window.__restoreRepair(\''+r._key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>'
-          : '<span onclick="window.__editNote(\''+r._key+'\')" title="Bấm để sửa ghi chú" style="cursor:pointer;display:inline-block;max-width:240px;white-space:normal;line-height:1.35;'+(r.internalNote ? 'color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:.82rem;font-weight:600' : 'color:#cbd5e1;font-size:.8rem;border:1px dashed #e2e8f0;border-radius:6px;padding:3px 8px')+'">'+(r.internalNote ? '📝 '+String(r.internalNote).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '＋ ghi chú')+'</span>' }];
+      { label: showTrash ? 'Thao tác' : 'Ghi chú', key: r => {
+          if (showTrash) return '<button onclick="window.__restoreRepair(\''+r._key+'\')" style="padding:2px 8px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">Khôi phục</button>';
+          var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+          var hasNote = r.internalNote && String(r.internalNote).trim();
+          var fb = r.initialCondition && String(r.initialCondition).trim();
+          var style, text;
+          if (hasNote) { style = 'color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:.82rem;font-weight:600'; text = '📝 ' + esc(r.internalNote); }
+          else if (fb) { style = 'color:#64748b;font-size:.8rem'; text = esc(r.initialCondition); }
+          else { style = 'color:#cbd5e1;font-size:.8rem;border:1px dashed #e2e8f0;border-radius:6px;padding:3px 8px'; text = '＋ ghi chú'; }
+          return '<span onclick="window.__editNote(\''+r._key+'\')" title="Bấm để sửa ghi chú (không đổi tình trạng ban đầu)" style="cursor:pointer;display:inline-block;max-width:240px;white-space:normal;line-height:1.35;'+style+'">'+text+'</span>';
+        } }];
     const ths = cols.map(c => '<th style="padding:.5rem .75rem;border-bottom:2px solid #e5e7eb;text-align:left;font-size:.8rem;font-weight:600;color:#374151;white-space:nowrap">' + c.label + '</th>').join('');
     const total = data.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
