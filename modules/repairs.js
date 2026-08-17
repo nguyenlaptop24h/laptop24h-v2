@@ -849,6 +849,7 @@ function quickChangeStatus(record) {
       device: v(d.device), serial: v(d.serial), config: (cfg?esc(cfg):'—'),
       password: v(d.password), accessories: v(d.accessories),
       initialCondition: v(d.initialCondition), repairRequest: v(d.repairRequest),
+      note: v((d.internalNote && String(d.internalNote).trim()) ? d.internalNote : d.initialCondition),
       cost: money(d.cost), deposit: money(d.deposit),
       deliveredDate: v(d.deliveredDate), techName: v(d.techName),
       warning: rWarnHtml, terms: rTermsHtml, footer: rFooter
@@ -872,7 +873,15 @@ function quickChangeStatus(record) {
       else if (on('showAccessories')) rows += '<tr><td class="lb">Phụ kiện</td><td class="vl" colspan="3">'+v(d.accessories)+'</td></tr>';
       if (on('showInitial') || on('showRequest')) {
         rows += '<tr><td class="sec" colspan="4">'+esc(secS)+'</td></tr>';
-        if (on('showInitial')) rows += '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>';
+        if (on('showInitial')) {
+          var _hasNote = d.internalNote && String(d.internalNote).trim();
+          if (_hasNote) {
+            rows += '<tr><td class="lb">Tình trạng ban đầu</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>';
+            rows += '<tr><td class="lb">Ghi chú</td><td class="vl" colspan="3">'+esc(d.internalNote)+'</td></tr>';
+          } else {
+            rows += '<tr><td class="lb">Ghi chú</td><td class="vl" colspan="3">'+v(d.initialCondition)+'</td></tr>';
+          }
+        }
         if (on('showRequest')) rows += '<tr><td class="lb">Yêu cầu sửa chữa</td><td class="vl" colspan="3">'+v(d.repairRequest)+'</td></tr>';
       }
       var cC=on('showCost'), cD=on('showDeposit'), cL=on('showDelivered'), cT=on('showTech');
