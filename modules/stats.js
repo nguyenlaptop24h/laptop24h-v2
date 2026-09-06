@@ -149,8 +149,15 @@ export async function mount(container) {
     return ts >= from && ts <= to;
   }
   function repMs(r) {
-    if (r && r.receivedDate) { var t = new Date(r.receivedDate + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
-    return (r && (r.ts || r.createdAt)) || 0;
+    // Tính tiền theo NGÀY GIAO: giao ngày nào tính vào ngày đó.
+    if (r && r.deliveredDate) { var t = new Date(r.deliveredDate + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+    // Đã đánh dấu "Đã giao" nhưng thiếu ngày giao → tạm lấy ngày nhận / ts để không bị mất.
+    if (r && r.status === 'Đã giao') {
+      if (r.receivedDate) { var t2 = new Date(r.receivedDate + 'T00:00:00').getTime(); if (!isNaN(t2)) return t2; }
+      return (r.ts || r.createdAt) || 0;
+    }
+    // Chưa giao → chưa tính tiền.
+    return 0;
   }
 
   // ─── revenue chart ──────────────────────────────────────
