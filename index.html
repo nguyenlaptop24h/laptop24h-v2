@@ -6,9 +6,20 @@
 <title>Laptop 24h - Quản lý</title>
 <link rel="stylesheet" href="styles/main.css" />
 <style>
-  #nav-links a { display: flex; align-items: center; gap: 11px; }
+  #nav-links a { display: flex; align-items: center; gap: 11px; white-space: nowrap; }
   .nav-ic { flex: none; opacity: .9; }
   #nav-links a:hover .nav-ic, #nav-links a.active .nav-ic { opacity: 1; }
+  /* Responsive: cửa sổ hẹp thì thu nhỏ chữ/sidebar cho vừa, không dồn dòng */
+  @media (max-width: 1000px){
+    .logo { font-size: 1rem; padding: 1rem .8rem; }
+    #nav-links a { font-size: 13px; padding: .55rem .8rem; gap: 9px; }
+    .nav-ic { width: 16px; height: 16px; }
+  }
+  @media (max-width: 720px){
+    #nav-links a { font-size: 12px; padding: .45rem .6rem; gap: 7px; }
+    .nav-ic { width: 15px; height: 15px; }
+    .logo { font-size: .9rem; }
+  }
   /* Ẩn cột Thao tác (đã có chuột phải) — nút vẫn còn trong DOM để menu chuột phải hoạt động */
   .col-hide { display: none !important; }
   /* Icon Lucide thay cho emoji — đồng bộ toàn app */
