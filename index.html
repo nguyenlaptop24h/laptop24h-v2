@@ -9,11 +9,6 @@
   #nav-links a { display: flex; align-items: center; gap: 11px; white-space: nowrap; }
   .nav-ic { flex: none; opacity: .9; }
   #nav-links a:hover .nav-ic, #nav-links a.active .nav-ic { opacity: 1; }
-  /* Giữ bố cục desktop ở MỌI kích cỡ (không tự xổ ngang); dùng zoom để vừa cửa sổ */
-  @media (max-width: 768px){
-    #sidebar { width: var(--sidebar-w); position: fixed; top: 0; left: 0; height: 100vh; flex-direction: column; flex-wrap: nowrap; overflow-y: auto; }
-    #main-content { margin-left: var(--sidebar-w); padding: 1.5rem; }
-  }
   /* Ẩn cột Thao tác (đã có chuột phải) — nút vẫn còn trong DOM để menu chuột phải hoạt động */
   .col-hide { display: none !important; }
   /* Icon Lucide thay cho emoji — đồng bộ toàn app */
@@ -78,30 +73,5 @@
 <!-- App bootstrap (ES module) -->
 <script type="module" src="app.js?v=182"></script>
 
-<!-- Tự phóng to/thu nhỏ toàn bộ giao diện theo bề rộng cửa sổ (luôn hiển thị đủ nội dung) -->
-<script>
-(function(){
-  var BASE = 1400; // bề rộng thiết kế: cửa sổ rộng bằng mức này = 100%
-  function fit(){
-    var w = window.innerWidth || document.documentElement.clientWidth || BASE;
-    var z = w / BASE;
-    if (z > 1.6) z = 1.6;
-    if (z < 0.3) z = 0.3;
-    document.documentElement.style.zoom = z;
-    // Bù chiều cao cho các phần dùng 100vh (position:fixed) để không bị hụt khi zoom < 1
-    var vh = window.innerHeight;
-    if (vh && z) {
-      var comp = Math.ceil(vh / z) + 'px';
-      var sb = document.getElementById('sidebar'); if (sb) sb.style.height = comp;
-      var mc = document.getElementById('main-content'); if (mc) mc.style.minHeight = comp;
-    }
-  }
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', fit);
-  if (document.readyState !== 'loading') fit();
-  else document.addEventListener('DOMContentLoaded', fit);
-  window.addEventListener('load', fit);
-})();
-</script>
 </body>
 </html>
