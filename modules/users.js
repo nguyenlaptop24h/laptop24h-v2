@@ -9,6 +9,7 @@ const COLLECTION = 'users';
 registerRoute('#users', mount);
 
 const ROLE_LABEL = { admin: 'Quản trị', staff: 'Nhân viên' };
+const BRANCH_LABEL = { all: 'Cả 2 (siêu QL)', vinhlong: 'Vĩnh Long', cantho: 'Cần Thơ' };
 
 export async function mount(container) {
   if (!isAdmin()) {
@@ -45,13 +46,19 @@ export async function mount(container) {
     }
     const cols = [
       { label: 'Tên đăng nhập', key: u => u.username || '' },
-      { label: 'Họ tên',        key: u => u.name || '' },
-      { label: 'Vai trò',       key: u => {
+      { label: 'Họ tên', key: u => u.name || '' },
+      { label: 'Vai trò', key: u => {
           const role = u.role || 'staff';
           return `<span class="badge ${role==='admin'?'badge-purple':'badge-blue'}">${ROLE_LABEL[role]||role}</span>`;
         }
       },
-      { label: '',              key: u => {
+      { label: 'Chi nhánh', key: u => {
+          const b = u.branch || 'all';
+          const cls = b==='all' ? 'badge-green' : 'badge-gray';
+          return `<span class="badge ${cls}">${BRANCH_LABEL[b]||b}</span>`;
+        }
+      },
+      { label: '', key: u => {
           const isSelf = u._key === me?._key;
           return `
             <button class="btn btn--sm btn--secondary user-edit" data-key="${u._key}">Sửa</button>
@@ -74,6 +81,7 @@ export async function mount(container) {
   function openForm(record) {
     const wrap = document.getElementById('user-form-wrap');
     wrap.classList.remove('hidden');
+    const curBranch = record?.branch || 'all';
     wrap.innerHTML = `
       <div class="form-card">
         <h3>${record ? 'Cập nhật người dùng' : 'Thêm người dùng'}</h3>
@@ -97,6 +105,14 @@ export async function mount(container) {
               <option value="admin" ${record?.role==='admin'?'selected':''}>Quản trị</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>Chi nhánh xem được</label>
+            <select id="f-branch">
+              <option value="all" ${curBranch==='all'?'selected':''}>Cả 2 chi nhánh (siêu quản lý)</option>
+              <option value="vinhlong" ${curBranch==='vinhlong'?'selected':''}>Chỉ Vĩnh Long</option>
+              <option value="cantho" ${curBranch==='cantho'?'selected':''}>Chỉ Cần Thơ</option>
+            </select>
+          </div>
         </div>
         <div class="form-actions">
           <button id="f-save" class="btn btn--primary">${record ? 'Cập nhật' : 'Tạo tài khoản'}</button>
@@ -113,13 +129,14 @@ export async function mount(container) {
     document.getElementById('f-save').addEventListener('click', async () => {
       const username = document.getElementById('f-username').value.trim();
       const password = document.getElementById('f-password').value;
-      const name     = document.getElementById('f-name').value.trim();
-      const role     = document.getElementById('f-role').value;
+      const name = document.getElementById('f-name').value.trim();
+      const role = document.getElementById('f-role').value;
+      const branch = document.getElementById('f-branch').value;
 
       if (!username) { toast('Vui lòng nhập tên đăng nhập', 'error'); return; }
       if (!record && !password) { toast('Vui lòng nhập mật khẩu', 'error'); return; }
 
-      const data = { username, name, role };
+      const data = { username, name, role, branch };
       if (password) data.password = password;
 
       try {
