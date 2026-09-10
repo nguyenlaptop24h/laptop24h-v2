@@ -25,7 +25,7 @@ async function lookupUser(uname) {
     let res = null;
     Object.entries(data).forEach(([key, u]) => {
       if ((u.username || '').toLowerCase() === String(uname).toLowerCase())
-        res = { _key: key, id: u.id, name: u.name, username: u.username, role: u.role };
+        res = { _key: key, id: u.id, name: u.name, username: u.username, role: u.role, branch: u.branch };
     });
     return res;
   } catch (e) { return null; }
@@ -52,8 +52,10 @@ export async function initAuth() {
         if (fbUser) {
           const uname = (fbUser.email || '').split('@')[0];
           const info = await lookupUser(uname);
-          const branch = sessionStorage.getItem('laptop24h_branch') || 'vinhlong';
-          currentUser = Object.assign({ username: uname, name: uname, role: 'staff' }, info || {}, { branch });
+          const chosen = sessionStorage.getItem('laptop24h_branch') || 'vinhlong';
+          const access = (info && info.branch) ? info.branch : 'all';        // 'all' = siêu QL (xem cả 2)
+          const effBranch = (access === 'all') ? chosen : access;             // user thường: khoá theo chi nhánh được gán
+          currentUser = Object.assign({ username: uname, name: uname, role: 'staff' }, info || {}, { branch: effBranch, branchAccess: access });
           sessionStorage.setItem('laptop24h_user', JSON.stringify(currentUser));
           showApp();
           finish(currentUser);
@@ -121,7 +123,9 @@ async function legacyLogin(username, password, branch) {
     });
     if (!found) return false;
     delete found.password;
-    currentUser = Object.assign({}, found, { branch });
+    const access = found.branch || 'all';
+    const effBranch = (access === 'all') ? branch : access;
+    currentUser = Object.assign({}, found, { branch: effBranch, branchAccess: access });
     sessionStorage.setItem('laptop24h_user', JSON.stringify(currentUser));
     showApp();
     return true;
@@ -153,7 +157,24 @@ function showApp() {
   const nameEl = document.getElementById('user-name');
   if (nameEl) nameEl.textContent = currentUser?.name || currentUser?.username || '';
   const branchEl = document.getElementById('branch-label');
-  if (branchEl) branchEl.textContent = BRANCH_NAMES[currentUser?.branch] || '';
+  if (branchEl) {
+    const bacc = currentUser?.branchAccess || 'all';
+    if (bacc === 'all') {
+      // Siêu quản lý: cho phép chuyển chi nhánh ngay trong app
+      branchEl.innerHTML = '<select id="branch-switch" title="Chuyển chi nhánh" style="width:100%;padding:5px 8px;border:1px solid #475569;border-radius:6px;background:#0f172a;color:#e2e8f0;font-size:12px;cursor:pointer">'
+        + '<option value="vinhlong"' + (currentUser.branch === 'vinhlong' ? ' selected' : '') + '>📍 Vĩnh Long</option>'
+        + '<option value="cantho"' + (currentUser.branch === 'cantho' ? ' selected' : '') + '>📍 Cần Thơ</option></select>';
+      const sw = document.getElementById('branch-switch');
+      if (sw) sw.addEventListener('change', () => {
+        currentUser.branch = sw.value;
+        sessionStorage.setItem('laptop24h_branch', sw.value);
+        sessionStorage.setItem('laptop24h_user', JSON.stringify(currentUser));
+        location.reload();
+      });
+    } else {
+      branchEl.textContent = BRANCH_NAMES[currentUser?.branch] || '';
+    }
+  }
 }
 
 function showAuth() {
