@@ -8,11 +8,11 @@ const COLLECTION = 'users';
 
 registerRoute('#users', mount);
 
-const ROLE_LABEL = { admin: 'Quản trị', staff: 'Nhân viên' };
+const ROLE_LABEL = { admin: 'Quản trị', manager: 'Quản lý', staff: 'Nhân viên' };
 const BRANCH_LABEL = { all: 'Cả 2 (siêu QL)', vinhlong: 'Vĩnh Long', cantho: 'Cần Thơ' };
 
 export async function mount(container) {
-  if (!isAdmin()) {
+  if (!isAdmin() || getCurrentUser()?.role === 'manager') {
     container.innerHTML = '<div style="padding:2rem;color:#e53e3e">Bạn không có quyền truy cập trang này.</div>';
     return;
   }
@@ -102,6 +102,7 @@ export async function mount(container) {
             <label>Vai trò</label>
             <select id="f-role">
               <option value="staff" ${record?.role==='staff'||!record?.role?'selected':''}>Nhân viên</option>
+              <option value="manager" ${record?.role==='manager'?'selected':''}>Quản lý (như Quản trị, trừ Thống kê & Nhân viên)</option>
               <option value="admin" ${record?.role==='admin'?'selected':''}>Quản trị</option>
             </select>
           </div>
