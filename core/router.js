@@ -1,7 +1,7 @@
 // core/router.js - Hash-based routing
 // MÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi module tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ± ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ route cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§a mÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¬nh qua registerRoute()
 
-import { isAdmin } from './auth.js';
+import { isAdmin, canViewStats, canManageUsers } from './auth.js';
 
 const routes = {};
 let currentRoute = null;
@@ -20,8 +20,11 @@ export function initRouter() {
 
   async function navigate() {
     const hash = location.hash || '#repairs';
-  // Nhân viên (không phải admin) chỉ được vào: Phiếu sửa chữa, Kho hàng, Khách hàng
+  // Nhân viên (không phải admin/quản lý) chỉ được vào: Phiếu sửa chữa, Kho hàng, Khách hàng
   if (!isAdmin() && ['#repairs','#inventory','#customers'].indexOf(hash) < 0) { location.hash = '#repairs'; return; }
+  // Quản lý: KHÔNG được vào Thống kê & Nhân viên
+  if (hash === '#stats' && !canViewStats()) { location.hash = '#repairs'; return; }
+  if (hash === '#users' && !canManageUsers()) { location.hash = '#repairs'; return; }
     const mountFn = routes[hash];
     const main = document.getElementById('main-content');
     if (!mountFn) {

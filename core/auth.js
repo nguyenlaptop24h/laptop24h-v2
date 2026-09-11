@@ -154,6 +154,13 @@ function showApp() {
       if (a && _allow.indexOf(a.getAttribute('href')) < 0) li.style.display = 'none';
     });
   }
+  // Vai trò "Quản lý": như Quản trị nhưng KHÔNG xem Thống kê & Nhân viên
+  document.querySelectorAll('#nav-links li').forEach(li => {
+    const a = li.querySelector('a'); if (!a) return;
+    const h = a.getAttribute('href');
+    if (h === '#stats' && !canViewStats()) li.style.display = 'none';
+    if (h === '#users' && !canManageUsers()) li.style.display = 'none';
+  });
   const nameEl = document.getElementById('user-name');
   if (nameEl) nameEl.textContent = currentUser?.name || currentUser?.username || '';
   const branchEl = document.getElementById('branch-label');
@@ -198,4 +205,9 @@ function showAuth() {
 }
 
 export function getCurrentUser() { return currentUser; }
-export function isAdmin() { return currentUser?.role === 'admin'; }
+// "manager" (Quản lý) có quyền như admin (trừ xem Thống kê)
+export function isAdmin() { return currentUser?.role === 'admin' || currentUser?.role === 'manager'; }
+// Chỉ Quản trị mới xem được Thống kê
+export function canViewStats() { return currentUser?.role === 'admin'; }
+// Chỉ Quản trị mới quản lý được Nhân viên
+export function canManageUsers() { return currentUser?.role === 'admin'; }
