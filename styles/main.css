@@ -238,7 +238,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px;
   .module-header h2 { font-size: 1.15rem; }
   .module-actions { width: 100%; }
   .module-actions .btn { flex: 1 1 auto; text-align: center; }
-  .search-input { min-width: 0; width: 100%; }
+
+  /* Thanh tìm/lọc trong các module (search, trạng thái, ngày Từ/Đến):
+     đè width cố định inline (vd 145px) để mỗi ô xuống 1 dòng, rộng hết màn */
+  #main-content .search-input {
+    width: 100% !important; min-width: 0 !important; flex: 1 1 100% !important;
+    box-sizing: border-box;
+  }
+  /* Header gọn (tiêu đề + 1 nút nhỏ như "Thùng rác"): giữ trên cùng một hàng */
+  #rep-sticky .module-header,
+  #main-content .module-header.mh-inline { flex-direction: row !important; align-items: center !important; }
 
   /* Bảng: cuộn ngang thay vì bị bóp méo */
   .data-table, .st-tbl { display: block; overflow-x: auto; white-space: nowrap;
