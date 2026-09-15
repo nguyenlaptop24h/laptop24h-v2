@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Laptop 24h - Quản lý</title>
-<link rel="stylesheet" href="styles/main.css" />
+<link rel="stylesheet" href="styles/main.css?v=2" />
 <style>
   #nav-links a { display: flex; align-items: center; gap: 11px; white-space: nowrap; }
   .nav-ic { flex: none; opacity: .9; }
@@ -38,6 +38,12 @@
 
 <!-- Giao diện chính -->
 <div id="app" class="screen hidden">
+<!-- Thanh trên cùng cho điện thoại (ẩn trên máy tính) -->
+<div id="mobile-topbar">
+  <button id="nav-toggle" type="button" aria-label="Mở menu">☰</button>
+  <span class="mtb-title">Laptop 24h</span>
+</div>
+<div id="nav-backdrop"></div>
 <nav id="sidebar">
 <div class="logo">Laptop 24h</div>
 <div id="branch-label" style="font-size:12px;color:rgba(255,255,255,0.75);padding:0 16px 8px;margin-top:-6px;letter-spacing:0.3px;"></div>
@@ -69,6 +75,19 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+<!-- Bật/tắt ngăn kéo menu trên điện thoại -->
+<script>
+(function(){
+  document.addEventListener('click', function(e){
+    var app = document.getElementById('app');
+    if (!app) return;
+    if (e.target.closest('#nav-toggle'))      app.classList.toggle('nav-open');
+    else if (e.target.closest('#nav-backdrop')) app.classList.remove('nav-open');
+    else if (e.target.closest('#nav-links a'))  app.classList.remove('nav-open');
+  });
+})();
+</script>
 
 <!-- App bootstrap (ES module) -->
 <script type="module" src="app.js?v=182"></script>
