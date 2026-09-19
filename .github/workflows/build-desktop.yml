@@ -1,0 +1,32 @@
+name: Build Desktop (Windows .exe)
+
+# Chạy tay từ tab Actions (nút "Run workflow")
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cài thư viện
+        working-directory: desktop
+        run: npm install
+
+      - name: Build file cài đặt
+        working-directory: desktop
+        run: npm run dist
+
+      - name: Tải file .exe lên (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laptop24h-Setup
+          path: desktop/dist/*.exe
+          if-no-files-found: error
