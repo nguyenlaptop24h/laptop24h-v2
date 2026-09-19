@@ -1,0 +1,45 @@
+{
+  "name": "laptop24h-desktop",
+  "version": "1.0.0",
+  "description": "Laptop 24h - Phần mềm quản lý (bản desktop)",
+  "author": "Laptop 24h",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "make-icon": "node make-icon.js",
+    "dist": "node make-icon.js && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "jimp": "^0.22.12",
+    "png-to-ico": "^2.1.8"
+  },
+  "build": {
+    "appId": "com.laptop24h.quanly",
+    "productName": "Laptop 24h",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "build/icon.ico"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Laptop 24h"
+    }
+  }
+}
