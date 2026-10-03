@@ -835,6 +835,8 @@ function quickChangeStatus(record) {
     var shopAddr = (R.shopAddr && R.shopAddr.trim()) ? R.shopAddr : (T.address || '');
     var shopHot  = (R.shopHot && R.shopHot.trim()) ? R.shopHot : (T.hotline || T.phone || '');
     shopHot = String(shopHot).replace(/^\s*hotline\s*:?\s*/i, '').trim();
+    // Chi nhánh Cần Thơ: luôn dùng đúng địa chỉ + SĐT Cần Thơ trên phiếu
+    try { if ((JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch||'') === 'cantho') { shopAddr = '36 Mạc Thiên Tích, phường Ninh Kiều, TP Cần Thơ'; shopHot = '0913.929.515'; } } catch(e) {}
     var shopLogo = (R.logo && R.logo.length > 10) ? R.logo : (T.logo || LOGO24H);
     var rTitle = R.title || 'PHIẾU NHẬN MÁY';
     var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
@@ -963,6 +965,8 @@ async function printWarrantySlip(d) {
     var shopAddr = (R.shopAddr && R.shopAddr.trim()) ? R.shopAddr : (T.address || '');
     var shopHot  = (R.shopHot && R.shopHot.trim()) ? R.shopHot : (T.hotline || T.phone || '');
     shopHot = String(shopHot).replace(/^\s*hotline\s*:?\s*/i, '').trim();
+    // Chi nhánh Cần Thơ: luôn dùng đúng địa chỉ + SĐT Cần Thơ trên phiếu
+    try { if ((JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch||'') === 'cantho') { shopAddr = '36 Mạc Thiên Tích, phường Ninh Kiều, TP Cần Thơ'; shopHot = '0913.929.515'; } } catch(e) {}
     var shopLogo = (R.logo && R.logo.length > 10) ? R.logo : (T.logo || LOGO24H);
     var rPaper = (R.paper === 'A4') ? 'A4' : 'A5';
     var scale = (Number(R.fontScale)||100)/100; if (scale < 0.5) scale = 0.5; if (scale > 2) scale = 2;
