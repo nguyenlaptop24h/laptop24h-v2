@@ -207,7 +207,11 @@ function showAuth() {
 export function getCurrentUser() { return currentUser; }
 // "manager" (Quản lý) có quyền như admin (trừ xem Thống kê)
 export function isAdmin() { return currentUser?.role === 'admin' || currentUser?.role === 'manager'; }
-// Chỉ Quản trị mới xem được Thống kê
-export function canViewStats() { return currentUser?.role === 'admin'; }
+// Thống kê: Quản trị xem cả 2 chi nhánh. Siêu quản lý "vucc" chỉ xem được khi đang ở Cần Thơ (không xem Vĩnh Long).
+export function canViewStats() {
+  if (currentUser?.role === 'admin') return true;
+  if ((currentUser?.username || '').toLowerCase() === 'vucc' && currentUser?.branch === 'cantho') return true;
+  return false;
+}
 // Chỉ Quản trị mới quản lý được Nhân viên
 export function canManageUsers() { return currentUser?.role === 'admin'; }
