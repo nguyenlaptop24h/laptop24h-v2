@@ -517,6 +517,7 @@ export async function mount(container) {
       if (period==='single' && singleEl.value)
         lbl = new Date(singleEl.value+'T00:00:00').toLocaleDateString('vi-VN');
 
+      const _isCT = (function(){ try { return (JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch||'') === 'cantho'; } catch(e){ return false; } })();
       content.innerHTML = `
         <div class="st-grid">
 
@@ -525,6 +526,18 @@ export async function mount(container) {
             <h3>&#128200; Bi&#7875;u &#273;&#7891; l&#7907;i nhu&#7853;n &mdash; ${lbl} <span style="font-weight:400;font-size:11px;color:#888">(b&#7845;m v&#224;o c&#7897;t &#273;&#7875; xem chi ti&#7871;t ng&#224;y &#273;&#243;)</span></h3>
             <div class="st-chart-wrap"><canvas id="st-chart"></canvas></div>
           </div>
+
+          ${_isCT ? `
+          <!-- TONG LOI NHUAN (CAN THO) -->
+          <div class="st-panel st-full" style="background:linear-gradient(135deg,#ecfdf5,#eff6ff);border:1px solid #bbf7d0">
+            <h3>&#128176; T&#7893;ng l&#7907;i nhu&#7853;n (S&#7917;a ch&#7919;a + B&#225;n h&#224;ng) &mdash; ${lbl}</h3>
+            <div class="st-row" style="padding-top:6px;border-bottom:1px dashed #cbd5e1">
+              <span class="st-label" style="font-weight:700;font-size:15px">T&#7893;ng l&#7907;i nhu&#7853;n</span>
+              <span class="st-val ${(repProfit+saleProfit)>=0?'green':'red'}" style="font-size:22px;font-weight:800">${formatVND(repProfit+saleProfit)}</span>
+            </div>
+            <div class="st-row"><span class="st-label">&bull; L&#7907;i nhu&#7853;n s&#7917;a ch&#7919;a</span><span class="st-val ${repProfit>=0?'green':'red'}">${formatVND(repProfit)}</span></div>
+            <div class="st-row"><span class="st-label">&bull; L&#7907;i nhu&#7853;n b&#225;n h&#224;ng</span><span class="st-val ${saleProfit>=0?'green':'red'}">${formatVND(saleProfit)}</span></div>
+          </div>` : ''}
 
           <!-- SUA CHUA -->
           <div class="st-panel">
@@ -571,7 +584,8 @@ export async function mount(container) {
             </div>
           </div>
 
-          <!-- KY THUAT VIEN -->
+          <!-- KY THUAT VIEN (ẩn ở Cần Thơ) -->
+          ${_isCT ? '' : `
           <div class="st-panel st-full">
             <h3>&#128104;&#8205;&#128295; Th&#7889;ng k&#234; k&#7929; thu&#7853;t vi&#234;n &mdash; ${lbl}</h3>
             <div style="font-size:12px;color:#888;margin:-4px 0 6px">Bi&#7875;u &#273;&#7891; l&#7907;i nhu&#7853;n 6 th&#225;ng g&#7847;n nh&#7845;t</div>
@@ -587,7 +601,7 @@ export async function mount(container) {
               </tr></thead>
               <tbody>${techRows}</tbody>
             </table>
-          </div>
+          </div>`}
 
           <!-- KHO HANG -->
           <div class="st-panel st-full">
