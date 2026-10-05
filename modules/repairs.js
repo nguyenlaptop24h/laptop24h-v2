@@ -397,8 +397,16 @@ function openRepBillTplModal() {
 // Cho phép mở trình chỉnh mẫu từ module Cài đặt
 if (typeof window !== 'undefined') { window.__openRepBillTpl = openRepBillTplModal; window.__openReceiptTpl = openReceiptTplModal; }
 let _sheetToken = '';
+let _sheetUrlCanthoRep = 'https://script.google.com/macros/s/AKfycbxDK7nFOhPCcdKVHO5daQlWwh636yJHC3tKnWGA-wRci4QQXY355MuHJawATGgg3gs7rQ/exec'; // Apps Script sheet SỬA CHỮA của Cần Thơ
 function logRepairToSheet(data, action) {
-    try { fetch(REPAIRS_SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:_sheetToken,...data})}).catch(()=>{}); } catch(e){}
+    try {
+      var br = '';
+      try { br = JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch || ''; } catch(e){}
+      // Cần Thơ ghi sang sheet riêng; nếu chưa cấu hình link thì KHÔNG ghi (tránh trộn vào sheet Vĩnh Long)
+      var url = (br === 'cantho') ? _sheetUrlCanthoRep : REPAIRS_SHEET_URL;
+      if (!url) return;
+      fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:_sheetToken,branch:br,...data})}).catch(()=>{});
+    } catch(e){}
 }
 
 export async function mount(container) {
@@ -458,6 +466,7 @@ let showTrash = false;
   });
   try { getDB().ref('repairReceiptTpl').on('value', sn => { const v = sn.val(); if (v) { _recTpl = v; try { localStorage.setItem(RPL_RECEIPT_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
   try { getDB().ref('config/sheetToken').once('value').then(function(s){ _sheetToken = s.val() || ''; }).catch(function(){}); } catch(e) {}
+  try { getDB().ref('config/sheetUrlCanthoRep').once('value').then(function(s){ if (s.val()) _sheetUrlCanthoRep = s.val(); }).catch(function(){}); } catch(e) {}
   container.addEventListener('unmount', () => unsub && unsub());
 
   window.__editNote = (key) => {

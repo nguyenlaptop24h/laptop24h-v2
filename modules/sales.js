@@ -49,13 +49,19 @@ function _addMonths(dateStr, months) {
   return y + '-' + mo + '-' + da;
 }
 
+let _sheetUrlCanthoSale = 'https://script.google.com/macros/s/AKfycbzEHRM-UNCX2Rw8lVy4_vBSmwCVKURfvMTgeyFV4-Au17glR4dp1ezMlNMeBxMw5eEp/exec'; // Apps Script sheet BÁN HÀNG của Cần Thơ
 function logToSheet(data, action) {
   try {
-    fetch(SALES_SHEET_URL, {
+    var br = '';
+    try { br = JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}').branch || ''; } catch(e){}
+    // Cần Thơ ghi sang sheet riêng; chưa cấu hình link thì KHÔNG ghi (tránh trộn vào sheet Vĩnh Long)
+    var url = (br === 'cantho') ? _sheetUrlCanthoSale : SALES_SHEET_URL;
+    if (!url) return;
+    fetch(url, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...data })
+      body: JSON.stringify({ action, branch: br, ...data })
     }).catch(() => {});
   } catch(e) {}
 }
@@ -534,6 +540,7 @@ export async function mount(container) {
   if (_dClear) _dClear.onclick = () => { _dFrom.value = ''; _dTo.value = ''; dateFrom = ''; dateTo = ''; filterMode = 'day'; _dClear.style.display = 'none'; updateFilterUI(); currentPage = 1; render(); };
   container.querySelector('#sl-tpl-btn').onclick = openTemplateEditor;
   try { getDB().ref('billTemplate').on('value', s => { const v = s.val(); if (v) { _billTpl = v; try { localStorage.setItem(TPL_KEY, JSON.stringify(v)); } catch(e) {} } }); } catch(e) {}
+  try { getDB().ref('config/sheetUrlCanthoSale').once('value').then(function(s){ if (s.val()) _sheetUrlCanthoSale = s.val(); }).catch(function(){}); } catch(e) {}
 
   // Template editor buttons
   container.querySelector('#sl-tpl-close').onclick  = () => container.querySelector('#sl-tpl-overlay').style.display = 'none';
