@@ -1,6 +1,6 @@
 // Laptop 24h - Bản desktop (Electron)
 // Mở phần mềm web (GitHub Pages) trong một cửa sổ ứng dụng riêng.
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, session } = require('electron');
 const path = require('path');
 
 const APP_URL = 'https://nguyenlaptop24h.github.io/laptop24h-v2/';
@@ -33,9 +33,9 @@ function createWindow() {
     return { action: 'allow' };
   });
 
-  // Nếu mất mạng / lỗi tải trang → thử lại sau 3 giây
+  // Nếu mất mạng / lỗi tải trang → thử lại sau 3 giây (bỏ qua cache)
   win.webContents.on('did-fail-load', (e, code, desc, validatedURL, isMainFrame) => {
-    if (isMainFrame) setTimeout(() => win.loadURL(APP_URL), 3000);
+    if (isMainFrame) setTimeout(() => { try { win.webContents.reloadIgnoringCache(); } catch(_) { win.loadURL(APP_URL); } }, 3000);
   });
 }
 
@@ -45,10 +45,11 @@ function buildMenu() {
     {
       label: 'Ứng dụng',
       submenu: [
-        { label: 'Tải lại', accelerator: 'CmdOrCtrl+R', click: () => win && win.reload() },
+        { label: 'Tải lại', accelerator: 'CmdOrCtrl+R', click: () => win && win.webContents.reloadIgnoringCache() },
+        { label: 'Làm mới (xoá bộ nhớ đệm)', accelerator: 'CmdOrCtrl+Shift+R', click: () => { try { session.defaultSession.clearCache().finally(() => win && win.webContents.reloadIgnoringCache()); } catch(_) { win && win.webContents.reloadIgnoringCache(); } } },
         { label: 'In', accelerator: 'CmdOrCtrl+P', click: () => win && win.webContents.print() },
         { type: 'separator' },
-        { label: 'Phoóng to', accelerator: 'CmdOrCtrl+=', role: 'zoomIn' },
+        { label: 'Phóng to', accelerator: 'CmdOrCtrl+=', role: 'zoomIn' },
         { label: 'Thu nhỏ', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
         { label: 'Cỡ mặc định', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
         { type: 'separator' },
@@ -60,7 +61,10 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Xoá bộ nhớ đệm mỗi lần mở để luôn tải bản phần mềm mới nhất
+  // (tránh kẹt ở màn hình đăng nhập do giữ bản cũ của các file lõi).
+  try { await session.defaultSession.clearCache(); } catch (e) {}
   buildMenu();
   createWindow();
   app.on('activate', () => {
