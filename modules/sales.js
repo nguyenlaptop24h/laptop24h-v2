@@ -1115,11 +1115,15 @@ export async function mount(container) {
 
     const subtotal = items.reduce((s, it) => s + Math.max(0, it.qty * it.price - it.discount), 0);
     const total    = Math.max(0, subtotal - extraDiscount);
+    var _meU = (function(){ try { return JSON.parse(sessionStorage.getItem('laptop24h_user')||'{}'); } catch(e){ return {}; } })();
+    var _meName = _meU.name || _meU.username || '';
+    var _oldSale = editKey ? allItems.find(s => s._key === editKey) : null;
     const data = {
       customer, phone, date, payMethod, status, note,
       items, subtotal, extraDiscount, total, paid,
+      staff: (_oldSale && _oldSale.staff) ? _oldSale.staff : _meName,   // người bán (giữ nguyên khi sửa đơn cũ)
       createdAt: editKey
-        ? (allItems.find(s => s._key === editKey)?.createdAt || Date.now())
+        ? (_oldSale?.createdAt || Date.now())
         : Date.now()
     };
 

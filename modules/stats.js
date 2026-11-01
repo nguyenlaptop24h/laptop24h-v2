@@ -159,6 +159,11 @@ export async function mount(container) {
     // Chưa giao → chưa tính tiền.
     return 0;
   }
+  // Bán hàng: tính tiền theo NGÀY BÁN (hoàn thành ngày nào tính ngày đó).
+  function saleMs(sl) {
+    if (sl && sl.date) { var t = new Date(sl.date + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+    return (sl.ts || sl.createdAt) || 0;
+  }
 
   // ─── revenue chart ──────────────────────────────────────
   async function renderRevenueChart(repF, saleF, from, to, productByKey) {
@@ -187,7 +192,7 @@ export async function mount(container) {
         const hE = new Date(baseDay); hE.setHours(h,59,59,999);
         buckets.push({ type:'hour', date:_ld(baseDay), from:hS.getTime(), to:hE.getTime() });
         repData.push( repF.filter(r=>inRange(repMs(r), hS.getTime(), hE.getTime())).reduce((s,r)=>s+repProfitOf(r),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt, hS.getTime(), hE.getTime())).reduce((s,sl)=>s+saleProfitOf(sl),0));
+        saleData.push(saleF.filter(s=>inRange(saleMs(s), hS.getTime(), hE.getTime())).reduce((s,sl)=>s+saleProfitOf(sl),0));
       }
     } else if (diffDays <= 62) {
       // Daily
@@ -197,7 +202,7 @@ export async function mount(container) {
         const dS = d.getTime(), dE = dS + 86399999;
         buckets.push({ type:'day', date:_ld(d), from:dS, to:dE });
         repData.push( repF.filter(r=>inRange(repMs(r),dS,dE)).reduce((s,r)=>s+repProfitOf(r),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,dS,dE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
+        saleData.push(saleF.filter(s=>inRange(saleMs(s),dS,dE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
       }
     } else {
       // Monthly
@@ -210,7 +215,7 @@ export async function mount(container) {
         const mE = nx.getTime()-1;
         buckets.push({ type:'month', from:mS, to:mE });
         repData.push( repF.filter(r=>inRange(repMs(r),mS,mE)).reduce((s,r)=>s+repProfitOf(r),0));
-        saleData.push(saleF.filter(s=>inRange(s.ts||s.createdAt,mS,mE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
+        saleData.push(saleF.filter(s=>inRange(saleMs(s),mS,mE)).reduce((s,sl)=>s+saleProfitOf(sl),0));
         cur = nx;
       }
     }
@@ -340,7 +345,7 @@ export async function mount(container) {
       ]);
 
       const repF  = repairs.filter(r => !r.deletedAt && inRange(repMs(r), from, to));
-      const saleF = sales.filter(s   => !s.deletedAt && inRange(s.ts || s.createdAt, from, to));
+      const saleF = sales.filter(s   => !s.deletedAt && inRange(saleMs(s), from, to));
 
       // ── Repairs ──
       const repRevenue  = repF.reduce((s,r)=>s+(r.cost||0),0);
