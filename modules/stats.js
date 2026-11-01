@@ -149,15 +149,14 @@ export async function mount(container) {
     return ts >= from && ts <= to;
   }
   function repMs(r) {
-    // Tính tiền theo NGÀY GIAO: giao ngày nào tính vào ngày đó.
-    if (r && r.deliveredDate) { var t = new Date(r.deliveredDate + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
-    // Đã đánh dấu "Đã giao" nhưng thiếu ngày giao → tạm lấy ngày nhận / ts để không bị mất.
-    if (r && r.status === 'Đã giao') {
-      if (r.receivedDate) { var t2 = new Date(r.receivedDate + 'T00:00:00').getTime(); if (!isNaN(t2)) return t2; }
-      return (r.ts || r.createdAt) || 0;
-    }
-    // Chưa giao → chưa tính tiền.
-    return 0;
+    // Tính tiền khi đơn ĐÃ XONG ("Hoàn thành" hoặc "Đã giao").
+    // Ngày tính = ngày hoàn thành (ưu tiên), rồi ngày giao, rồi ngày nhận.
+    if (!r) return 0;
+    var st = r.status || '';
+    if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
+    var ds = r.completedDate || r.deliveredDate || r.receivedDate || '';
+    if (ds) { var t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+    return (r.ts || r.createdAt) || 0;
   }
   // Bán hàng: tính tiền theo NGÀY BÁN (hoàn thành ngày nào tính ngày đó).
   function saleMs(sl) {

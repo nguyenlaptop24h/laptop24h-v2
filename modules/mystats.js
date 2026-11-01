@@ -26,11 +26,15 @@ function _isMine(name, me) {
   const n = _noAcc(name); if (!n) return false;
   return n === _noAcc(me.name) || n === _noAcc(me.username);
 }
-// Ngày tính tiền = NGÀY GIAO (hoàn thành). Chưa giao → không tính.
+// Tính tiền khi đơn ĐÃ XONG ("Hoàn thành" hoặc "Đã giao").
+// Ngày tính = ngày hoàn thành (ưu tiên), rồi ngày giao, rồi ngày nhận. Chưa xong → không tính.
 function _repMs(r) {
-  if (r && r.deliveredDate) { const t = new Date(r.deliveredDate + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
-  if (r && r.status === 'Đã giao') { if (r.receivedDate) { const t2 = new Date(r.receivedDate + 'T00:00:00').getTime(); if (!isNaN(t2)) return t2; } return (r.ts || r.createdAt) || 0; }
-  return 0;
+  if (!r) return 0;
+  const st = r.status || '';
+  if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
+  const ds = r.completedDate || r.deliveredDate || r.receivedDate || '';
+  if (ds) { const t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+  return (r.ts || r.createdAt) || 0;
 }
 const _repProfit = r => (r.cost || 0) - (r.partsCost || 0) - (r.discount || 0);
 

@@ -788,7 +788,7 @@ function quickChangeStatus(record) {
     formWrap.querySelector('#rc-save').addEventListener('click', async () => {
       const rq = ta.value.trim();
       try {
-        const update = { ...record, status: 'Hoàn thành', repairRequest: rq };
+        const update = { ...record, status: 'Hoàn thành', repairRequest: rq, completedDate: record.completedDate || todayStr() };
         await updateItem(COLLECTION, record._key, update);
         logRepairToSheet({ ...update, key: record._key }, 'update');
         toast('✅ Hoàn thành');
