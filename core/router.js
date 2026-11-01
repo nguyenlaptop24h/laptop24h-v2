@@ -54,7 +54,7 @@ export function initRouter() {
     import('../modules/expenses.js?v=2'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=4'),
-    import('../modules/mystats.js?v=3'),
+    import('../modules/mystats.js?v=4'),
   ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, services, expenses, users, settings, mystats]) => {
     if (repairs.status === 'fulfilled') registerRoute('#repairs', repairs.value.mount);
     if (sales.status === 'fulfilled') registerRoute('#sales', sales.value.mount);
