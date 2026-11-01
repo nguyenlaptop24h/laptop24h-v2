@@ -154,7 +154,7 @@ export async function mount(container) {
     if (!r) return 0;
     var st = r.status || '';
     if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
-    var ds = r.completedDate || r.deliveredDate || r.receivedDate || '';
+    var ds = r.deliveredDate || r.completedDate || r.receivedDate || '';
     if (ds) { var t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
     return (r.ts || r.createdAt) || 0;
   }

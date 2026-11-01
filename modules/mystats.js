@@ -34,7 +34,7 @@ function _repMs(r) {
   if (!r) return 0;
   const st = r.status || '';
   if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
-  const ds = r.completedDate || r.deliveredDate || r.receivedDate || '';
+  const ds = r.deliveredDate || r.completedDate || r.receivedDate || '';
   if (ds) { const t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
   return (r.ts || r.createdAt) || 0;
 }
