@@ -43,7 +43,7 @@ export function initRouter() {
 
   // Import tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥t cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ modules ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng thÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¹ng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ routes
   Promise.allSettled([
-    import('../modules/repairs.js?v=105'),
+    import('../modules/repairs.js?v=106'),
     import('../modules/sales.js?v=85'),
     import('../modules/inventory.js?v=29'),
     import('../modules/customers.js?v=22'),
@@ -54,7 +54,7 @@ export function initRouter() {
     import('../modules/expenses.js?v=2'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=4'),
-    import('../modules/mystats.js?v=1'),
+    import('../modules/mystats.js?v=2'),
   ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, services, expenses, users, settings, mystats]) => {
     if (repairs.status === 'fulfilled') registerRoute('#repairs', repairs.value.mount);
     if (sales.status === 'fulfilled') registerRoute('#sales', sales.value.mount);
