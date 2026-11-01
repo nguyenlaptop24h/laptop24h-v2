@@ -148,7 +148,7 @@ function showApp() {
   document.querySelectorAll('.admin-only').forEach(el => { el.style.display = admin ? '' : 'none'; });
   // Nhân viên (không phải admin) chỉ thấy: Phiếu sửa chữa, Kho hàng, Khách hàng
   if (!admin) {
-    const _allow = ['#repairs', '#inventory', '#customers'];
+    const _allow = ['#repairs', '#inventory', '#customers', '#mystats'];
     document.querySelectorAll('#nav-links li').forEach(li => {
       const a = li.querySelector('a');
       if (a && _allow.indexOf(a.getAttribute('href')) < 0) li.style.display = 'none';

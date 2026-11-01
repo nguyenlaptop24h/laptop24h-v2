@@ -21,7 +21,7 @@ export function initRouter() {
   async function navigate() {
     const hash = location.hash || '#repairs';
   // Nhân viên (không phải admin/quản lý) chỉ được vào: Phiếu sửa chữa, Kho hàng, Khách hàng
-  if (!isAdmin() && ['#repairs','#inventory','#customers'].indexOf(hash) < 0) { location.hash = '#repairs'; return; }
+  if (!isAdmin() && ['#repairs','#inventory','#customers','#mystats'].indexOf(hash) < 0) { location.hash = '#repairs'; return; }
   // Quản lý: KHÔNG được vào Thống kê & Nhân viên
   if (hash === '#stats' && !canViewStats()) { location.hash = '#repairs'; return; }
   if (hash === '#users' && !canManageUsers()) { location.hash = '#repairs'; return; }
@@ -43,18 +43,19 @@ export function initRouter() {
 
   // Import tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥t cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂºÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ modules ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng thÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¹ng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ routes
   Promise.allSettled([
-    import('../modules/repairs.js?v=104'),
-    import('../modules/sales.js?v=84'),
+    import('../modules/repairs.js?v=105'),
+    import('../modules/sales.js?v=85'),
     import('../modules/inventory.js?v=29'),
     import('../modules/customers.js?v=22'),
     import('../modules/debts.js?v=4'),
-    import('../modules/stats.js?v=26'),
+    import('../modules/stats.js?v=27'),
     import('../modules/warranty.js?v=5'),
     import('../modules/services.js?v=1'),
     import('../modules/expenses.js?v=2'),
     import('../modules/users.js?v=3'),
     import('../modules/settings.js?v=4'),
-  ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, services, expenses, users, settings]) => {
+    import('../modules/mystats.js?v=1'),
+  ]).then(([repairs, sales, inventory, customers, debts, stats, warranty, services, expenses, users, settings, mystats]) => {
     if (repairs.status === 'fulfilled') registerRoute('#repairs', repairs.value.mount);
     if (sales.status === 'fulfilled') registerRoute('#sales', sales.value.mount);
     if (inventory.status === 'fulfilled') registerRoute('#inventory', inventory.value.mount);
@@ -66,6 +67,7 @@ export function initRouter() {
     if (expenses.status === 'fulfilled') registerRoute('#expenses', expenses.value.mount);
     if (users.status === 'fulfilled') registerRoute('#users', users.value.mount);
     if (settings.status === 'fulfilled') registerRoute('#settings', settings.value.mount);
+    if (mystats.status === 'fulfilled') registerRoute('#mystats', mystats.value.mount);
     navigate();
   });
 }
