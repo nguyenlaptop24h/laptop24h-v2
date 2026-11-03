@@ -643,7 +643,7 @@ export async function mount(container) {
         : items.length === 1 ? (items[0].name || '—')
         : `${items[0].name || ''} +${items.length - 1}`;
       const st  = STATUS[s.status || 'done'] || STATUS['done'];
-      const pay = s.payMethod === 'transfer' ? '🏦 CK' : '💵 TM';
+      const pay = (!s.payMethod || s.payMethod === 'cash') ? '💵 TM' : '📅 TG';
 
       if (filterMode === 'trash') {
         return `<tr>
@@ -744,11 +744,16 @@ export async function mount(container) {
       days7.push({ ds, rev, lbl });
     }
     const maxRev = Math.max(...days7.map(d => d.rev), 1);
-    const cash     = active.filter(s => !s.payMethod || s.payMethod === 'cash').length;
-    const transfer = active.filter(s => s.payMethod === 'transfer').length;
-    const total    = (cash + transfer) || 1;
+    const _isCash  = s => !s.payMethod || s.payMethod === 'cash';
+    const cash     = active.filter(_isCash).length;
+    const instl    = active.filter(s => !_isCash(s)).length;
+    const total    = (cash + instl) || 1;
     const cashPct  = Math.round(cash / total * 100);
     const tranPct  = 100 - cashPct;
+    // Trả góp trong tháng này
+    const monthInstl      = monthList.filter(s => !_isCash(s));
+    const monthInstlCount = monthInstl.length;
+    const monthInstlAmt   = monthInstl.reduce((a, x) => a + (x.total || 0), 0);
 
     container.querySelector('#sl-sidebar').innerHTML = `
     <div class="sl-sb-section">
@@ -789,7 +794,12 @@ export async function mount(container) {
       <div style="height:5px;background:#e0e0e0;border-radius:3px;overflow:hidden;margin:3px 0">
         <div style="height:100%;width:${cashPct}%;background:#1a73e8;border-radius:3px"></div>
       </div>
-      <div class="sl-pay-row"><span>🏦 Chuyển khoản</span><b>${tranPct}%</b></div>
+      <div class="sl-pay-row"><span>📅 Trả góp</span><b>${tranPct}%</b></div>
+    </div>
+    <div class="sl-sb-section">
+      <div class="sl-sb-title">Trả góp tháng này</div>
+      <div class="sl-pay-row"><span>Số đơn trả góp</span><b>${monthInstlCount}</b></div>
+      <div class="sl-pay-row"><span>Tiền bán trả góp</span><b>${formatVND(monthInstlAmt)}</b></div>
     </div>`;
   }
 
@@ -826,7 +836,7 @@ export async function mount(container) {
           <label>Thanh toán</label>
           <select id="sf-pay">
             <option value="cash">💵 Tiền mặt</option>
-            <option value="transfer">🏦 Chuyển khoản</option>
+            <option value="installment">📅 Trả góp</option>
           </select>
         </div>
         <div class="sl-field">
@@ -879,7 +889,7 @@ export async function mount(container) {
     modal.querySelector('#sf-customer').value = ex?.customer || '';
     modal.querySelector('#sf-phone').value    = ex?.phone    || '';
     modal.querySelector('#sf-date').value     = ex?.date     || todayStr;
-    modal.querySelector('#sf-pay').value      = ex?.payMethod || 'cash';
+    modal.querySelector('#sf-pay').value      = (ex?.payMethod && ex.payMethod !== 'cash') ? 'installment' : 'cash';
     modal.querySelector('#sf-status').value   = ex?.status   || 'done';
     modal.querySelector('#sf-note').value     = ex?.note     || '';
     modal.querySelector('#sf-extra-disc').value = _dot(ex?.extraDiscount || 0);
@@ -1278,7 +1288,7 @@ export async function mount(container) {
     <div class="cust-box">
       <div class="fi"><span class="k">Khách hàng: </span>${esc(s.customer || 'Khách lẻ')}</div>
       ${s.phone ? `<div class="fi"><span class="k">Điện thoại: </span>${esc(s.phone)}</div>` : ''}
-      <div class="fi"><span class="k">Thanh toán: </span>${s.payMethod === 'transfer' ? '🏦 Chuyển khoản' : '💵 Tiền mặt'}</div>
+      <div class="fi"><span class="k">Thanh toán: </span>${(!s.payMethod || s.payMethod === 'cash') ? '💵 Tiền mặt' : '📅 Trả góp'}</div>
       ${s.note ? `<div class="fi"><span class="k">Ghi chú: </span>${esc(s.note)}</div>` : ''}
     </div>
     <table>
