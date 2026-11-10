@@ -150,11 +150,12 @@ export async function mount(container) {
   }
   function repMs(r) {
     // Tính tiền khi đơn ĐÃ XONG ("Hoàn thành" hoặc "Đã giao").
-    // Ngày tính = ngày hoàn thành (ưu tiên), rồi ngày giao, rồi ngày nhận.
+    // Ngày tính = ngày HOÀN THÀNH (ưu tiên), rồi ngày NHẬN. KHÔNG dùng ngày giao,
+    // để việc bấm "Đã giao" trễ không làm lệch thống kê.
     if (!r) return 0;
     var st = r.status || '';
     if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
-    var ds = r.deliveredDate || r.completedDate || r.receivedDate || '';
+    var ds = r.completedDate || r.receivedDate || '';
     if (ds) { var t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
     return (r.ts || r.createdAt) || 0;
   }

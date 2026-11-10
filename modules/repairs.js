@@ -435,7 +435,9 @@ export async function mount(container) {
       <label style="font-size:.85rem;color:#555">Đến:</label>
       <input id="rep-date-to"   type="date" class="search-input" style="width:145px" value="${today}"/>
       <button id="rep-clear-date" class="btn btn--secondary" style="font-size:.83rem;padding:.35rem .8rem">Tất cả ngày</button>
+      <button id="rep-deliv-btn" class="btn btn--secondary" style="font-size:.83rem;padding:.35rem .8rem" title="Lọc theo NGÀY GIAO MÁY trong khoảng ngày đã chọn">📦 Giao trong ngày</button>
     </div>
+    <div id="rep-deliv-summary" style="display:none;margin-bottom:.6rem;padding:.5rem .8rem;background:#ecfeff;border:1px solid #a5f3fc;border-radius:8px;font-size:.9rem;color:#0e7490;font-weight:600"></div>
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:.4rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb">
       <button id="rep-add" class="btn btn--primary" style="padding:.6rem 2rem;font-size:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(37,99,235,.25)">+ Thêm phiếu mới</button>
       <span id="rep-actionbar" style="display:none">
@@ -460,6 +462,7 @@ export async function mount(container) {
   const PAGE_SIZE = 20;
   let selectedKey = null;
   let selectedKeys = new Set();
+  let deliveryMode = false;
 let showTrash = false;
 
   const searchEl   = container.querySelector('#rep-search');
@@ -523,6 +526,17 @@ let showTrash = false;
 
   container.querySelector('#rep-clear-date').addEventListener('click', () => {
     dateFromEl.value = ''; dateToEl.value = ''; applyFilter();
+  });
+
+  const delivBtn = container.querySelector('#rep-deliv-btn');
+  delivBtn?.addEventListener('click', () => {
+    deliveryMode = !deliveryMode;
+    delivBtn.className = deliveryMode ? 'btn btn--primary' : 'btn btn--secondary';
+    delivBtn.style.cssText = 'font-size:.83rem;padding:.35rem .8rem' + (deliveryMode ? ';background:#0891b2;color:#fff;border-color:#0891b2' : '');
+    statusEl.disabled = deliveryMode;
+    statusEl.style.opacity = deliveryMode ? '.5' : '1';
+    if (deliveryMode && !dateFromEl.value && !dateToEl.value) { dateFromEl.value = today; dateToEl.value = today; }
+    applyFilter();
   });
   container.querySelector('#rep-add').addEventListener('click', () => openForm(null));
 
@@ -608,11 +622,30 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
         (r.phone||'').toLowerCase().includes(q) || (r.device||'').toLowerCase().includes(q) ||
         (r.serial||'').toLowerCase().includes(q);
       const matchSt   = !st || r.status === st;
+      if (deliveryMode) {
+        // Chế độ "Giao trong ngày": chỉ phiếu đã giao, lọc theo NGÀY GIAO MÁY
+        if (r.status !== 'Đã giao' || !r.deliveredDate) return false;
+        const dDate     = r.deliveredDate;
+        const matchFrom = !from || dDate >= from;
+        const matchTo   = !to   || dDate <= to;
+        return matchQ && matchFrom && matchTo;
+      }
       const rDate     = r.receivedDate || (r.ts ? new Date(r.ts).toISOString().slice(0,10) : '');
       const matchFrom = !from || rDate >= from;
       const matchTo   = !to   || rDate <= to;
       return matchQ && matchSt && matchFrom && matchTo;
     });
+    const sumEl = container.querySelector('#rep-deliv-summary');
+    if (sumEl) {
+      if (deliveryMode) {
+        const tongTien = filtered.reduce((s, r) => s + (r.cost || 0), 0);
+        const lbl = (from || to) ? ((from || '…') + (from === to ? '' : ' → ' + (to || '…'))) : 'tất cả ngày';
+        sumEl.style.display = 'block';
+        sumEl.innerHTML = '📦 Giao trong ngày (' + lbl + '): <b>' + filtered.length + '</b> phiếu · Tổng tiền: <b>' + formatVND(tongTien) + '</b>';
+      } else {
+        sumEl.style.display = 'none';
+      }
+    }
     renderTable(filtered);
   }
 
@@ -621,7 +654,9 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
     if (!data.length) { wrap.innerHTML = '<p style="padding:1rem;color:#888">Không có dữ liệu</p>'; return; }
     const cols = [
       { label: '<input type="checkbox" id="rep-chk-all" title="Chọn tất cả" style="cursor:pointer;accent-color:#2563eb">', key: r => '<input type="checkbox" class="rep-chk" data-key="' + r._key + '" style="cursor:pointer;accent-color:#2563eb">' },
-      { label: 'Ngày nhận',  key: r => formatDate(r.receivedDate || r.ts) },
+      deliveryMode
+        ? { label: 'Ngày giao', key: r => formatDate(r.deliveredDate) }
+        : { label: 'Ngày nhận',  key: r => formatDate(r.receivedDate || r.ts) },
       { label: 'Khách hàng', key: r => r.customerName || '' },
       { label: 'SĐT',        key: r => r.phone || '' },
       { label: 'Thiết bị',   key: r => r.device || formatDeliveryItems(r.deliveryItems) || '' },
@@ -1109,7 +1144,7 @@ function openForm(record) {
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>TỔNG TIỀN SỬa (₫)</label><input id="f-cost" type="text" data-fmt="number" readonly style="background:#eef4ff;font-weight:700;color:#1e40af" value="${String(record?.cost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LK MUA NGOÀI (₫)</label><input id="f-partsCostExtra" type="text" data-fmt="number" placeholder="LK mua ngoài kho..." style="background:#fff" value="${String(record?.partsCostExtra||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div><div class="rfm-f"><label>VỐN LINH KIỆN (tổng) (₫)</label><input id="f-partsCost" type="text" data-fmt="number" readonly style="background:#f8fafc;font-weight:600" value="${String(record?.partsCost||0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}"></div></div><div class="rfm-r rfm-r2"><div class="rfm-f"><label>BẢO HÀNH SỬA CHỮA</label><select id="f-warranty"><option value="3 tháng" ${(record?.warranty||'3 tháng')==='3 tháng'?'selected':''}>3 tháng</option><option value="6 tháng" ${record?.warranty==='6 tháng'?'selected':''}>6 tháng</option><option value="1 năm" ${record?.warranty==='1 năm'?'selected':''}>1 năm</option><option value="Không bảo hành" ${record?.warranty==='Không bảo hành'?'selected':''}>Không bảo hành</option></select></div><div class="rfm-f"><label>KỸ THUẬT VIÊN <span style="color:#94a3b8;font-weight:400;text-transform:none">(chọn sau khi có người nhận)</span></label><select id="f-techName">${(function(){var sel=record?.techName||'';var set=new Set(_techOpts);if(sel)set.add(sel);var o='<option value="">— Chọn KTV —</option>';Array.from(set).filter(Boolean).forEach(function(n){o+='<option value="'+String(n).replace(/"/g,'&quot;')+'"'+(n===sel?' selected':'')+'>'+n+'</option>';});return o;})()}</select></div></div>
 <div class="rfm-r rfm-r2"><div class="rfm-f"><label>TRẠNG THÁI</label><select id="f-status">${STATUS_LIST.map(s => '<option ' + ((record?.status||'Tiếp nhận')===s ? 'selected' : '') + '>' + s + '</option>').join('')}</select></div><div class="rfm-f"><label>GHI CHÚ NỘI BỘ</label><textarea id="f-internalNote" placeholder="Chỉ nhân viên thấy...">${record?.internalNote||''}</textarea></div></div>
 <input type="hidden" id="f-paymentType" value="${record?.paymentType||'Tiền mặt'}">
-${isAdmin() ? `<div class="rfm-r rfm-r2"><div class="rfm-f"><label>NGÀY GIAO MÁY <span style="color:#94a3b8;font-weight:400;text-transform:none">(admin sửa để tính lợi nhuận đúng ngày)</span></label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"></div><div class="rfm-f"></div></div>` : `<input type="hidden" id="f-deliveredDate" value="${record?.deliveredDate||''}">`}
+${isAdmin() ? `<div class="rfm-r rfm-r2"><div class="rfm-f"><label>NGÀY GIAO MÁY <span style="color:#94a3b8;font-weight:400;text-transform:none">(ngày trả máy cho khách — dùng cho lọc "Giao trong ngày")</span></label><input id="f-deliveredDate" type="date" value="${record?.deliveredDate||''}"></div><div class="rfm-f"></div></div>` : `<input type="hidden" id="f-deliveredDate" value="${record?.deliveredDate||''}">`}
 </div>
 <div class="rfm-foot"><button class="rfm-cancbtn" id="f-cancel">Hủy</button><button id="f-print" style="padding:9px 22px;border:1.5px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500">🖨 In phiếu</button><button class="rfm-savbtn" id="f-save">💾 Lưu phiếu</button></div>
 </div></div>`;

@@ -29,12 +29,13 @@ function _isMine(name, who) {
   const n = _noAcc(name); if (!n) return false;
   return n === _noAcc(who.name) || n === _noAcc(who.username);
 }
-// Ngày tính = ngày hoàn thành (ưu tiên) → ngày giao → ngày nhận. Chưa xong → không tính.
+// Ngày tính = ngày HOÀN THÀNH (ưu tiên) → ngày NHẬN. KHÔNG dùng ngày giao,
+// để bấm "Đã giao" trễ không làm lệch thống kê. Chưa xong → không tính.
 function _repMs(r) {
   if (!r) return 0;
   const st = r.status || '';
   if (st !== 'Hoàn thành' && st !== 'Đã giao') return 0;
-  const ds = r.deliveredDate || r.completedDate || r.receivedDate || '';
+  const ds = r.completedDate || r.receivedDate || '';
   if (ds) { const t = new Date(ds + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
   return (r.ts || r.createdAt) || 0;
 }
