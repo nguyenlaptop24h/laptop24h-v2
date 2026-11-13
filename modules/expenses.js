@@ -57,33 +57,44 @@ export function mount(container){
   `;
 
   let items = [];
+  let rawItems = [];
   let _ensured = false;
   onSnapshot(COL, list => {
-    items = (list||[]).filter(x=>!x.deletedAt);
+    rawItems = list || [];
+    items = rawItems.filter(x=>!x.deletedAt);
     refreshCatOptions(); render();
     if (!_ensured) { _ensured = true; ensureRecurring(); }
   });
 
   // Tự ghi chi phí cố định cho các tháng mới (copy khoản gần nhất trong chuỗi)
+  // Dùng rawItems (gồm cả khoản ĐÃ XOÁ) để KHÔNG tạo lại tháng mà người dùng đã xoá.
   async function ensureRecurring(){
     const groups = {};
-    items.forEach(x=>{ if(x.recurId){ (groups[x.recurId]=groups[x.recurId]||[]).push(x); } });
+    rawItems.forEach(x=>{ if(x.recurId){ (groups[x.recurId]=groups[x.recurId]||[]).push(x); } });
     const curMonth = ymNow();
     let created = 0;
     for(const id in groups){
       const arr = groups[id].slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-      let latest = arr[arr.length-1];
-      if(!latest || !latest.recurring) continue;              // chuỗi đã dừng
-      let lm = (latest.date||'').slice(0,7);
+      // Mẫu để copy = khoản CÒN HIỆU LỰC (chưa xoá) & đang bật "cố định", mới nhất
+      const activeRecur = arr.filter(x=>!x.deletedAt && x.recurring);
+      let template = activeRecur[activeRecur.length-1];
+      if(!template) continue;                                 // chuỗi đã dừng hoặc đã xoá
+      // Tháng đã có bản ghi (kể cả đã xoá) → coi như đã xử lý, không tạo lại
+      const monthsPresent = new Set(arr.map(x=>(x.date||'').slice(0,7)));
+      let lm = (template.date||'').slice(0,7);
       let guard = 0;
       while(lm < curMonth && guard < 36){
         guard++;
         const nm = addMonthYM(lm, 1);
-        const existing = groups[id].filter(x=>(x.date||'').slice(0,7)===nm)[0];
-        if(existing){ latest = existing; lm = nm; continue; }
-        const day = (latest.date||'').slice(8,10) || '01';
-        const doc = { date:nm+'-'+day, category:latest.category, name:latest.name, amount:latest.amount, note:latest.note||'', recurring:true, recurId:id, createdAt:Date.now() };
-        try { await addItem(COL, doc); created++; groups[id].push(doc); latest = doc; } catch(e){}
+        if(monthsPresent.has(nm)){
+          // cập nhật mẫu nếu tháng đó có bản active mới hơn
+          const act = arr.filter(x=>!x.deletedAt && x.recurring && (x.date||'').slice(0,7)===nm).slice(-1)[0];
+          if(act) template = act;
+          lm = nm; continue;
+        }
+        const day = (template.date||'').slice(8,10) || '01';
+        const doc = { date:nm+'-'+day, category:template.category, name:template.name, amount:template.amount, note:template.note||'', recurring:true, recurId:id, createdAt:Date.now() };
+        try { await addItem(COL, doc); created++; monthsPresent.add(nm); } catch(e){}
         lm = nm;
       }
     }
