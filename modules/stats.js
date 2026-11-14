@@ -264,27 +264,30 @@ export async function mount(container) {
   }
 
   // ─── biểu đồ lợi nhuận KTV theo 6 tháng ────────────────
-  async function renderTechChart(repairs) {
+  async function renderTechChart(repairs, users) {
     const canvas = container.querySelector('#st-tech-chart');
     if (!canvas) return;
     try { await loadChartJs(); } catch (e) { return; }
     try { if (_techChartInstance) _techChartInstance.destroy(); } catch (_) {}
     _techChartInstance = null;
     const noAcc = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toUpperCase().trim();
-    const techs = [{key:'TIEN',label:'TIẾN',color:'#2196F3'},{key:'THUAN',label:'THUẬN',color:'#4CAF50'},{key:'NGUYEN',label:'NGUYÊN',color:'#FF9800'}];
+    const palette = ['#2196F3','#4CAF50','#FF9800','#9C27B0','#E91E63','#00BCD4','#795548','#607D8B'];
+    const accts = (users||[]).map((u,i)=>({ key:u._key||u.username||u.name, label:(u.name||u.username||'').trim(), nName:noAcc(u.name), nUser:noAcc(u.username), color:palette[i%palette.length] })).filter(a=>a.label);
+    const findKey = tn => { const n=noAcc(tn); if(!n) return null; const a=accts.find(x=>(x.nName&&x.nName===n)||(x.nUser&&x.nUser===n)); return a?a.key:null; };
     const now = new Date(); const labels = []; const mkeys = [];
     for (let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); labels.push((d.getMonth()+1)+'/'+d.getFullYear()); mkeys.push(d.getFullYear()+'-'+d.getMonth()); }
-    const data = {}; techs.forEach(t=>{ data[t.key]=mkeys.map(()=>0); });
+    const data = {}; accts.forEach(a=>{ data[a.key]=mkeys.map(()=>0); });
     repairs.forEach(r=>{
       if (r.deletedAt) return;
-      const k = noAcc(r.techName); if (!data[k]) return;
+      const k = findKey(r.techName); if (!k || !data[k]) return;
       const ms = repMs(r); if (!ms) return; const d = new Date(ms);
       const idx = mkeys.indexOf(d.getFullYear()+'-'+d.getMonth()); if (idx<0) return;
       data[k][idx] += (r.cost||0) - (r.partsCost||0) - (r.discount||0);
     });
+    const used = accts.filter(a => data[a.key].some(v=>v!==0));
     _techChartInstance = new Chart(canvas.getContext('2d'), {
       type: 'line',
-      data: { labels, datasets: techs.map(t=>({ label:t.label, data:data[t.key], borderColor:t.color, backgroundColor:t.color, tension:.3, fill:false, pointRadius:3 })) },
+      data: { labels, datasets: used.map(t=>({ label:t.label, data:data[t.key], borderColor:t.color, backgroundColor:t.color, tension:.3, fill:false, pointRadius:3 })) },
       options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{position:'top'}, tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+formatVND(ctx.parsed.y) } } },
@@ -340,8 +343,8 @@ export async function mount(container) {
     const { from, to } = getPeriodRange(period);
 
     try {
-      const [repairs, sales, products, categories] = await Promise.all([
-        getAll('repairs'), getAll('sales'), getAll('products'), getAll('categories')
+      const [repairs, sales, products, categories, users] = await Promise.all([
+        getAll('repairs'), getAll('sales'), getAll('products'), getAll('categories'), getAll('users')
       ]);
 
       const repF  = repairs.filter(r => !r.deletedAt && inRange(repMs(r), from, to));
@@ -374,14 +377,16 @@ export async function mount(container) {
         });
       }).length;
 
-      // ── Thống kê kỹ thuật viên: chỉ 3 KTV, gộp tên không phân biệt dấu / hoa thường ──
+      // ── Thống kê kỹ thuật viên: khớp theo TÀI KHOẢN (tên + tên đăng nhập), GIỐNG "Lợi nhuận của tôi" ──
       const _noAcc = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toUpperCase().trim();
-      const TECHS = [{key:'TIEN',label:'TIẾN'},{key:'THUAN',label:'THUẬN'},{key:'NGUYEN',label:'NGUYÊN'}];
+      const _accts = (users||[]).map(u=>({ key:u._key||u.username||u.name, label:(u.name||u.username||'').trim(), nName:_noAcc(u.name), nUser:_noAcc(u.username) })).filter(a=>a.label);
+      const _findAcct = tn => { const n=_noAcc(tn); if(!n) return null; return _accts.find(a=> (a.nName&&a.nName===n) || (a.nUser&&a.nUser===n)) || null; };
       const techMap = {};
-      TECHS.forEach(t=>{ techMap[t.key] = {name:t.label, tickets:0, done:0, revenue:0, capital:0, profit:0}; });
+      _accts.forEach(a=>{ techMap[a.key] = {name:a.label, tickets:0, done:0, revenue:0, capital:0, profit:0}; });
       repF.forEach(r=>{
-        const g = techMap[_noAcc(r.techName)];
-        if(!g) return;                       // bỏ qua KTV khác / phiếu chưa ghi tên KTV
+        const a = _findAcct(r.techName);
+        if(!a) return;                       // phiếu chưa ghi tên KTV / tên không khớp tài khoản nào
+        const g = techMap[a.key];
         g.tickets++;
         const stt = r.status||'';
         if (stt === 'Hoàn thành' || stt === 'Đã giao') g.done++;
@@ -389,7 +394,7 @@ export async function mount(container) {
         g.capital += (r.partsCost||0);
         g.profit  += repProfitOf(r);
       });
-      const techArr = Object.values(techMap).sort((a,b)=> b.profit - a.profit);
+      const techArr = Object.values(techMap).filter(t=>t.tickets>0).sort((a,b)=> b.profit - a.profit);
 
       const statusMap = {};
       repF.forEach(r=>{ const k=r.status||'Tiếp nhận'; statusMap[k]=(statusMap[k]||0)+1; });
@@ -509,7 +514,7 @@ export async function mount(container) {
             <td style="text-align:right;font-weight:700;color:${t.profit>=0?'#4CAF50':'#f44336'}">${formatVND(t.profit)}</td>
           </tr>`;
         }).join('') + `<tr style="font-weight:700;border-top:2px solid #bbb;background:#fafafa">
-            <td>TỔNG (3 KTV)</td>
+            <td>TỔNG</td>
             <td style="text-align:center">${techArr.reduce((s,t)=>s+t.tickets,0)}</td>
             <td style="text-align:center">${techArr.reduce((s,t)=>s+t.done,0)}</td>
             <td style="text-align:right">${formatVND(techArr.reduce((s,t)=>s+t.revenue,0))}</td>
@@ -639,7 +644,7 @@ export async function mount(container) {
 
       renderLowStockTable(1);
       renderRevenueChart(repF, saleF, from, to, productByKey);
-      renderTechChart(repairs);
+      renderTechChart(repairs, users);
 
     } catch (e) {
       content.innerHTML = `<p style="padding:1rem;color:red">L&#7895;i: ${e.message}</p>`;
