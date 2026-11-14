@@ -419,6 +419,31 @@ function _canonTech(tn) {
   return a ? a.label : '';
 }
 
+// ── Quét ảnh bằng AI (điền tên/SĐT/mô tả) ──
+// URL /exec của Apps Script "Scan-AI". Để trống = chưa cấu hình.
+let _scanUrl = 'https://script.google.com/macros/s/AKfycby5ooPrE7SErS-v4f9FzMhpCwSt2_QtXjf1M2Q0ZqBxcoAny6NOTpmagILtEALqOsNh/exec';
+// Nén ảnh trước khi gửi (giảm dung lượng) → trả base64 (không có tiền tố data:)
+function _downscaleToB64(file, maxSide, quality) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, maxSide / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+        c.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        var durl = c.toDataURL('image/jpeg', quality || 0.72);
+        URL.revokeObjectURL(url);
+        resolve(durl.split(',')[1]);
+      } catch (err) { URL.revokeObjectURL(url); reject(err); }
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Không đọc được ảnh')); };
+    img.src = url;
+  });
+}
+
 export async function mount(container) {
   const today = todayStr();
   try {
@@ -1134,6 +1159,7 @@ function openForm(record) {
 <div class="rfm-ov"><div class="rfm-card">
 <div class="rfm-head"><h2>🔧 Phiếu Nhận Máy Sửa</h2><button class="rfm-x" onclick="document.getElementById('f-cancel').click()">✕</button></div>
 <div class="rfm-body">
+<div style="margin:0 0 10px"><button type="button" id="f-scan" style="width:100%;padding:10px 14px;background:linear-gradient(90deg,#0891b2,#2563eb);color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 6px rgba(37,99,235,.25)">📷 Quét bằng AI — tự điền Tên, SĐT, Lỗi</button><input type="file" id="f-scan-file" accept="image/*" style="display:none"></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f" style="position:relative"><label style="color:#0891b2">🔍 TÊN KHÁCH HÀNG * <span style="color:#94a3b8;font-weight:400;text-transform:none">(gõ để tìm)</span></label><input id="f-customerName" type="text" placeholder="Gõ tên để tìm hoặc nhập mới..." autocomplete="off" value="${record?.customerName||''}"><div id="f-cust-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><div class="rfm-f"><label>SỐ ĐIỆN THOẠI *</label><input id="f-phone" type="text" placeholder="0xxx..." value="${record?.phone||''}"></div><div class="rfm-f"><label>ĐỊA CHỈ</label><input id="f-address" type="text" placeholder="Địa chỉ..." value="${record?.address||''}"></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>THIẾT BỊ *</label><input id="f-device" type="text" placeholder="Dell Inspiron 15 3520" value="${record?.device||''}"></div><div class="rfm-f"><label>SERIAL / IMEI</label><input id="f-serial" type="text" placeholder="SN12345..." value="${record?.serial||''}"></div><div class="rfm-f"><label>MẬT KHẨU MÁY</label><input id="f-password" type="text" placeholder="Password..." value="${record?.password||''}"></div></div>
 <div class="rfm-r rfm-r4">
@@ -1159,6 +1185,41 @@ function openForm(record) {
 </div></div>`;
     formWrap.classList.add('rep-modal');
     formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); });
+
+    // ── Nút "Quét bằng AI" ──
+    (function () {
+      const sbtn = formWrap.querySelector('#f-scan');
+      const sfile = formWrap.querySelector('#f-scan-file');
+      if (!sbtn || !sfile) return;
+      sbtn.addEventListener('click', () => {
+        if (!_scanUrl) { toast('Tính năng quét ảnh AI chưa được cấu hình', 'warning'); return; }
+        sfile.click();
+      });
+      sfile.addEventListener('change', async () => {
+        const f = sfile.files && sfile.files[0]; sfile.value = '';
+        if (!f) return;
+        const old = sbtn.textContent; sbtn.disabled = true; sbtn.style.opacity = '.75'; sbtn.textContent = '⏳ Đang đọc ảnh...';
+        try {
+          const b64 = await _downscaleToB64(f, 1280, 0.72);
+          const resp = await fetch(_scanUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'scan', image: b64, mime: 'image/jpeg' })
+          });
+          const data = await resp.json();
+          if (data.error) { toast('Lỗi AI: ' + data.error, 'error'); }
+          else {
+            const set = (id, v) => { const el = formWrap.querySelector('#' + id); if (el && v) el.value = v; };
+            set('f-customerName', data.name);
+            set('f-phone', String(data.phone || '').replace(/[^0-9]/g, ''));
+            set('f-initialCondition', data.description);
+            const got = [data.name && 'tên', data.phone && 'SĐT', data.description && 'lỗi'].filter(Boolean).join(', ');
+            toast(got ? ('✅ Đã điền: ' + got + ' — kiểm tra lại nhé') : 'Không tìm thấy thông tin trong ảnh', got ? 'success' : 'warning');
+          }
+        } catch (e) { toast('Lỗi quét ảnh: ' + e.message, 'error'); }
+        sbtn.disabled = false; sbtn.style.opacity = '1'; sbtn.textContent = old;
+      });
+    })();
     formWrap.querySelector('#f-print').addEventListener('click', () => {
       const fv = id => formWrap.querySelector('#'+id).value;
       const d = {
