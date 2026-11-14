@@ -444,6 +444,103 @@ function _downscaleToB64(file, maxSide, quality) {
   });
 }
 
+// Gửi ảnh (base64) tới proxy AI, trả về dữ liệu đã đọc.
+async function _scanSend(b64) {
+  const resp = await fetch(_scanUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'scan', image: b64, mime: 'image/jpeg' })
+  });
+  return await resp.json();
+}
+
+// Điền dữ liệu AI vào form; trả về danh sách nhãn đã điền.
+function _fillScan(formWrap, data) {
+  const set = (id, v) => { const el = formWrap.querySelector('#' + id); if (el && v) el.value = v; };
+  set('f-customerName', data.name);
+  if (data.phone) set('f-phone', String(data.phone).replace(/[^0-9]/g, ''));
+  set('f-initialCondition', data.description);
+  set('f-device', data.device);
+  set('f-serial', data.serial);
+  set('f-cpu', data.cpu);
+  set('f-ram', data.ram);
+  set('f-ssd', data.ssd);
+  const got = [];
+  if (data.name) got.push('tên'); if (data.phone) got.push('SĐT'); if (data.description) got.push('lỗi');
+  if (data.device) got.push('model'); if (data.serial) got.push('serial');
+  if (data.cpu || data.ram || data.ssd) got.push('cấu hình');
+  return got;
+}
+
+// Mở khung camera trực tiếp để quét giấy khách hoặc TEM trên máy.
+function _openScanModal(formWrap) {
+  const ov = document.createElement('div');
+  ov.id = 'scan-ov';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px';
+  ov.innerHTML =
+    '<div style="color:#fff;font-weight:600;font-size:15px;text-align:center">📷 Đưa <b>giấy khách</b> hoặc <b>TEM trên máy</b> vào khung rồi bấm Chụp &amp; đọc</div>' +
+    '<video id="scan-video" autoplay playsinline muted style="max-width:96vw;max-height:60vh;border-radius:12px;background:#000"></video>' +
+    '<div id="scan-status" style="color:#cbd5e1;font-size:13px;min-height:18px;text-align:center"></div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">' +
+      '<button type="button" id="scan-shot" style="padding:12px 22px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">📸 Chụp &amp; đọc</button>' +
+      '<button type="button" id="scan-pick" style="padding:12px 18px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">🖼 Chọn ảnh</button>' +
+      '<button type="button" id="scan-close" style="padding:12px 18px;background:#475569;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">Đóng</button>' +
+    '</div>' +
+    '<input type="file" id="scan-file" accept="image/*" style="display:none">';
+  document.body.appendChild(ov);
+
+  const video = ov.querySelector('#scan-video');
+  const statusEl = ov.querySelector('#scan-status');
+  const shotBtn = ov.querySelector('#scan-shot');
+  let stream = null, busy = false;
+  const stop = () => { try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (e) {} };
+  const close = () => { stop(); ov.remove(); };
+
+  (async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      video.srcObject = stream;
+    } catch (e) {
+      statusEl.textContent = 'Không mở được camera — hãy bấm "🖼 Chọn ảnh".';
+    }
+  })();
+
+  const process = async (b64) => {
+    if (busy) return; busy = true;
+    stop();
+    statusEl.textContent = '⏳ Đang đọc... (có thể mất vài giây)';
+    shotBtn.disabled = true; shotBtn.style.opacity = '.6';
+    try {
+      const data = await _scanSend(b64);
+      if (data.error) { statusEl.textContent = 'Lỗi: ' + data.error; busy = false; shotBtn.disabled = false; shotBtn.style.opacity = '1'; return; }
+      const got = _fillScan(formWrap, data);
+      close();
+      toast(got.length ? ('✅ Đã điền: ' + got.join(', ') + ' — kiểm tra lại nhé') : 'Không tìm thấy thông tin trong ảnh', got.length ? 'success' : 'warning');
+    } catch (e) {
+      statusEl.textContent = 'Lỗi: ' + e.message; busy = false; shotBtn.disabled = false; shotBtn.style.opacity = '1';
+    }
+  };
+
+  shotBtn.addEventListener('click', () => {
+    if (!stream || !video.videoWidth) { statusEl.textContent = 'Camera chưa sẵn sàng.'; return; }
+    const w = video.videoWidth, h = video.videoHeight;
+    const scale = Math.min(1, 1280 / Math.max(w, h));
+    const c = document.createElement('canvas'); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+    process(c.toDataURL('image/jpeg', 0.72).split(',')[1]);
+  });
+
+  const fileEl = ov.querySelector('#scan-file');
+  ov.querySelector('#scan-pick').addEventListener('click', () => fileEl.click());
+  fileEl.addEventListener('change', async () => {
+    const f = fileEl.files && fileEl.files[0]; fileEl.value = '';
+    if (!f) return;
+    try { const b64 = await _downscaleToB64(f, 1280, 0.72); process(b64); }
+    catch (e) { statusEl.textContent = 'Lỗi ảnh: ' + e.message; }
+  });
+  ov.querySelector('#scan-close').addEventListener('click', close);
+}
+
 export async function mount(container) {
   const today = todayStr();
   try {
@@ -1159,7 +1256,7 @@ function openForm(record) {
 <div class="rfm-ov"><div class="rfm-card">
 <div class="rfm-head"><h2>🔧 Phiếu Nhận Máy Sửa</h2><button class="rfm-x" onclick="document.getElementById('f-cancel').click()">✕</button></div>
 <div class="rfm-body">
-<div style="margin:0 0 10px"><button type="button" id="f-scan" style="width:100%;padding:10px 14px;background:linear-gradient(90deg,#0891b2,#2563eb);color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 6px rgba(37,99,235,.25)">📷 Quét bằng AI — tự điền Tên, SĐT, Lỗi</button><input type="file" id="f-scan-file" accept="image/*" style="display:none"></div>
+<div style="margin:0 0 10px"><button type="button" id="f-scan" style="width:100%;padding:10px 14px;background:linear-gradient(90deg,#0891b2,#2563eb);color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 6px rgba(37,99,235,.25)">📷 Quét bằng camera — tự điền Tên, SĐT, Lỗi, Model máy</button></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f" style="position:relative"><label style="color:#0891b2">🔍 TÊN KHÁCH HÀNG * <span style="color:#94a3b8;font-weight:400;text-transform:none">(gõ để tìm)</span></label><input id="f-customerName" type="text" placeholder="Gõ tên để tìm hoặc nhập mới..." autocomplete="off" value="${record?.customerName||''}"><div id="f-cust-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #c7d2fe;border-radius:6px;z-index:999;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div></div><div class="rfm-f"><label>SỐ ĐIỆN THOẠI *</label><input id="f-phone" type="text" placeholder="0xxx..." value="${record?.phone||''}"></div><div class="rfm-f"><label>ĐỊA CHỈ</label><input id="f-address" type="text" placeholder="Địa chỉ..." value="${record?.address||''}"></div></div>
 <div class="rfm-r rfm-r3"><div class="rfm-f"><label>THIẾT BỊ *</label><input id="f-device" type="text" placeholder="Dell Inspiron 15 3520" value="${record?.device||''}"></div><div class="rfm-f"><label>SERIAL / IMEI</label><input id="f-serial" type="text" placeholder="SN12345..." value="${record?.serial||''}"></div><div class="rfm-f"><label>MẬT KHẨU MÁY</label><input id="f-password" type="text" placeholder="Password..." value="${record?.password||''}"></div></div>
 <div class="rfm-r rfm-r4">
@@ -1186,38 +1283,13 @@ function openForm(record) {
     formWrap.classList.add('rep-modal');
     formWrap.querySelector('#f-cancel').addEventListener('click', () => { formWrap.innerHTML = ''; formWrap.classList.remove('rep-modal'); });
 
-    // ── Nút "Quét bằng AI" ──
+    // ── Nút "Quét bằng camera" ──
     (function () {
       const sbtn = formWrap.querySelector('#f-scan');
-      const sfile = formWrap.querySelector('#f-scan-file');
-      if (!sbtn || !sfile) return;
+      if (!sbtn) return;
       sbtn.addEventListener('click', () => {
         if (!_scanUrl) { toast('Tính năng quét ảnh AI chưa được cấu hình', 'warning'); return; }
-        sfile.click();
-      });
-      sfile.addEventListener('change', async () => {
-        const f = sfile.files && sfile.files[0]; sfile.value = '';
-        if (!f) return;
-        const old = sbtn.textContent; sbtn.disabled = true; sbtn.style.opacity = '.75'; sbtn.textContent = '⏳ Đang đọc ảnh...';
-        try {
-          const b64 = await _downscaleToB64(f, 1280, 0.72);
-          const resp = await fetch(_scanUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'scan', image: b64, mime: 'image/jpeg' })
-          });
-          const data = await resp.json();
-          if (data.error) { toast('Lỗi AI: ' + data.error, 'error'); }
-          else {
-            const set = (id, v) => { const el = formWrap.querySelector('#' + id); if (el && v) el.value = v; };
-            set('f-customerName', data.name);
-            set('f-phone', String(data.phone || '').replace(/[^0-9]/g, ''));
-            set('f-initialCondition', data.description);
-            const got = [data.name && 'tên', data.phone && 'SĐT', data.description && 'lỗi'].filter(Boolean).join(', ');
-            toast(got ? ('✅ Đã điền: ' + got + ' — kiểm tra lại nhé') : 'Không tìm thấy thông tin trong ảnh', got ? 'success' : 'warning');
-          }
-        } catch (e) { toast('Lỗi quét ảnh: ' + e.message, 'error'); }
-        sbtn.disabled = false; sbtn.style.opacity = '1'; sbtn.textContent = old;
+        _openScanModal(formWrap);
       });
     })();
     formWrap.querySelector('#f-print').addEventListener('click', () => {
