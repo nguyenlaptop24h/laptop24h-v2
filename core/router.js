@@ -1,7 +1,7 @@
 // core/router.js - Hash-based routing
 // MÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂi module tÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ± ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂng kÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ route cÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§a mÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¬nh qua registerRoute()
 
-import { isAdmin, canViewStats, canManageUsers } from './auth.js'; // v187
+import { isAdmin, canViewStats, canManageUsers } from './auth.js'; // v188
 
 const routes = {};
 let currentRoute = null;
@@ -48,7 +48,7 @@ export function initRouter() {
     import('../modules/inventory.js?v=29'),
     import('../modules/customers.js?v=22'),
     import('../modules/debts.js?v=4'),
-    import('../modules/stats.js?v=30'),
+    import('../modules/stats.js?v=31'),
     import('../modules/warranty.js?v=5'),
     import('../modules/services.js?v=1'),
     import('../modules/expenses.js?v=3'),
