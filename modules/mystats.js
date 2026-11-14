@@ -40,7 +40,7 @@ function _repMs(r) {
   return (r.ts || r.createdAt) || 0;
 }
 const _repProfit = r => (r.cost || 0) - (r.partsCost || 0) - (r.discount || 0);
-const _ddmm = s => { if (!s) return '--'; const d = new Date(String(s).length <= 10 ? String(s) + 'T00:00:00' : String(s)); if (isNaN(d.getTime())) return '--'; return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
+const _ddmm = s => { if (!s && s !== 0) return '--'; const d = (typeof s === 'number') ? new Date(s) : new Date(String(s).length <= 10 ? String(s) + 'T00:00:00' : String(s)); if (isNaN(d.getTime())) return '--'; return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
 
 let _chart = null;
 
