@@ -2,6 +2,7 @@
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot, getDB, getAll } from '../core/db.js';
 import { toast, formatVND, showModal, showContextMenu } from '../core/ui.js';
+import { qrBlock, ensureQrLib } from '../core/qr.js';
 
 // Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
 function _custHistItems(name, phone, reps, sales) {
@@ -76,6 +77,7 @@ function saveTemplate(obj) {
 }
 
 export async function mount(container) {
+  ensureQrLib();
   let allItems = [];
   let invItems = [];
   let filterMode = 'day';
@@ -1311,6 +1313,7 @@ export async function mount(container) {
       <div class="wn-head">📋 ĐIỀU KHOẢN BẢO HÀNH</div>
       <div class="wn-body"><ul>${termsHtml}</ul></div>
     </div>
+    ${qrBlock(s._key, 'Quét để tra cứu bảo hành')}
   </div>
   <div class="footer-band">
     <strong>${shopName} — ${phone}</strong>

@@ -1,7 +1,8 @@
 // modules/repairs.js - Phiếu sửa chữa
-import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB } from '../core/db.js';
+import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB, newKey, setItem } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
+import { qrBlock, ensureQrLib } from '../core/qr.js';
 
 // Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
 function _custHistItems(name, phone, reps, sales) {
@@ -1092,6 +1093,9 @@ function quickChangeStatus(record) {
         (rFooter ? '<div class="ft">'+rFooter+'</div>' : '');
     }
 
+    var _qrKeyR = d._key || d._qrKey || '';
+    if (_qrKeyR) { try { var _qb = qrBlock(_qrKeyR); if (_qb) inner += _qb; } catch(e){} }
+
     var fs = function(px){ return (px*scale).toFixed(1)+'px'; };
     var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
@@ -1220,6 +1224,9 @@ async function printWarrantySlip(d) {
       '<div class="terms"><b>Điều khoản bảo hành:</b><br>'+termsHtml+'</div>' +
       '<div class="note">⚠️ Lưu ý: Quý khách vui lòng kiểm tra lại cấu hình máy trước khi ra về. Xin cảm ơn quý khách!</div>';
 
+    var _qrKeyR = d._key || d._qrKey || '';
+    if (_qrKeyR) { try { var _qb = qrBlock(_qrKeyR); if (_qb) inner += _qb; } catch(e){} }
+
     var fs = function(px){ return (px*scale).toFixed(1)+'px'; };
     var css = '@page{size:'+rPaper+' portrait;margin:8mm}' +
       '*{margin:0;padding:0;box-sizing:border-box}' +
@@ -1252,6 +1259,9 @@ async function printWarrantySlip(d) {
 
 function openForm(record) {
     const formWrap = container.querySelector('#rep-form-wrap');
+    // Key cố định cho phiếu này (phiếu mới: sinh trước để QR khớp Key sẽ lưu).
+    const _formKey = (record && record._key) ? record._key : newKey(COLLECTION);
+    ensureQrLib();
     formWrap.innerHTML = `<style>.rfm-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999}.rfm-card{background:#fff;border-radius:14px;width:820px;max-width:96vw;max-height:93vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.3);display:flex;flex-direction:column}.rfm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:2px solid #f1f5f9;flex-shrink:0}.rfm-head h2{margin:0;font-size:17px;font-weight:700;color:#1e293b}.rfm-head .rfm-x{background:#f8fafc;border:none;font-size:16px;cursor:pointer;color:#64748b;width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center}.rfm-head .rfm-x:hover{background:#e2e8f0}.rfm-body{padding:18px 22px;flex:1;overflow-y:auto}.rfm-r{display:grid;gap:12px;margin-bottom:14px}.rfm-r3{grid-template-columns:1fr 1fr 1fr}.rfm-r4{grid-template-columns:1fr 1fr 1fr 1fr}.rfm-r2{grid-template-columns:1fr 1fr}.rfm-r1{grid-template-columns:1fr}.rfm-f label{display:block;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}.rfm-f input,.rfm-f textarea,.rfm-f select{width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;color:#1e293b;outline:none;transition:border .15s;background:#fff}.rfm-f input:focus,.rfm-f textarea:focus,.rfm-f select:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}.rfm-f textarea{resize:vertical;min-height:78px;font-family:inherit}.rfm-foot{padding:14px 22px;border-top:2px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}.rfm-cancbtn{padding:9px 22px;border:1.5px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;color:#374151;font-weight:500}.rfm-cancbtn:hover{background:#f8fafc}.rfm-savbtn{padding:9px 26px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700}.rfm-savbtn:hover{background:#1d4ed8}</style>
 <div class="rfm-ov"><div class="rfm-card">
 <div class="rfm-head"><h2>🔧 Phiếu Nhận Máy Sửa</h2><button class="rfm-x" onclick="document.getElementById('f-cancel').click()">✕</button></div>
@@ -1303,6 +1313,7 @@ function openForm(record) {
         status: fv('f-status'), cpu: fv('f-cpu'), ram: fv('f-ram'), ssd: fv('f-ssd'), vga: fv('f-vga'), initialCondition: fv('f-initialCondition'),
         repairRequest: fv('f-repairRequest')
       };
+      d._qrKey = _formKey;
       printReceipt(d);
     });
     formWrap.querySelector('#f-save').addEventListener('click', async () => {
@@ -1341,7 +1352,7 @@ function openForm(record) {
       };
       try {
         if (record) { await updateItem(COLLECTION, record._key, data); logRepairToSheet({...data, key:record._key}, 'update'); toast('Đã cập nhật phiếu'); }
-        else { const _r = await addItem(COLLECTION, data); logRepairToSheet({...data, key:_r?.key||''}, 'add'); toast('Đã thêm phiếu mới'); }
+        else { await setItem(COLLECTION, _formKey, data); logRepairToSheet({...data, key:_formKey}, 'add'); toast('Đã thêm phiếu mới'); }
         if (record && record.partsUsed && record.partsUsed.length) { await restorePartsStock(record.partsUsed); }
         await deductPartsStock(_partsArr);
         // Phiếu mới: nhắc điền bảo hành nếu chưa có bảo hành nào
