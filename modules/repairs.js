@@ -174,7 +174,7 @@ function printWarrantyBill(record) {
   win.document.close();
 }
 
-const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzha41ZadrH6LNqgttslMWyVN0OzFmFW1YW8CaWs2Yd_b8CF82xZhtqsM36XxJJZy8D5Q/exec';
+const REPAIRS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyO2yd3dljhjaCjc3BCxJq1pQ54x6zOuCwrHoTh9Ep0wZrMvOiDqoVUcs7WXSXXxxv5tA/exec';
 function getRepBillTpl() { try { return JSON.parse(localStorage.getItem(RPL_BILL_KEY) || '{}'); } catch(e) { return {}; } }
 function saveRepBillTpl(obj) { localStorage.setItem(RPL_BILL_KEY, JSON.stringify(obj)); }
 const RPL_RECEIPT_KEY = 'rp_receipt_tpl';
