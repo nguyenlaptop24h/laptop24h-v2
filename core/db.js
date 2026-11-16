@@ -65,6 +65,17 @@ export function addItem(collection, data) {
   return db.ref(branchPath(collection)).push({ ...data, createdAt: Date.now() });
 }
 
+// Sinh trước một Firebase push id (client-side, CHƯA ghi dữ liệu).
+// Dùng để biết trước Key của phiếu mới (cho mã QR tra cứu).
+export function newKey(collection) {
+  return db.ref(branchPath(collection)).push().key;
+}
+
+// Ghi phiếu vào đúng Key đã biết trước (tạo mới hoặc ghi đè toàn bộ).
+export function setItem(collection, key, data) {
+  return db.ref(branchPath(collection) + '/' + key).set({ ...data, createdAt: data.createdAt || Date.now() });
+}
+
 export function updateItem(collection, key, data) {
   return db.ref(branchPath(collection) + '/' + key).update({ ...data, updatedAt: Date.now() });
 }
