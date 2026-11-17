@@ -708,7 +708,7 @@ let showTrash = false;
             if (s === 'Đã giao' && remaining > 0) { askDeliverPayment(rec, remaining, fw); return; }
             const update = { ...rec, status: s };
             if (s === 'Đã giao' && !rec.deliveredDate) update.deliveredDate = todayStr();
-            updateItem(COLLECTION, rec._key, update).then(() => toast('✅ ' + s)).catch(e => toast('Lỗi: ' + e.message, 'error'));
+            updateItem(COLLECTION, rec._key, update).then(() => { logRepairToSheet({ ...update, key: rec._key }, 'update'); toast('✅ ' + s); }).catch(e => toast('Lỗi: ' + e.message, 'error'));
           }
         })) },
       { label: '📦 Giao máy', onClick: () => quickDeliver(rec) },
@@ -871,7 +871,9 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
       confirmText: 'Giao máy',
       onConfirm: async () => {
         try {
-          await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: todayStr() });
+          const _u = { ...record, status: 'Đã giao', deliveredDate: todayStr() };
+          await updateItem(COLLECTION, record._key, _u);
+          logRepairToSheet({ ..._u, key: record._key }, 'update');
           toast('✅ Đã giao máy thành công');
         } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
       }
@@ -899,7 +901,7 @@ statusBtn.textContent = n > 1 ? '⇄ Đổi TT (' + n + ')' : '⇄ Đổi TT';
         if (!rec) { fail++; continue; }
         const update = { ...rec, status: ns };
         if (ns === 'Đã giao' && !rec.deliveredDate) update.deliveredDate = todayStr();
-        try { await updateItem(COLLECTION, key, update); ok++; }
+        try { await updateItem(COLLECTION, key, update); logRepairToSheet({ ...update, key: key }, 'update'); ok++; }
         catch(e) { fail++; }
       }
       toast('Đã đổi ' + ok + ' phiếu → "' + ns + '"' + (fail ? ', ' + fail + ' lỗi' : ''));
@@ -932,7 +934,7 @@ function quickChangeStatus(record) {
         if (ns === 'Đã giao' && remaining > 0) { askDeliverPayment(record, remaining, formWrap); return; }
         const update = { ...record, status: ns };
         if (ns === 'Đã giao' && !record.deliveredDate) update.deliveredDate = todayStr();
-        try { await updateItem(COLLECTION, record._key, update); toast('✅ ' + ns); formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); }
+        try { await updateItem(COLLECTION, record._key, update); logRepairToSheet({ ...update, key: record._key }, 'update'); toast('✅ ' + ns); formWrap.innerHTML = ''; selectedKeys = new Set(); updateBtnStates(); }
         catch(e) { toast('Lỗi: ' + e.message, 'error'); }
       });
     });
@@ -977,7 +979,9 @@ function quickChangeStatus(record) {
     const today = todayStr();
     formWrap.querySelector('#dp-paid').addEventListener('click', async () => {
       try {
-        await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'paid' });
+        const _up = { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'paid' };
+        await updateItem(COLLECTION, record._key, _up);
+        logRepairToSheet({ ..._up, key: record._key }, 'update');
         toast('\u2705 Đã giao \u2014 đã thanh toán'); done();
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
@@ -986,7 +990,9 @@ function quickChangeStatus(record) {
         const dev = (record.device || '') + (record.serial ? (' / ' + record.serial) : '');
         const note = 'Nợ phiếu sửa: ' + dev + ' \u2014 nhận ' + (record.receivedDate ? formatDate(record.receivedDate) : '?') + ', giao ' + formatDate(today) + '. Còn lại ' + formatVND(remaining) + '.';
         await addItem('debts', { name: record.customerName || '', phone: record.phone || '', amount: remaining, paid: 0, status: 'unpaid', dueDate: '', note: note, source: 'repair', repairKey: record._key });
-        await updateItem(COLLECTION, record._key, { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'debt' });
+        const _ud = { ...record, status: 'Đã giao', deliveredDate: record.deliveredDate || today, paymentStatus: 'debt' };
+        await updateItem(COLLECTION, record._key, _ud);
+        logRepairToSheet({ ..._ud, key: record._key }, 'update');
         toast('\u2705 Đã giao \u2014 đã ghi công nợ ' + formatVND(remaining)); done();
       } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
     });
