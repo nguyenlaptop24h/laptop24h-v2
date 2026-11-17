@@ -640,7 +640,33 @@ export async function mount(container) {
             ${invDetail || '<p style="color:#888;padding:6px 0">Kh&#244;ng c&#243; h&#224;ng t&#7891;n.</p>'}
           </div>
 
+          <div class="st-panel st-full">
+            <h3>📋 Lịch sử tạo / cập nhật phiếu sửa</h3>
+            <div id="rh-period" style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px">
+              <button class="btn btn--primary rh-p" data-p="today">Hôm nay</button>
+              <button class="btn btn--secondary rh-p" data-p="week">Tuần này</button>
+              <button class="btn btn--secondary rh-p" data-p="month">Tháng này</button>
+              <button class="btn btn--secondary rh-p" data-p="year">Năm nay</button>
+            </div>
+            <div id="rh-body"></div>
+          </div>
+
         </div>`;
+
+      let _rhPeriod = 'today';
+      function rhRange(p){ const n=new Date(),y=n.getFullYear(),m=n.getMonth(),d=n.getDate(); let from; const to=Date.now(); if(p==='today')from=new Date(y,m,d).getTime(); else if(p==='week'){const dow=(n.getDay()+6)%7;from=new Date(y,m,d-dow).getTime();} else if(p==='month')from=new Date(y,m,1).getTime(); else from=new Date(y,0,1).getTime(); return {from,to}; }
+      function renderRepairHistory(){
+        const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const {from,to}=rhRange(_rhPeriod);
+        const list=repairs.filter(x=>!x.deletedAt).map(x=>{const upd=x.updatedAt||0,crt=x.createdAt||x.ts||0;return {x,t:Math.max(upd,crt),isNew:!(upd>crt)};}).filter(o=>o.t>=from&&o.t<=to).sort((a,b)=>b.t-a.t);
+        const body=content.querySelector('#rh-body'); if(!body)return;
+        if(!list.length){ body.innerHTML='<p style="color:#888;padding:10px">Không có phiếu nào trong kỳ này.</p>'; return; }
+        const fmt=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());};
+        const nNew=list.filter(o=>o.isNew).length, nUpd=list.length-nNew;
+        body.innerHTML='<div style="margin:2px 0 6px;color:#555;font-weight:600">'+list.length+' phiếu · 🆕 '+nNew+' tạo mới · ✏️ '+nUpd+' cập nhật</div><div style="overflow-x:auto"><table class="st-tbl"><thead><tr><th>Thời gian</th><th>Loại</th><th>Khách hàng</th><th>Thiết bị</th><th>KTV</th><th>Trạng thái</th></tr></thead><tbody>'+list.slice(0,300).map(o=>{const r=o.x;return '<tr><td style="white-space:nowrap">'+fmt(o.t)+'</td><td style="white-space:nowrap">'+(o.isNew?'🆕 Tạo mới':'✏️ Cập nhật')+'</td><td>'+esc(r.customerName)+'</td><td>'+esc(r.device)+'</td><td>'+esc(r.techName)+'</td><td>'+esc(r.status)+'</td></tr>';}).join('')+'</tbody></table></div>'+(list.length>300?'<p style="color:#888;padding:6px">Hiển thị 300 phiếu mới nhất.</p>':'');
+      }
+      content.querySelectorAll('.rh-p').forEach(b=>b.addEventListener('click',()=>{ _rhPeriod=b.dataset.p; content.querySelectorAll('.rh-p').forEach(x=>{x.className='btn btn--secondary rh-p';}); b.className='btn btn--primary rh-p'; renderRepairHistory(); }));
+      renderRepairHistory();
 
       renderLowStockTable(1);
       renderRevenueChart(repF, saleF, from, to, productByKey);
