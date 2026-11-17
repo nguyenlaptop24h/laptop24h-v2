@@ -2,7 +2,7 @@
 import { registerRoute } from '../core/router.js';
 import { addItem, updateItem, deleteItem, onSnapshot, getDB, getAll } from '../core/db.js';
 import { toast, formatVND, showModal, showContextMenu } from '../core/ui.js';
-import { qrBlock, ensureQrLib } from '../core/qr.js';
+import { qrBlock, ensureQrLib } from '../core/qr.js?v=2';
 
 // Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
 function _custHistItems(name, phone, reps, sales) {

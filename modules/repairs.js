@@ -2,7 +2,7 @@
 import { addItem, updateItem, deleteItem, onSnapshot, getAll, getItem, getDB, newKey, setItem } from '../core/db.js';
 import { buildTable, toast, showModal, formatDate, formatVND, showContextMenu } from '../core/ui.js';
 import { isAdmin } from '../core/auth.js';
-import { qrBlock, ensureQrLib } from '../core/qr.js';
+import { qrBlock, ensureQrLib } from '../core/qr.js?v=2';
 
 // Lịch sử khách (dùng chung): khớp theo SĐT (khách lẻ) hoặc tên → sửa chữa + máy đã mua + máy tại shop
 function _custHistItems(name, phone, reps, sales) {
