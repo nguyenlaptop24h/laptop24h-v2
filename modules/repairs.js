@@ -1095,7 +1095,6 @@ function quickChangeStatus(record) {
         '<table class="info">'+rows+'</table>' +
         (on('showWarn') ? '<div class="warn">⚠️ LƯU Ý VỀ DỮ LIỆU: '+rWarnHtml+'</div>' : '') +
         (on('showTerms') ? '<div class="terms"><b>Điều khoản:</b><br>'+rTermsHtml+'</div>' : '') +
-        (on('showSign') ? '<div class="sign"><div><div class="sl">Khách hàng</div><div class="su">(ký, ghi rõ họ tên)</div></div><div><div class="sl">Người nhận máy</div><div class="su">(ký, ghi rõ họ tên)</div></div></div>' : '') +
         (rFooter ? '<div class="ft">'+rFooter+'</div>' : '');
     }
 
