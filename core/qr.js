@@ -41,7 +41,7 @@ export function qrBlock(key, caption) {
   var cap = caption || 'Quét để tra cứu bảo hành / tình trạng máy';
   return '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0">' +
     '<div style="width:92px;height:92px;flex:none">' + svg + '</div>' +
-    '<div style="font-size:11px;color:#333;line-height:1.5;max-width:230px">' +
+    '<div style="font-size:11px;color:#333;line-height:1.5;white-space:nowrap">' +
     '<b>📱 ' + cap + '</b><br>laptop24hstore.vn/tra-cuu-bao-hanh</div>' +
     '</div>';
 }
